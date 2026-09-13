@@ -5,9 +5,8 @@ import type { ElementFamily } from '../types';
 import { Layout } from '../components/Layout';
 
 const FAMILY_LABEL: Record<ElementFamily, string> = {
-  TIME: 'Time',
-  SPACE: 'Space',
-  ELEMENTS: 'Elements',
+  TIME: 'Temps',
+  ELEMENTS: 'Element',
 };
 
 export function TrashPage() {
@@ -40,7 +39,7 @@ export function TrashPage() {
 
       {isLoading && <p className="text-sm text-neutral-500">Chargement…</p>}
 
-      <ul className="divide-y divide-neutral-800 rounded-lg border border-neutral-200">
+      <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200">
         {elements?.map((el) => (
           <li
             key={el.id}

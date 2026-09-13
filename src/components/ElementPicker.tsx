@@ -8,14 +8,12 @@ export function ElementPicker({
   onPick,
   allowCreate = true,
   createFamily = 'ELEMENTS',
-  createParentId = null,
 }: {
   excludeIds: string[];
   placeholder: string;
   onPick: (element: Element) => void;
   allowCreate?: boolean;
   createFamily?: ElementFamily;
-  createParentId?: string | null;
 }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Element[]>([]);
@@ -46,7 +44,6 @@ export function ElementPicker({
       const created = await createElement({
         name: trimmed,
         family: createFamily,
-        parentId: createParentId,
       });
       onPick(created);
       setQuery('');

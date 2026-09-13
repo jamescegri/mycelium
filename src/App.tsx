@@ -2,10 +2,8 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './lib/auth';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
-import { FamilyLevelPage } from './pages/FamilyLevelPage';
 import { ElementDetailPage } from './pages/ElementDetailPage';
 import { TrashPage } from './pages/TrashPage';
-import { CollectionDetailPage } from './pages/CollectionDetailPage';
 import { PeekProvider } from './components/PeekPanel';
 import { CommandPaletteProvider } from './components/CommandPalette';
 
@@ -37,14 +35,6 @@ export default function App() {
         }
       />
       <Route
-        path="/space/:family"
-        element={
-          <RequireAuth>
-            <FamilyLevelPage />
-          </RequireAuth>
-        }
-      />
-      <Route
         path="/elements/:id"
         element={
           <RequireAuth>
@@ -57,14 +47,6 @@ export default function App() {
         element={
           <RequireAuth>
             <TrashPage />
-          </RequireAuth>
-        }
-      />
-      <Route
-        path="/collections/:id"
-        element={
-          <RequireAuth>
-            <CollectionDetailPage />
           </RequireAuth>
         }
       />

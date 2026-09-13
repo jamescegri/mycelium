@@ -1,8 +1,12 @@
 // Reflète exactement le schéma SQL (supabase/schema.sql).
 // Un seul type d'objet narratif : Element. Ne JAMAIS ajouter de types
 // comme Character/Chapter/Scene/Arc ici — voir le cahier des charges.
+//
+// v2 : hiérarchie multi-parent (element_links), plus de parent_id unique
+// ni de table collections séparée — un Groupe/une Collection est un
+// Element qui a au moins un enfant.
 
-export type ElementFamily = 'TIME' | 'SPACE' | 'ELEMENTS';
+export type ElementFamily = 'TIME' | 'ELEMENTS';
 export type TemporalRelationType = 'BEFORE' | 'AFTER';
 export type RelationOrigin = 'manual' | 'mention';
 
@@ -12,13 +16,18 @@ export interface Element {
   name: string;
   family: ElementFamily;
   content: unknown | null; // JSON Tiptap
-  parent_id: string | null;
   notion_url: string | null;
   absolute_date: string | null;
-  sort_order: number;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface ElementLink {
+  parent_id: string;
+  child_id: string;
+  sort_order: number;
+  created_at: string;
 }
 
 export interface Tag {
@@ -46,10 +55,4 @@ export interface TemporalRelation {
   created_at: string;
 }
 
-export interface Collection {
-  id: string;
-  user_id: string;
-  name: string;
-}
-
-export const FAMILIES: ElementFamily[] = ['TIME', 'SPACE', 'ELEMENTS'];
+export const FAMILIES: ElementFamily[] = ['TIME', 'ELEMENTS'];

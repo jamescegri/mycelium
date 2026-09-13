@@ -8,16 +8,49 @@ les règles métier.
 
 Il n'existe qu'un seul objet : **Element**. L'application n'impose jamais de
 types narratifs prédéfinis (pas de Character, Chapter, Scene, Arc…).
-L'utilisateur donne du sens à ses Elements par leur contenu, leur hiérarchie,
-leurs relations, leurs tags, leurs collections et leur position temporelle.
-Les familles TIME / SPACE / ELEMENTS ne servent qu'à organiser les grandes
-vues — elles n'imposent aucune structure interne aux Elements.
+L'utilisateur donne du sens à ses Elements par leur contenu, leurs relations,
+leurs tags et leur position temporelle — et par leur rangement, qui n'est
+**jamais figé** : un Element peut appartenir à plusieurs Groupes à la fois.
+Les familles TIME / ELEMENTS ne servent qu'à étiqueter (Temps prépare la
+future timeline) — elles n'imposent aucune structure.
 
 La boucle centrale est : **créer → écrire → relier → organiser → explorer**,
 et chaque étape doit rester quasi-instantanée. Voir le cahier des charges
 pour le détail des principes et des non-objectifs.
 
-## État actuel
+## v2 : rangement multi-parent (Groupes)
+
+Le rangement d'un Element n'est plus un arbre à parent unique — c'est un
+graphe : un Element peut avoir **plusieurs parents et plusieurs enfants** en
+même temps (table `element_links`, remplace `elements.parent_id` et les
+anciennes tables `collections`/`collection_elements`). Un **Groupe** n'est
+rien d'autre qu'un Element qui a au moins un enfant ; "Collections" et
+"Groupes" sont donc devenus le même mécanisme.
+
+- Sur la page d'un Element : deux sections toujours visibles sous
+  l'éditeur — **Parents** et **Enfants** — jamais dans le texte.
+- Dans l'éditeur, trois déclencheurs distincts :
+  - `/` cherche/crée un Element et insère un lien cliquable dans le texte
+    (inchangé)
+  - `@` rattache l'Element courant comme enfant de celui choisi (celui-ci
+    devient un parent) — **n'insère rien** dans le texte
+  - `+` rattache l'Element choisi comme enfant de l'Element courant — même
+    principe, aucune insertion
+  - Les trois refusent silencieusement un choix qui créerait une boucle
+    (ancêtre ↔ descendant)
+- Dashboard : barre "Écrire / Rechercher / + Nouvel Element" en haut, puis
+  un onglet **Groupes** (cartes avec aperçu des premiers enfants, clic pour
+  plonger d'un niveau), en plus des onglets Temporel et Connexions déjà
+  existants (inchangés, indépendants de la hiérarchie).
+- Familles réduites à **TIME** et **ELEMENTS** — "Lieu" (SPACE) n'est plus
+  une famille séparée, c'est redevenu un Element ordinaire.
+- Refonte visuelle (thème blanc, typographie) volontairement **différée** :
+  cette version ne change que le modèle de données et les interactions, pas
+  encore l'habillage.
+- Base Supabase repartie de zéro (schéma changé, pas de migration — accepté
+  par l'utilisateur, aucune donnée de prod à conserver à ce stade).
+
+## État actuel (V1, avant la v2 ci-dessus)
 
 - ✅ Étape 1 — Setup : projet React + TypeScript + Vite + Tailwind v4,
   auth Supabase, routing, schéma SQL complet (`supabase/schema.sql`)

@@ -2,7 +2,8 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { getElement, getAncestors, listElements } from '../lib/elements';
+import { getElement, listElements } from '../lib/elements';
+import { listAllLinks, parentsOf } from '../lib/links';
 import { extractPlainText } from '../lib/content';
 import { ConnectionsDisclosure } from './ConnectionsDisclosure';
 
@@ -92,8 +93,14 @@ function PeekOverlay({
     queryKey: ['elements'],
     queryFn: listElements,
   });
-  const ancestors =
-    allElements && element ? getAncestors(allElements, element.id) : [];
+  const { data: links } = useQuery({
+    queryKey: ['links'],
+    queryFn: listAllLinks,
+  });
+  const parents =
+    allElements && links && element
+      ? parentsOf(links, allElements, element.id)
+      : [];
 
   return (
     <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose}>
@@ -131,9 +138,9 @@ function PeekOverlay({
               </div>
             </div>
 
-            {ancestors.length > 0 && (
+            {parents.length > 0 && (
               <div className="mb-1 truncate text-xs text-neutral-400">
-                {ancestors.map((a) => a.name).join(' › ')}
+                {parents.map((p) => p.name).join(' · ')}
               </div>
             )}
 

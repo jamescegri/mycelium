@@ -2,38 +2,48 @@ import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { listElements } from '../lib/elements';
+import { createElement, listElements } from '../lib/elements';
+import {
+  childrenOf,
+  hasChildren,
+  listAllLinks,
+  rootElements,
+} from '../lib/links';
 import { listAllRelations } from '../lib/relations';
 import { listTemporalRelations } from '../lib/temporal';
 import { normalizeEdges, topologicalOrder } from '../lib/timeline';
-import { listCollections, createCollection } from '../lib/collections';
-import { FAMILY_COLOR } from '../lib/family';
 import { Layout } from '../components/Layout';
-import type { Element, ElementFamily } from '../types';
+import { useCommandPalette } from '../components/CommandPalette';
+import type { Element, ElementLink } from '../types';
 
-type Tab = 'arbo' | 'temporal' | 'connexions' | 'collections';
+type Tab = 'groupes' | 'temporal' | 'connexions';
 
 const TAB_LABEL: Record<Tab, string> = {
-  arbo: 'Arborescence',
+  groupes: 'Groupes',
   temporal: 'Temporel',
   connexions: 'Connexions',
-  collections: 'Collections',
 };
 
 // Le Dashboard n'est pas "la page où sont rangés les Elements" : c'est un
 // espace qui regarde le même réseau sous plusieurs angles. Aucune vue
 // n'introduit de donnée propre — tout est dérivé de ce qui existe déjà
-// (parent_id, relations, temporal_relations, collections).
+// (element_links, relations, temporal_relations). Un Groupe n'est rien
+// d'autre qu'un Element qui a au moins un enfant.
 export function DashboardPage() {
-  const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>('arbo');
+  const [tab, setTab] = useState<Tab>('groupes');
   const { data: elements } = useQuery({
     queryKey: ['elements'],
     queryFn: listElements,
   });
+  const { data: links } = useQuery({
+    queryKey: ['links'],
+    queryFn: listAllLinks,
+  });
 
   return (
     <Layout>
+      <CaptureBar />
+
       <nav className="mb-8 flex gap-6 border-b border-neutral-100 pb-3 text-sm">
         {(Object.keys(TAB_LABEL) as Tab[]).map((t) => (
           <button
@@ -50,52 +60,156 @@ export function DashboardPage() {
         ))}
       </nav>
 
-      {tab === 'arbo' && (
-        <ArborescenceTab
-          elements={elements ?? []}
-          onNavigate={(f) => navigate(`/space/${f}`)}
-        />
+      {tab === 'groupes' && (
+        <GroupesTab elements={elements ?? []} links={links ?? []} />
       )}
       {tab === 'temporal' && <TemporalTab />}
       {tab === 'connexions' && <ConnexionsTab elements={elements ?? []} />}
-      {tab === 'collections' && <CollectionsTab />}
     </Layout>
   );
 }
 
-function ArborescenceTab({
+// Écrire, chercher, ou créer un nouvel Element : le point d'entrée
+// principal, toujours en haut, avant même les vues.
+function CaptureBar() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { open: openPalette } = useCommandPalette();
+  const [name, setName] = useState('');
+
+  const createMutation = useMutation({
+    mutationFn: (name: string) => createElement({ name, family: 'ELEMENTS' }),
+    onSuccess: (created) => {
+      queryClient.invalidateQueries({ queryKey: ['elements'] });
+      setName('');
+      navigate(`/elements/${created.id}`, { state: { isNew: true } });
+    },
+  });
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (name.trim()) createMutation.mutate(name.trim());
+  }
+
+  return (
+    <form className="mb-8 flex items-center gap-5 text-sm" onSubmit={handleSubmit}>
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Écrire quelque chose…"
+        className="flex-1 border-b border-neutral-200 bg-transparent py-2 text-base text-neutral-900 outline-none focus:border-neutral-400"
+      />
+      <button
+        type="button"
+        onClick={openPalette}
+        className="shrink-0 text-neutral-500 hover:text-neutral-700"
+      >
+        Rechercher <span className="text-neutral-300">⌘K</span>
+      </button>
+      <button
+        type="submit"
+        disabled={!name.trim() || createMutation.isPending}
+        className="shrink-0 text-neutral-500 hover:text-neutral-700 disabled:opacity-40"
+      >
+        + Nouvel Element
+      </button>
+    </form>
+  );
+}
+
+function GroupesTab({
   elements,
-  onNavigate,
+  links,
 }: {
   elements: Element[];
-  onNavigate: (family: ElementFamily) => void;
+  links: ElementLink[];
 }) {
-  const families: ElementFamily[] = ['TIME', 'SPACE', 'ELEMENTS'];
+  const navigate = useNavigate();
+  const roots = rootElements(links, elements);
+  const groups = roots.filter((e) => hasChildren(links, e.id));
+  const standalone = roots.filter((e) => !hasChildren(links, e.id));
+
   return (
-    <div className="flex flex-col gap-8 sm:flex-row sm:gap-14">
-      {families.map((f) => {
-        const count = elements.filter(
-          (e) => !e.parent_id && e.family === f
-        ).length;
-        return (
-          <button
-            key={f}
-            onClick={() => onNavigate(f)}
-            className="group text-left"
-          >
-            <div
-              className="text-3xl font-semibold tracking-tight"
-              style={{ color: FAMILY_COLOR[f] }}
-            >
-              {f}
-            </div>
-            <div className="mt-1 text-xs text-neutral-400 group-hover:text-neutral-600">
-              {count} Element{count !== 1 ? 's' : ''}
-            </div>
-          </button>
-        );
-      })}
+    <div>
+      <div className="mb-8">
+        {groups.length === 0 ? (
+          <p className="text-sm text-neutral-400">
+            Pas encore de Groupe — rattache un enfant à un Element (bouton "+
+            Nouvelle sous-page" ou "+" dans l'éditeur) pour qu'il en devienne
+            un.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {groups.map((group) => (
+              <GroupCard
+                key={group.id}
+                group={group}
+                elements={elements}
+                links={links}
+                onNavigate={() => navigate(`/elements/${group.id}`)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {standalone.length > 0 && (
+        <div>
+          <div className="mb-2 text-xs text-neutral-500">Autres</div>
+          <div className="space-y-1.5">
+            {standalone.map((el) => (
+              <button
+                key={el.id}
+                onClick={() => navigate(`/elements/${el.id}`)}
+                className="block text-left text-[15px] text-neutral-800 hover:text-yellow-600"
+              >
+                {el.name || 'Sans titre'}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+// Aperçu d'un Groupe : ses premiers enfants, imbriqués — une carte qu'on
+// ouvre pour plonger d'un niveau (même logique en cascade sur la page de
+// l'Element lui-même, qui montre à son tour ses propres enfants).
+function GroupCard({
+  group,
+  elements,
+  links,
+  onNavigate,
+}: {
+  group: Element;
+  elements: Element[];
+  links: ElementLink[];
+  onNavigate: () => void;
+}) {
+  const allChildren = childrenOf(links, elements, group.id);
+  const preview = allChildren.slice(0, 4);
+  const remaining = allChildren.length - preview.length;
+
+  return (
+    <button
+      onClick={onNavigate}
+      className="rounded-lg border border-neutral-200 p-4 text-left hover:border-neutral-400"
+    >
+      <div className="mb-2 truncate text-sm font-medium text-neutral-900">
+        {group.name || 'Sans titre'}
+      </div>
+      <div className="space-y-0.5">
+        {preview.map((child) => (
+          <div key={child.id} className="truncate text-xs text-neutral-500">
+            {child.name || 'Sans titre'}
+          </div>
+        ))}
+        {remaining > 0 && (
+          <div className="text-xs text-neutral-300">+{remaining} autres</div>
+        )}
+      </div>
+    </button>
   );
 }
 
@@ -214,77 +328,6 @@ function ConnexionsTab({ elements }: { elements: Element[] }) {
           </button>
         ))}
       </div>
-    </div>
-  );
-}
-
-function CollectionsTab() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [creating, setCreating] = useState(false);
-  const [name, setName] = useState('');
-  const { data: collections } = useQuery({
-    queryKey: ['collections'],
-    queryFn: listCollections,
-  });
-
-  const createMutation = useMutation({
-    mutationFn: createCollection,
-    onSuccess: (created) => {
-      queryClient.invalidateQueries({ queryKey: ['collections'] });
-      setCreating(false);
-      setName('');
-      navigate(`/collections/${created.id}`);
-    },
-  });
-
-  function handleCreate(e: FormEvent) {
-    e.preventDefault();
-    if (name.trim()) createMutation.mutate(name.trim());
-  }
-
-  return (
-    <div>
-      <div className="space-y-1.5">
-        {collections?.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => navigate(`/collections/${c.id}`)}
-            className="block text-left text-[15px] text-neutral-800 hover:text-yellow-500"
-          >
-            {c.name}
-          </button>
-        ))}
-        {collections?.length === 0 && (
-          <p className="text-sm text-neutral-400">
-            Aucune collection pour l'instant.
-          </p>
-        )}
-      </div>
-      {creating ? (
-        <form onSubmit={handleCreate} className="mt-3 flex items-center gap-2">
-          <input
-            autoFocus
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Nom de la collection"
-            className="flex-1 border-b border-neutral-200 bg-transparent px-1 py-1 text-sm text-neutral-900 outline-none focus:border-neutral-400"
-          />
-          <button
-            type="submit"
-            className="text-sm text-neutral-600 hover:text-neutral-800"
-          >
-            Créer
-          </button>
-        </form>
-      ) : (
-        <button
-          onClick={() => setCreating(true)}
-          className="mt-3 text-sm text-neutral-500 hover:text-neutral-700"
-        >
-          + Nouvelle collection
-        </button>
-      )}
     </div>
   );
 }

@@ -1,14 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  getAncestors,
-  getElement,
-  listElements,
-  softDeleteElement,
-  sortByOrder,
-  updateElement,
-} from '../lib/elements';
+import { getElement, softDeleteElement, updateElement } from '../lib/elements';
 import { syncMentionRelations } from '../lib/relations';
 import { extractMentionIds, toEditorContent } from '../lib/content';
 import { FAMILY_COLOR } from '../lib/family';
@@ -17,7 +10,8 @@ import { Layout } from '../components/Layout';
 import { Editor } from '../components/Editor';
 import { ConnectionsDisclosure } from '../components/ConnectionsDisclosure';
 import { PropertiesDisclosure } from '../components/PropertiesDisclosure';
-import { ChildrenList } from '../components/ChildrenList';
+import { ParentsSection } from '../components/ParentsSection';
+import { EnfantsSection } from '../components/EnfantsSection';
 import { usePeek } from '../components/PeekPanel';
 
 export function ElementDetailPage() {
@@ -82,7 +76,6 @@ function ElementEditor({
   element: Element;
   onRequestDelete: () => void;
 }) {
-  const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
   const { openPeek } = usePeek();
@@ -103,15 +96,6 @@ function ElementEditor({
   const [name, setName] = useState(element.name);
   const [content, setContent] = useState<object | string>(() =>
     toEditorContent(element.content)
-  );
-
-  const { data: allElements } = useQuery({
-    queryKey: ['elements'],
-    queryFn: listElements,
-  });
-  const ancestors = allElements ? getAncestors(allElements, element.id) : [];
-  const childElements = sortByOrder(
-    (allElements ?? []).filter((e) => e.parent_id === element.id)
   );
 
   const saveMutation = useMutation({
@@ -136,36 +120,15 @@ function ElementEditor({
         className="w-full bg-transparent text-3xl font-semibold tracking-tight text-neutral-900 outline-none placeholder:text-neutral-300"
       />
 
-      <div className="mb-6 mt-2 flex flex-wrap items-center gap-1.5 text-xs text-neutral-500">
-        <button
-          onClick={() => navigate(`/space/${element.family}`)}
-          style={{ color: FAMILY_COLOR[element.family] }}
-          className="hover:underline"
-        >
-          {element.family}
-        </button>
-        {ancestors.map((ancestor) => (
-          <span key={ancestor.id} className="flex items-center gap-1.5">
-            <span className="text-neutral-300">/</span>
-            <button
-              onClick={() => navigate(`/elements/${ancestor.id}`)}
-              className="max-w-[160px] truncate hover:text-neutral-700"
-            >
-              {ancestor.name}
-            </button>
-          </span>
-        ))}
-      </div>
-
-      <div className="mb-2">
-        <PropertiesDisclosure element={element} />
+      <div className="mb-6 mt-2 text-xs" style={{ color: FAMILY_COLOR[element.family] }}>
+        {element.family}
       </div>
 
       <div className="mb-8">
-        <Editor content={content} onChange={setContent} />
+        <Editor elementId={element.id} content={content} onChange={setContent} />
       </div>
 
-      <div className="mb-10 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between">
         <button
           onClick={() => saveMutation.mutate()}
           disabled={saveMutation.isPending}
@@ -181,16 +144,20 @@ function ElementEditor({
         </button>
       </div>
 
-      <div className="border-t border-neutral-100 pt-6">
-        <ConnectionsDisclosure elementId={element.id} onSelect={openPeek} />
+      {/* Le classement (Parents/Enfants) vit sous la zone de texte, jamais
+          dedans : "@"/"+" tapés dans l'éditeur agissent ici, pas comme du
+          texte inséré. */}
+      <div className="mb-6 space-y-4 border-t border-neutral-100 pt-6">
+        <ParentsSection element={element} />
+        <EnfantsSection element={element} />
       </div>
 
-      <div className="mt-8 border-t border-neutral-100 pt-6">
-        <ChildrenList
-          items={childElements}
-          parentId={element.id}
-          defaultFamily={element.family}
-        />
+      <div className="mb-6">
+        <PropertiesDisclosure element={element} />
+      </div>
+
+      <div className="border-t border-neutral-100 pt-6">
+        <ConnectionsDisclosure elementId={element.id} onSelect={openPeek} />
       </div>
     </>
   );

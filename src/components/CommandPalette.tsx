@@ -2,9 +2,10 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createElement, getAncestors, listElements } from '../lib/elements';
+import { createElement, listElements } from '../lib/elements';
+import { linkChild, listAllLinks, parentsOf } from '../lib/links';
 import { usePeek } from './PeekPanel';
-import type { Element, ElementFamily } from '../types';
+import type { Element } from '../types';
 
 interface CommandPaletteContextValue {
   open: () => void;
@@ -63,6 +64,10 @@ function CommandPaletteOverlay({ onClose }: { onClose: () => void }) {
     queryKey: ['elements'],
     queryFn: listElements,
   });
+  const { data: links } = useQuery({
+    queryKey: ['links'],
+    queryFn: listAllLinks,
+  });
 
   const all = elements ?? [];
   const trimmed = query.trim().toLowerCase();
@@ -72,32 +77,37 @@ function CommandPaletteOverlay({ onClose }: { onClose: () => void }) {
   const hasExact = matches.some((e) => e.name.toLowerCase() === trimmed);
 
   // Créer depuis la palette place le nouvel Element là où c'est le plus
-  // probable : en enfant de la page Element courante, ou à la racine de
-  // l'espace courant si on navigue une famille, sinon à la racine.
+  // probable : en enfant de la page Element courante (si on est sur une
+  // page Element), sinon à la racine.
   const elementMatch = location.pathname.match(/^\/elements\/([^/]+)/);
-  const spaceMatch = location.pathname.match(/^\/space\/([^/]+)/);
   const currentElement = elementMatch
     ? all.find((e) => e.id === elementMatch[1])
     : undefined;
-  const createParentId = currentElement ? currentElement.id : null;
-  const createFamily: ElementFamily =
-    currentElement?.family ??
-    (spaceMatch ? (spaceMatch[1] as ElementFamily) : 'ELEMENTS');
 
   const createMutation = useMutation({
-    mutationFn: (name: string) =>
-      createElement({ name, family: createFamily, parentId: createParentId }),
+    mutationFn: async (name: string) => {
+      const created = await createElement({
+        name,
+        family: currentElement?.family ?? 'ELEMENTS',
+      });
+      if (currentElement) {
+        await linkChild(currentElement.id, created.id);
+      }
+      return created;
+    },
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['elements'] });
+      queryClient.invalidateQueries({ queryKey: ['links'] });
       onClose();
       navigate(`/elements/${created.id}`, { state: { isNew: true } });
     },
   });
 
   function pathOf(el: Element) {
-    return getAncestors(all, el.id)
-      .map((a) => a.name)
-      .join(' / ');
+    if (!links) return '';
+    return parentsOf(links, all, el.id)
+      .map((p) => p.name)
+      .join(' · ');
   }
 
   return (
