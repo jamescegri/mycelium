@@ -1,13 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 
 export function LoginPage() {
-  const { signIn } = useAuth();
+  const { session, signIn } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Une fois connecté (ou si on arrive sur /login avec une session déjà
+  // active), on part vers l'app : rien dans le routing ne fait ce lien tout
+  // seul, /login se contente d'afficher le formulaire.
+  useEffect(() => {
+    if (session) navigate('/elements', { replace: true });
+  }, [session, navigate]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
