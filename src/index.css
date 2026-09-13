@@ -1,1 +1,27 @@
 @import "tailwindcss";
+
+.prose-mycelium p {
+  margin: 0.5em 0;
+}
+
+.prose-mycelium p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--color-neutral-600);
+}
+
+.mention {
+  display: inline-block;
+  border-radius: 0.25rem;
+  padding: 0 0.35em;
+  margin: 0 0.05em;
+  background-color: color-mix(in srgb, var(--color-yellow-500) 20%, transparent);
+  color: var(--color-yellow-400);
+  cursor: pointer;
+}
+
+.mention:hover {
+  background-color: color-mix(in srgb, var(--color-yellow-500) 32%, transparent);
+}

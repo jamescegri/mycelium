@@ -4,19 +4,38 @@ Outil personnel de knowledge management pour un projet créatif (manga /
 worldbuilding). Voir le cahier des charges complet pour la vision produit et
 les règles métier.
 
-## État actuel (étapes 1 et 2 du plan)
+## Philosophie
+
+Il n'existe qu'un seul objet : **Element**. L'application n'impose jamais de
+types narratifs prédéfinis (pas de Character, Chapter, Scene, Arc…).
+L'utilisateur donne du sens à ses Elements par leur contenu, leur hiérarchie,
+leurs relations, leurs tags, leurs collections et leur position temporelle.
+Les familles TIME / SPACE / ELEMENTS ne servent qu'à organiser les grandes
+vues — elles n'imposent aucune structure interne aux Elements.
+
+La boucle centrale est : **créer → écrire → relier → organiser → explorer**,
+et chaque étape doit rester quasi-instantanée. Voir le cahier des charges
+pour le détail des principes et des non-objectifs.
+
+## État actuel
 
 - ✅ Étape 1 — Setup : projet React + TypeScript + Vite + Tailwind v4,
   auth Supabase, routing, schéma SQL complet (`supabase/schema.sql`)
 - ✅ Étape 2 — CRUD Elements : créer, lister, ouvrir, éditer (nom, famille,
   contenu texte simple), supprimer (corbeille / soft delete)
-- ⬜ Étape 3 — Hiérarchie (parent/enfant, arborescence, drag & drop)
-- ⬜ Étape 4 — Éditeur riche Tiptap + système `/`
-- ⬜ Étape 5 et suivantes — voir le cahier des charges
+- ✅ Étape 3 — Éditeur riche (Tiptap) + mentions `/` : rechercher un Element
+  existant ou en créer un à la volée depuis `/`, insertion d'un lien
+  cliquable qui navigue vers la page de l'Element mentionné. Les mentions
+  sont resynchronisées vers la table `relations` (origin='mention') à
+  chaque sauvegarde.
+- ⬜ Étape 4 — Backlinks (afficher qui référence l'Element courant)
+- ⬜ Étape 5 — Relations libres (UI dédiée, sans passer par une mention)
+- ⬜ Étape 6 — Hiérarchie (parent/enfant, profondeur illimitée, déplacement)
+- ⬜ Étape 7 — Timeline (dérivée des relations BEFORE/AFTER)
 
-Le contenu d'un Element est stocké en `jsonb` en base mais traité comme une
-simple chaîne de texte pour l'instant ; l'étape 4 introduira l'éditeur riche
-sans nécessiter de migration de schéma.
+Le contenu d'un Element est un document Tiptap (JSON) stocké tel quel dans
+la colonne `jsonb` ; les Elements créés à l'étape 2 (contenu texte brut)
+restent lisibles sans migration.
 
 ## Démarrer
 
@@ -54,9 +73,30 @@ l'étape 1.
   sur "Enregistrer"
 - Suppression → l'Element disparaît de la liste (soft delete, restauration
   prévue à l'étape 15)
-- `npm run build` passe sans erreur TypeScript
+- Taper `/` dans l'éditeur ouvre une recherche d'Elements existants ; en
+  sélectionner un insère un lien cliquable vers sa page
+- Taper `/` suivi d'un nom qui n'existe pas propose "+ Créer" : valider crée
+  l'Element (avec un nom contenant des espaces) et insère le lien vers sa
+  page, déjà vide et prête à être éditée
+- Cliquer sur un lien de mention navigue vers l'Element référencé, sans
+  fuite du contenu de la page précédente
+- Sauvegarder synchronise les mentions du texte vers `relations`
+  (`origin='mention'`), ce qui alimentera les backlinks de l'étape suivante
+- `npm run build` passe sans erreur TypeScript et produit un bundle
+  fonctionnel (vérifié avec Playwright contre une API Supabase simulée)
+
+## Note technique : Vite 8
+
+Le projet importé utilisait Vite 8.3.0 (nouveau bundler Rolldown) + 
+`@vitejs/plugin-react` 6.x. Dans cet environnement, `vite build` produisait
+silencieusement un bundle de production **sans le code de l'application**
+(aucune erreur, juste un bundle ne contenant que les dépendances) — un bug
+sérieux vu la nouveauté de cette combinaison. Le projet a été repointé sur
+Vite 7.3.6 + `@vitejs/plugin-react` 5.2.0 (pipeline Rollup classique,
+éprouvé), avec lequel le build inclut correctement tout le code. À garder
+en tête avant de retenter Vite 8 plus tard.
 
 ## Prochaine étape
 
-Étape 3 : hiérarchie libre (parent/enfant, profondeur illimitée, familles
-mélangeables), avec la garde anti-cycle décrite dans le cahier des charges.
+Étape 4 : backlinks — afficher automatiquement, sur la page d'un Element,
+la liste des Elements qui le référencent (dérivée de la table `relations`).

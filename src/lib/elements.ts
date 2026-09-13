@@ -47,6 +47,28 @@ export async function createElement(input: {
   return data as Element;
 }
 
+// Recherche utilisée par le système de mention "/" dans l'éditeur.
+export async function searchElements(
+  query: string,
+  excludeId?: string
+): Promise<Element[]> {
+  let request = supabase
+    .from('elements')
+    .select('*')
+    .is('deleted_at', null)
+    .order('updated_at', { ascending: false })
+    .limit(8);
+  if (query.trim()) {
+    request = request.ilike('name', `%${query.trim()}%`);
+  }
+  if (excludeId) {
+    request = request.neq('id', excludeId);
+  }
+  const { data, error } = await request;
+  if (error) throw error;
+  return data as Element[];
+}
+
 export async function updateElement(
   id: string,
   patch: Partial<Pick<Element, 'name' | 'family' | 'content' | 'notion_url' | 'absolute_date'>>
