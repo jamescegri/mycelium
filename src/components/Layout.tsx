@@ -2,9 +2,10 @@ import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 
-// Navigation minimale pour l'étape 2 : seule la vue Elements existe.
-// Timeline, Space et Dashboard seront ajoutés aux étapes suivantes.
-const NAV_ITEMS = [{ to: '/elements', label: 'Elements' }];
+const NAV_ITEMS = [
+  { to: '/elements', label: 'Elements' },
+  { to: '/timeline', label: 'Timeline' },
+];
 
 export function Layout({ children }: { children: ReactNode }) {
   const { signOut } = useAuth();

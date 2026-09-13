@@ -16,9 +16,19 @@ import {
   listManualRelations,
   syncMentionRelations,
 } from '../lib/relations';
+import {
+  createTemporalRelation,
+  deleteTemporalRelation,
+  listTemporalRelationsForElement,
+} from '../lib/temporal';
 import { extractMentionIds, toEditorContent } from '../lib/content';
 import { FAMILIES } from '../types';
-import type { Element, ElementFamily, Relation } from '../types';
+import type {
+  Element,
+  ElementFamily,
+  Relation,
+  TemporalRelationType,
+} from '../types';
 import { Layout } from '../components/Layout';
 import { Editor } from '../components/Editor';
 import { ElementPicker } from '../components/ElementPicker';
@@ -171,6 +181,61 @@ function ElementEditor({
     },
   });
 
+  const { data: temporalItems } = useQuery({
+    queryKey: ['temporal-relations', element.id],
+    queryFn: async () => {
+      const relations = await listTemporalRelationsForElement(element.id);
+      const otherIds = [
+        ...new Set(
+          relations.map((r) =>
+            r.element_a === element.id ? r.element_b : r.element_a
+          )
+        ),
+      ];
+      const others = await getElementsByIds(otherIds);
+      const otherById = new Map(others.map((e) => [e.id, e]));
+      return relations
+        .map((relation) => {
+          const isA = relation.element_a === element.id;
+          const otherId = isA ? relation.element_b : relation.element_a;
+          const currentIsBefore = isA
+            ? relation.type === 'BEFORE'
+            : relation.type === 'AFTER';
+          return {
+            relation,
+            other: otherById.get(otherId),
+            label: currentIsBefore ? ('Avant' as const) : ('Après' as const),
+          };
+        })
+        .filter(
+          (entry): entry is typeof entry & { other: Element } =>
+            !!entry.other
+        );
+    },
+  });
+
+  const [temporalDirection, setTemporalDirection] =
+    useState<TemporalRelationType>('BEFORE');
+  const addTemporalMutation = useMutation({
+    mutationFn: (target: Element) =>
+      createTemporalRelation(element.id, temporalDirection, target.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['temporal-relations', element.id],
+      });
+      queryClient.invalidateQueries({ queryKey: ['temporal-relations'] });
+    },
+  });
+  const deleteTemporalMutation = useMutation({
+    mutationFn: (relationId: string) => deleteTemporalRelation(relationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['temporal-relations', element.id],
+      });
+      queryClient.invalidateQueries({ queryKey: ['temporal-relations'] });
+    },
+  });
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       const saved = await updateElement(element.id, { name, family, content });
@@ -311,6 +376,54 @@ function ElementEditor({
 
       <div className="mt-10 border-t border-neutral-800 pt-5">
         <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          Position temporelle
+        </h2>
+        {temporalItems && temporalItems.length > 0 && (
+          <ul className="mb-3 divide-y divide-neutral-800 rounded-lg border border-neutral-800">
+            {temporalItems.map(({ relation, other, label }) => (
+              <li
+                key={relation.id}
+                className="flex items-center justify-between px-4 py-2.5 text-sm"
+              >
+                <button
+                  onClick={() => navigate(`/elements/${other.id}`)}
+                  className="flex-1 truncate text-left hover:underline"
+                >
+                  <span className="text-neutral-500">{label} · </span>
+                  {other.name}
+                </button>
+                <button
+                  onClick={() => deleteTemporalMutation.mutate(relation.id)}
+                  aria-label="Supprimer la position temporelle"
+                  className="ml-3 shrink-0 text-neutral-600 hover:text-red-400"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="flex gap-2">
+          <select
+            value={temporalDirection}
+            onChange={(e) =>
+              setTemporalDirection(e.target.value as TemporalRelationType)
+            }
+            className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-sm outline-none focus:border-yellow-500"
+          >
+            <option value="BEFORE">Avant…</option>
+            <option value="AFTER">Après…</option>
+          </select>
+          <ElementPicker
+            excludeIds={[element.id]}
+            placeholder="Choisir un Element…"
+            onPick={(target) => addTemporalMutation.mutate(target)}
+          />
+        </div>
+      </div>
+
+      <div className="mt-10 border-t border-neutral-800 pt-5">
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
           Référencé par
         </h2>
         {!backlinkElements || backlinkElements.length === 0 ? (
@@ -360,8 +473,8 @@ function ElementEditor({
       )}
 
       <p className="mt-8 text-xs text-neutral-600">
-        Tags, collections et timeline arrivent aux étapes suivantes du plan
-        de développement.
+        Tags et collections arrivent aux étapes suivantes du plan de
+        développement.
       </p>
     </>
   );

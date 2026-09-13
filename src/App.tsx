@@ -3,6 +3,7 @@ import { useAuth } from './lib/auth';
 import { LoginPage } from './pages/LoginPage';
 import { ElementsListPage } from './pages/ElementsListPage';
 import { ElementDetailPage } from './pages/ElementDetailPage';
+import { TimelinePage } from './pages/TimelinePage';
 
 function RequireAuth({ children }: { children: React.ReactElement }) {
   const { session, loading } = useAuth();
@@ -34,6 +35,14 @@ export default function App() {
         element={
           <RequireAuth>
             <ElementDetailPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/timeline"
+        element={
+          <RequireAuth>
+            <TimelinePage />
           </RequireAuth>
         }
       />

@@ -38,7 +38,10 @@ pour le détail des principes et des non-objectifs.
   un sélecteur pour changer/retirer le parent (déplacement facile) et une
   garde anti-cycle (un Element ne peut pas devenir le parent d'un de ses
   propres descendants)
-- ⬜ Étape 7 — Timeline (dérivée des relations BEFORE/AFTER)
+- ✅ Étape 7 — Timeline : vue dérivée (aucune donnée propre) qui trie tous
+  les Elements pris dans au moins une relation BEFORE/AFTER par ordre
+  chronologique (tri topologique) ; la position temporelle se modifie
+  depuis la page de l'Element ("avant"/"après" un autre Element)
 
 Le contenu d'un Element est un document Tiptap (JSON) stocké tel quel dans
 la colonne `jsonb` ; les Elements créés à l'étape 2 (contenu texte brut)
@@ -101,6 +104,10 @@ l'étape 1.
 - Depuis la page d'un Element, choisir un parent le déplace dans
   l'arborescence ; un Element et ses propres descendants sont exclus du
   choix (impossible de créer une boucle)
+- Depuis la section "Position temporelle", relier un Element "avant" ou
+  "après" un autre le fait apparaître dans /timeline, dans le bon ordre
+  chronologique ; l'autre Element affiche automatiquement la relation
+  réciproque ("après" / "avant")
 - `npm run build` passe sans erreur TypeScript et produit un bundle
   fonctionnel (vérifié avec Playwright contre une API Supabase simulée)
 
@@ -117,5 +124,7 @@ en tête avant de retenter Vite 8 plus tard.
 
 ## Prochaine étape
 
-Étape 7 : timeline — construite à partir des relations temporelles
-BEFORE/AFTER entre Elements.
+Les 10 priorités V1 du cahier des charges (créer, écrire, relier, organiser,
+explorer) et la timeline sont maintenant toutes en place. La suite
+naturelle — tags, collections, corbeille restaurable — n'a pas encore été
+priorisée dans le détail : à discuter avant de continuer.
