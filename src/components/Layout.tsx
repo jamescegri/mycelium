@@ -13,14 +13,14 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-white text-neutral-900">
-      <header className="flex items-center justify-between px-6 py-3">
+      <header className="flex items-center justify-between px-8 py-4">
         <button
           onClick={() => navigate('/dashboard')}
-          className="font-semibold tracking-tight text-yellow-500"
+          className="text-lg font-semibold tracking-tight text-yellow-500"
         >
           Mycelium
         </button>
-        <div className="flex items-center gap-4 text-sm text-neutral-500">
+        <div className="flex items-center gap-5 text-sm text-neutral-500">
           <button onClick={open} className="hover:text-neutral-700">
             Rechercher <span className="text-neutral-300">⌘K</span>
           </button>
@@ -35,7 +35,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </button>
         </div>
       </header>
-      <main className="mx-auto max-w-4xl px-6 py-8">{children}</main>
+      <main className="mx-auto max-w-3xl px-8 py-12">{children}</main>
     </div>
   );
 }

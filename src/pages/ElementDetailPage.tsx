@@ -117,10 +117,13 @@ function ElementEditor({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Sans titre"
-        className="w-full bg-transparent text-3xl font-semibold tracking-tight text-neutral-900 outline-none placeholder:text-neutral-300"
+        className="w-full bg-transparent text-4xl font-semibold tracking-tight text-neutral-900 outline-none placeholder:text-neutral-300"
       />
 
-      <div className="mb-6 mt-2 text-xs" style={{ color: FAMILY_COLOR[element.family] }}>
+      <div
+        className="mb-8 mt-3 text-sm font-medium tracking-wide"
+        style={{ color: FAMILY_COLOR[element.family] }}
+      >
         {element.family}
       </div>
 

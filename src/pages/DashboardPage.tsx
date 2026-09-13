@@ -92,12 +92,12 @@ function CaptureBar() {
   }
 
   return (
-    <form className="mb-8 flex items-center gap-5 text-sm" onSubmit={handleSubmit}>
+    <form className="mb-10 flex items-center gap-6 text-sm" onSubmit={handleSubmit}>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Écrire quelque chose…"
-        className="flex-1 border-b border-neutral-200 bg-transparent py-2 text-base text-neutral-900 outline-none focus:border-neutral-400"
+        className="flex-1 border-b border-neutral-200 bg-transparent py-2.5 text-xl text-neutral-900 outline-none focus:border-neutral-400"
       />
       <button
         type="button"
@@ -139,7 +139,7 @@ function GroupesTab({
             un.
           </p>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {groups.map((group) => (
               <GroupCard
                 key={group.id}
@@ -156,12 +156,12 @@ function GroupesTab({
       {standalone.length > 0 && (
         <div>
           <div className="mb-2 text-xs text-neutral-500">Autres</div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {standalone.map((el) => (
               <button
                 key={el.id}
                 onClick={() => navigate(`/elements/${el.id}`)}
-                className="block text-left text-[15px] text-neutral-800 hover:text-yellow-600"
+                className="block text-left text-base text-neutral-800 hover:text-yellow-600"
               >
                 {el.name || 'Sans titre'}
               </button>
@@ -194,19 +194,19 @@ function GroupCard({
   return (
     <button
       onClick={onNavigate}
-      className="rounded-lg border border-neutral-200 p-4 text-left hover:border-neutral-400"
+      className="rounded-xl border border-neutral-200 p-5 text-left hover:border-neutral-400"
     >
-      <div className="mb-2 truncate text-sm font-medium text-neutral-900">
+      <div className="mb-2.5 truncate text-base font-medium text-neutral-900">
         {group.name || 'Sans titre'}
       </div>
-      <div className="space-y-0.5">
+      <div className="space-y-1">
         {preview.map((child) => (
-          <div key={child.id} className="truncate text-xs text-neutral-500">
+          <div key={child.id} className="truncate text-sm text-neutral-500">
             {child.name || 'Sans titre'}
           </div>
         ))}
         {remaining > 0 && (
-          <div className="text-xs text-neutral-300">+{remaining} autres</div>
+          <div className="text-sm text-neutral-300">+{remaining} autres</div>
         )}
       </div>
     </button>
@@ -252,7 +252,7 @@ function TemporalTab() {
         <button
           key={el.id}
           onClick={() => navigate(`/elements/${el.id}`)}
-          className="block text-left text-[15px] text-neutral-800 hover:text-yellow-500"
+          className="block text-left text-base text-neutral-800 hover:text-yellow-500"
         >
           {el.name || 'Sans titre'}
         </button>
@@ -319,7 +319,7 @@ function ConnexionsTab({ elements }: { elements: Element[] }) {
           <button
             key={el.id}
             onClick={() => navigate(`/elements/${el.id}`)}
-            className="flex w-full items-center justify-between text-left text-[15px] text-neutral-800 hover:text-yellow-500"
+            className="flex w-full items-center justify-between text-left text-base text-neutral-800 hover:text-yellow-500"
           >
             <span className="truncate">{el.name || 'Sans titre'}</span>
             <span className="ml-2 shrink-0 text-xs text-neutral-400">

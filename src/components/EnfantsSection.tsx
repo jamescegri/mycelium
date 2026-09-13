@@ -80,8 +80,10 @@ export function EnfantsSection({ element }: { element: Element }) {
   ];
 
   return (
-    <div className="text-sm">
-      <div className="mb-1.5 text-xs text-neutral-500">Enfants</div>
+    <div className="text-base">
+      <div className="mb-2 text-xs text-neutral-500">
+        Enfants
+      </div>
       {children.length === 0 ? (
         <p className="mb-2 text-neutral-400">Pas encore d'enfant.</p>
       ) : (

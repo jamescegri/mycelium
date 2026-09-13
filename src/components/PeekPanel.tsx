@@ -105,7 +105,7 @@ function PeekOverlay({
   return (
     <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose}>
       <div
-        className="fixed right-0 top-0 h-full w-full max-w-md overflow-y-auto border-l border-neutral-200 bg-white p-6"
+        className="fixed right-0 top-0 h-full w-full max-w-md overflow-y-auto border-l border-neutral-200 bg-white p-8"
         onClick={(e) => e.stopPropagation()}
       >
         {!element ? (
@@ -144,12 +144,12 @@ function PeekOverlay({
               </div>
             )}
 
-            <h2 className="mb-3 text-xl font-semibold text-neutral-900">
+            <h2 className="mb-3 text-2xl font-semibold text-neutral-900">
               {element.name || 'Sans titre'}
             </h2>
 
             {!!element.content && (
-              <p className="mb-4 text-sm leading-relaxed text-neutral-600">
+              <p className="mb-5 text-base leading-relaxed text-neutral-600">
                 {extractPlainText(element.content)}
               </p>
             )}
