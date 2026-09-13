@@ -1,19 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
-import { searchElements } from '../lib/elements';
-import type { Element } from '../types';
+import { createElement, searchElements } from '../lib/elements';
+import type { Element, ElementFamily } from '../types';
 
 export function ElementPicker({
   excludeIds,
   placeholder,
   onPick,
+  allowCreate = true,
+  createFamily = 'ELEMENTS',
+  createParentId = null,
 }: {
   excludeIds: string[];
   placeholder: string;
   onPick: (element: Element) => void;
+  allowCreate?: boolean;
+  createFamily?: ElementFamily;
+  createParentId?: string | null;
 }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Element[]>([]);
   const [open, setOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
   const requestId = useRef(0);
   const excludeKey = excludeIds.join(',');
 
@@ -26,6 +33,28 @@ export function ElementPicker({
       }
     );
   }, [query, open, excludeKey]);
+
+  const trimmed = query.trim();
+  const hasExactMatch = results.some(
+    (r) => r.name.toLowerCase() === trimmed.toLowerCase()
+  );
+  const showCreate = allowCreate && trimmed.length > 0 && !hasExactMatch;
+
+  async function handleCreate() {
+    setCreating(true);
+    try {
+      const created = await createElement({
+        name: trimmed,
+        family: createFamily,
+        parentId: createParentId,
+      });
+      onPick(created);
+      setQuery('');
+      setOpen(false);
+    } finally {
+      setCreating(false);
+    }
+  }
 
   return (
     <div className="relative flex-1">
@@ -40,7 +69,7 @@ export function ElementPicker({
         placeholder={placeholder}
         className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm outline-none focus:border-yellow-500"
       />
-      {open && results.length > 0 && (
+      {open && (results.length > 0 || showCreate) && (
         <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-neutral-700 bg-neutral-900 py-1 shadow-xl">
           {results.map((el) => (
             <button
@@ -59,6 +88,17 @@ export function ElementPicker({
               </span>
             </button>
           ))}
+          {showCreate && (
+            <button
+              type="button"
+              disabled={creating}
+              onMouseDown={handleCreate}
+              className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-sm text-neutral-200 hover:bg-neutral-800 disabled:opacity-50"
+            >
+              <span className="text-yellow-500">+ Créer</span>
+              <span className="truncate">{trimmed}</span>
+            </button>
+          )}
         </div>
       )}
     </div>

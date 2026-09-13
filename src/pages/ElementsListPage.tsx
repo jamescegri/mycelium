@@ -2,7 +2,12 @@ import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { listElements, createElement } from '../lib/elements';
+import {
+  listElements,
+  createElement,
+  reorderSibling,
+  sortByOrder,
+} from '../lib/elements';
 import { FAMILIES } from '../types';
 import type { Element, ElementFamily } from '../types';
 import { Layout } from '../components/Layout';
@@ -20,6 +25,9 @@ interface TreeNode {
 
 // Arborescence libre : un Element sans parent (ou dont le parent a disparu)
 // est une racine. Profondeur illimitée, pas de contrainte de famille.
+// Chaque niveau de fratrie est trié par sort_order, la même source de
+// vérité que la réorganisation (haut/bas) et que la section "Enfants" sur
+// la page d'un Element.
 function buildTree(elements: Element[]): TreeNode[] {
   const byId = new Map(elements.map((e) => [e.id, e]));
   const childrenByParent = new Map<string, Element[]>();
@@ -38,11 +46,11 @@ function buildTree(elements: Element[]): TreeNode[] {
   function toNode(el: Element): TreeNode {
     return {
       element: el,
-      children: (childrenByParent.get(el.id) ?? []).map(toNode),
+      children: sortByOrder(childrenByParent.get(el.id) ?? []).map(toNode),
     };
   }
 
-  return roots.map(toNode);
+  return sortByOrder(roots).map(toNode);
 }
 
 export function ElementsListPage() {
@@ -85,13 +93,28 @@ export function ElementsListPage() {
     });
   }
 
-  function renderNode(node: TreeNode, depth: number) {
+  const reorderMutation = useMutation({
+    mutationFn: ({
+      siblings,
+      elementId,
+      direction,
+    }: {
+      siblings: Element[];
+      elementId: string;
+      direction: 'up' | 'down';
+    }) => reorderSibling(siblings, elementId, direction),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['elements'] }),
+  });
+
+  function renderNode(node: TreeNode, depth: number, siblings: TreeNode[]) {
     const hasChildren = node.children.length > 0;
     const isCollapsed = collapsed.has(node.element.id);
+    const siblingElements = siblings.map((s) => s.element);
+    const indexInSiblings = siblings.indexOf(node);
     return (
       <li key={node.element.id}>
         <div
-          className="flex items-center justify-between px-4 py-3 hover:bg-neutral-900"
+          className="group flex items-center justify-between px-4 py-3 hover:bg-neutral-900"
           style={{ paddingLeft: `${16 + depth * 20}px` }}
         >
           <div className="flex min-w-0 items-center gap-2">
@@ -113,13 +136,47 @@ export function ElementsListPage() {
               {node.element.name}
             </button>
           </div>
-          <span className="ml-3 shrink-0 rounded bg-neutral-800 px-2 py-0.5 text-xs text-neutral-400">
-            {FAMILY_LABEL[node.element.family]}
-          </span>
+          <div className="flex shrink-0 items-center gap-1">
+            <span className="mr-1 hidden items-center gap-0.5 group-hover:flex">
+              <button
+                onClick={() =>
+                  reorderMutation.mutate({
+                    siblings: siblingElements,
+                    elementId: node.element.id,
+                    direction: 'up',
+                  })
+                }
+                disabled={indexInSiblings === 0}
+                aria-label="Monter"
+                className="text-neutral-600 hover:text-neutral-300 disabled:opacity-20"
+              >
+                ↑
+              </button>
+              <button
+                onClick={() =>
+                  reorderMutation.mutate({
+                    siblings: siblingElements,
+                    elementId: node.element.id,
+                    direction: 'down',
+                  })
+                }
+                disabled={indexInSiblings === siblings.length - 1}
+                aria-label="Descendre"
+                className="text-neutral-600 hover:text-neutral-300 disabled:opacity-20"
+              >
+                ↓
+              </button>
+            </span>
+            <span className="rounded bg-neutral-800 px-2 py-0.5 text-xs text-neutral-400">
+              {FAMILY_LABEL[node.element.family]}
+            </span>
+          </div>
         </div>
         {hasChildren && !isCollapsed && (
           <ul>
-            {node.children.map((child) => renderNode(child, depth + 1))}
+            {node.children.map((child) =>
+              renderNode(child, depth + 1, node.children)
+            )}
           </ul>
         )}
       </li>
@@ -187,7 +244,7 @@ export function ElementsListPage() {
       )}
 
       <ul className="divide-y divide-neutral-800 rounded-lg border border-neutral-800">
-        {tree.map((node) => renderNode(node, 0))}
+        {tree.map((node) => renderNode(node, 0, tree))}
         {elements?.length === 0 && (
           <li className="px-4 py-6 text-center text-sm text-neutral-500">
             Aucun Element pour l'instant. Crée le premier ci-dessus.
@@ -196,8 +253,9 @@ export function ElementsListPage() {
       </ul>
       {elements && elements.length > 0 && (
         <p className="mt-3 text-xs text-neutral-600">
-          Change le parent d'un Element depuis sa propre page pour le
-          déplacer dans l'arborescence.
+          Survole un Element pour le réordonner (↑↓) parmi ses frères et
+          sœurs. Change son parent depuis sa propre page pour le déplacer
+          ailleurs dans l'arborescence.
         </p>
       )}
     </Layout>

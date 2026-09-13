@@ -2,11 +2,15 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  createElement,
+  getAncestors,
   getDescendantIds,
   getElement,
   getElementsByIds,
   listElements,
+  reorderSibling,
   softDeleteElement,
+  sortByOrder,
   updateElement,
 } from '../lib/elements';
 import {
@@ -42,6 +46,7 @@ import type {
 import { Layout } from '../components/Layout';
 import { Editor } from '../components/Editor';
 import { ElementPicker } from '../components/ElementPicker';
+import { Breadcrumb } from '../components/Breadcrumb';
 
 const FAMILY_LABEL: Record<ElementFamily, string> = {
   TIME: 'Time',
@@ -304,9 +309,10 @@ function ElementEditor({
   });
 
   const parentElement = allElements?.find((e) => e.id === element.parent_id);
-  const childElements = (allElements ?? []).filter(
-    (e) => e.parent_id === element.id
+  const childElements = sortByOrder(
+    (allElements ?? []).filter((e) => e.parent_id === element.id)
   );
+  const ancestors = allElements ? getAncestors(allElements, element.id) : [];
   // Un Element ne peut pas devenir son propre parent, ni le parent d'un de
   // ses ancêtres (ça créerait une boucle) : on l'exclut lui-même et tous
   // ses descendants du choix.
@@ -314,8 +320,37 @@ function ElementEditor({
     ? [element.id, ...getDescendantIds(allElements, element.id)]
     : [element.id];
 
+  const [childName, setChildName] = useState('');
+  const [addingChild, setAddingChild] = useState(false);
+  const addChildMutation = useMutation({
+    mutationFn: (childNameToCreate: string) =>
+      createElement({
+        name: childNameToCreate,
+        family: element.family,
+        parentId: element.id,
+      }),
+    onSuccess: (created) => {
+      queryClient.invalidateQueries({ queryKey: ['elements'] });
+      setChildName('');
+      setAddingChild(false);
+      navigate(`/elements/${created.id}`);
+    },
+  });
+  const reorderChildMutation = useMutation({
+    mutationFn: ({
+      childId,
+      direction,
+    }: {
+      childId: string;
+      direction: 'up' | 'down';
+    }) => reorderSibling(childElements, childId, direction),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['elements'] }),
+  });
+
   return (
     <>
+      <Breadcrumb ancestors={ancestors} currentName={element.name} />
+
       <div className="mb-6 flex items-center justify-between gap-4">
         <input
           value={name}
@@ -569,33 +604,100 @@ function ElementEditor({
         )}
       </div>
 
-      {childElements.length > 0 && (
-        <div className="mt-10 border-t border-neutral-800 pt-5">
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-            Enfants
-          </h2>
-          <ul className="divide-y divide-neutral-800 rounded-lg border border-neutral-800">
-            {childElements.map((child) => (
-              <li key={child.id}>
+      <div className="mt-10 border-t border-neutral-800 pt-5">
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          Enfants
+        </h2>
+        {childElements.length > 0 && (
+          <ul className="mb-3 divide-y divide-neutral-800 rounded-lg border border-neutral-800">
+            {childElements.map((child, index) => (
+              <li
+                key={child.id}
+                className="group flex items-center justify-between px-4 py-2.5 text-sm"
+              >
                 <button
                   onClick={() => navigate(`/elements/${child.id}`)}
-                  className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm hover:bg-neutral-900"
+                  className="flex-1 truncate text-left hover:underline"
                 >
-                  <span>{child.name}</span>
-                  <span className="rounded bg-neutral-800 px-2 py-0.5 text-xs text-neutral-400">
-                    {FAMILY_LABEL[child.family]}
-                  </span>
+                  {child.name}
                 </button>
+                <span className="mr-2 hidden items-center gap-0.5 group-hover:flex">
+                  <button
+                    onClick={() =>
+                      reorderChildMutation.mutate({
+                        childId: child.id,
+                        direction: 'up',
+                      })
+                    }
+                    disabled={index === 0}
+                    aria-label="Monter"
+                    className="text-neutral-600 hover:text-neutral-300 disabled:opacity-20"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    onClick={() =>
+                      reorderChildMutation.mutate({
+                        childId: child.id,
+                        direction: 'down',
+                      })
+                    }
+                    disabled={index === childElements.length - 1}
+                    aria-label="Descendre"
+                    className="text-neutral-600 hover:text-neutral-300 disabled:opacity-20"
+                  >
+                    ↓
+                  </button>
+                </span>
+                <span className="shrink-0 rounded bg-neutral-800 px-2 py-0.5 text-xs text-neutral-400">
+                  {FAMILY_LABEL[child.family]}
+                </span>
               </li>
             ))}
           </ul>
-        </div>
-      )}
-
-      <p className="mt-8 text-xs text-neutral-600">
-        Tags et collections arrivent aux étapes suivantes du plan de
-        développement.
-      </p>
+        )}
+        {addingChild ? (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (childName.trim()) addChildMutation.mutate(childName.trim());
+            }}
+            className="flex items-center gap-2"
+          >
+            <input
+              autoFocus
+              value={childName}
+              onChange={(e) => setChildName(e.target.value)}
+              placeholder="Nom de l'enfant"
+              className="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm outline-none focus:border-yellow-500"
+            />
+            <button
+              type="submit"
+              disabled={addChildMutation.isPending}
+              className="rounded bg-neutral-100 px-3 py-1.5 text-sm font-medium text-neutral-950 hover:bg-white disabled:opacity-50"
+            >
+              Créer
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAddingChild(false);
+                setChildName('');
+              }}
+              className="text-sm text-neutral-500 hover:text-neutral-300"
+            >
+              Annuler
+            </button>
+          </form>
+        ) : (
+          <button
+            onClick={() => setAddingChild(true)}
+            className="text-sm text-neutral-500 hover:text-neutral-300"
+          >
+            + Enfant
+          </button>
+        )}
+      </div>
     </>
   );
 }

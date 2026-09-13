@@ -51,6 +51,32 @@ Le contenu d'un Element est un document Tiptap (JSON) stocké tel quel dans
 la colonne `jsonb` ; les Elements créés à l'étape 2 (contenu texte brut)
 restent lisibles sans migration.
 
+## Refonte navigation/UX (en cours)
+
+Après validation du produit V1, une refonte de la navigation a été engagée
+en 4 phases (fondations → Dashboard multi-vues → fluidité façon Notion →
+vue Connexions), en gardant `Element + parent_id + relations + tags +
+collections + temporal_relations` comme seul modèle de données — aucun
+nouveau type introduit.
+
+- ✅ Phase A — Fondations :
+  - `sort_order` réellement utilisé : ordre stable entre frères et sœurs
+    (au lieu de `updated_at`), réorganisable via ↑↓ (arbre du Dashboard et
+    section "Enfants" d'un Element), calculé au même endroit pour toute
+    création (`createElement`) afin qu'un nouvel Element s'ajoute toujours
+    en dernière position plutôt que d'entrer en collision avec un
+    existant
+  - Fil d'Ariane complet et cliquable sur la page d'un Element
+    (`getAncestors` + composant `Breadcrumb`)
+  - Création contextuelle : "+ Enfant" depuis la page d'un Element, et
+    "+ Créer" à la volée dans tous les pickers (parent, relations,
+    position temporelle, collections) — plus seulement depuis `/`
+- ⬜ Phase B — Dashboard multi-vues (Arborescence / Temporelle /
+  Connexions) et navigation "par niveaux" façon Notion
+- ⬜ Phase C — Recherche globale, panneau latéral, menus contextuels
+- ⬜ Phase D — Vue Connexions par Element (relations + backlinks, visuel
+  simple en option, jamais un graphe complexe)
+
 ## Démarrer
 
 ### 1. Créer le projet Supabase
@@ -120,6 +146,14 @@ l'étape 1.
   listant tous ses Elements, avec un picker pour en ajouter d'autres
 - `npm run build` passe sans erreur TypeScript et produit un bundle
   fonctionnel (vérifié avec Playwright contre une API Supabase simulée)
+- Créer 3 Elements racine → `sort_order` 0, 1, 2 assignés automatiquement ;
+  réorganiser via ↑↓ renumérote toute la fratrie et l'ordre affiché suit
+  immédiatement
+- Le fil d'Ariane d'un Element créé comme enfant affiche bien
+  "Elements / Parent / Enfant" et chaque segment navigue correctement
+- Créer un Element depuis le picker "Relations" (option "+ Créer") le crée
+  à la racine et l'insère aussitôt comme relation, sans passer par `/` ni
+  par le Dashboard
 
 ## Note technique : Vite 8
 
@@ -134,7 +168,6 @@ en tête avant de retenter Vite 8 plus tard.
 
 ## Prochaine étape
 
-Tout ce qui était identifié dans le cahier des charges (les 10 priorités
-V1, la timeline, les tags, les collections, la corbeille) est maintenant en
-place. La suite dépend de l'usage réel : à voir ensemble ce qui manque le
-plus une fois testé en conditions réelles.
+Phase B de la refonte : transformer le Dashboard en un espace unique à
+vues commutables (Arborescence / Temporelle / Connexions) plutôt que des
+pages séparées, avec une navigation "par niveaux" façon Notion.
