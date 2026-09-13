@@ -12,16 +12,17 @@
   color: var(--color-neutral-600);
 }
 
+/* Une mention reste du texte — un lien dans une phrase, pas un widget
+   inséré. Pas de fond ni de bordure : juste une couleur et un
+   soulignement, comme un lien normal. */
 .mention {
-  display: inline-block;
-  border-radius: 0.25rem;
-  padding: 0 0.35em;
-  margin: 0 0.05em;
-  background-color: color-mix(in srgb, var(--color-yellow-500) 20%, transparent);
-  color: var(--color-yellow-400);
+  color: var(--color-yellow-500);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-yellow-500) 35%, transparent);
+  text-underline-offset: 2px;
   cursor: pointer;
 }
 
 .mention:hover {
-  background-color: color-mix(in srgb, var(--color-yellow-500) 32%, transparent);
+  text-decoration-color: var(--color-yellow-500);
 }

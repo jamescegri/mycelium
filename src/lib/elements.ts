@@ -174,6 +174,18 @@ export async function reorderSibling(
   );
 }
 
+// Points d'entrée du Dashboard (vue Arborescence) : les Elements racine
+// (sans parent) d'une famille. TIME/SPACE/ELEMENTS ne sont qu'un filtre sur
+// la racine — rien n'empêche un enfant d'appartenir à une autre famille.
+export function rootElementsByFamily(
+  elements: Element[],
+  family: ElementFamily
+): Element[] {
+  return sortByOrder(
+    elements.filter((e) => !e.parent_id && e.family === family)
+  );
+}
+
 export async function getElementsByIds(ids: string[]): Promise<Element[]> {
   if (ids.length === 0) return [];
   const { data, error } = await supabase

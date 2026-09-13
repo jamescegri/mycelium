@@ -1,58 +1,24 @@
-import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  createElement,
   getAncestors,
-  getDescendantIds,
   getElement,
-  getElementsByIds,
   listElements,
-  reorderSibling,
   softDeleteElement,
   sortByOrder,
   updateElement,
 } from '../lib/elements';
-import {
-  createManualRelation,
-  deleteRelation,
-  listBacklinks,
-  listManualRelations,
-  syncMentionRelations,
-} from '../lib/relations';
-import {
-  createTemporalRelation,
-  deleteTemporalRelation,
-  listTemporalRelationsForElement,
-} from '../lib/temporal';
-import {
-  addTagToElement,
-  listTagsForElement,
-  removeTagFromElement,
-} from '../lib/tags';
-import {
-  addElementToCollection,
-  listCollectionsForElement,
-  removeElementFromCollection,
-} from '../lib/collections';
+import { syncMentionRelations } from '../lib/relations';
 import { extractMentionIds, toEditorContent } from '../lib/content';
-import { FAMILIES } from '../types';
-import type {
-  Element,
-  ElementFamily,
-  Relation,
-  TemporalRelationType,
-} from '../types';
+import { FAMILY_COLOR } from '../lib/family';
+import type { Element } from '../types';
 import { Layout } from '../components/Layout';
 import { Editor } from '../components/Editor';
-import { ElementPicker } from '../components/ElementPicker';
-import { Breadcrumb } from '../components/Breadcrumb';
-
-const FAMILY_LABEL: Record<ElementFamily, string> = {
-  TIME: 'Time',
-  SPACE: 'Space',
-  ELEMENTS: 'Elements',
-};
+import { ConnectionsDisclosure } from '../components/ConnectionsDisclosure';
+import { PropertiesDisclosure } from '../components/PropertiesDisclosure';
+import { ChildrenList } from '../components/ChildrenList';
+import { usePeek } from '../components/PeekPanel';
 
 export function ElementDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -69,7 +35,7 @@ export function ElementDetailPage() {
     mutationFn: () => softDeleteElement(id as string),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['elements'] });
-      navigate('/elements');
+      navigate('/dashboard');
     },
   });
 
@@ -94,7 +60,7 @@ export function ElementDetailPage() {
       {/* key={element.id} : une instance fraîche par Element, avec son
           propre état local initialisé directement depuis les données déjà
           chargées. Sans ça, changer d'Element (ex. en cliquant sur une
-          mention) laisserait l'éditeur Tiptap affiche le contenu de l'ancien
+          mention) laisserait l'éditeur Tiptap afficher le contenu de l'ancien
           Element, puisqu'il n'initialise son contenu qu'au montage. */}
       <ElementEditor
         key={element.id}
@@ -117,9 +83,24 @@ function ElementEditor({
   onRequestDelete: () => void;
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
+  const { openPeek } = usePeek();
+
+  const isNew = (location.state as { isNew?: boolean } | null)?.isNew;
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  // Focus + sélection au montage seulement : "+ Nouvelle sous-page" crée
+  // l'Element "Sans titre" et amène directement ici, prêt à être renommé
+  // sans clic supplémentaire.
+  useEffect(() => {
+    if (isNew) {
+      nameInputRef.current?.focus();
+      nameInputRef.current?.select();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [name, setName] = useState(element.name);
-  const [family, setFamily] = useState<ElementFamily>(element.family);
   const [content, setContent] = useState<object | string>(() =>
     toEditorContent(element.content)
   );
@@ -128,177 +109,14 @@ function ElementEditor({
     queryKey: ['elements'],
     queryFn: listElements,
   });
-
-  const setParentMutation = useMutation({
-    mutationFn: (parentId: string | null) =>
-      updateElement(element.id, { parent_id: parentId }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['elements'] });
-      queryClient.invalidateQueries({ queryKey: ['elements', element.id] });
-    },
-  });
-
-  const { data: backlinkElements } = useQuery({
-    queryKey: ['backlinks', element.id],
-    queryFn: async () => {
-      const relations = await listBacklinks(element.id);
-      const sourceIds = [...new Set(relations.map((r) => r.source_id))];
-      return getElementsByIds(sourceIds);
-    },
-  });
-
-  const { data: manualRelations } = useQuery({
-    queryKey: ['manual-relations', element.id],
-    queryFn: async () => {
-      const relations = await listManualRelations(element.id);
-      const otherIds = [
-        ...new Set(
-          relations.map((r) =>
-            r.source_id === element.id ? r.target_id : r.source_id
-          )
-        ),
-      ];
-      const others = await getElementsByIds(otherIds);
-      const otherById = new Map(others.map((e) => [e.id, e]));
-      return relations
-        .map((relation) => ({
-          relation,
-          other: otherById.get(
-            relation.source_id === element.id
-              ? relation.target_id
-              : relation.source_id
-          ),
-        }))
-        .filter(
-          (entry): entry is { relation: Relation; other: Element } =>
-            !!entry.other
-        );
-    },
-  });
-
-  const [relationLabel, setRelationLabel] = useState('');
-  const addRelationMutation = useMutation({
-    mutationFn: (target: Element) =>
-      createManualRelation(element.id, target.id, relationLabel),
-    onSuccess: () => {
-      setRelationLabel('');
-      queryClient.invalidateQueries({
-        queryKey: ['manual-relations', element.id],
-      });
-    },
-  });
-  const deleteRelationMutation = useMutation({
-    mutationFn: (relationId: string) => deleteRelation(relationId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['manual-relations', element.id],
-      });
-    },
-  });
-
-  const { data: temporalItems } = useQuery({
-    queryKey: ['temporal-relations', element.id],
-    queryFn: async () => {
-      const relations = await listTemporalRelationsForElement(element.id);
-      const otherIds = [
-        ...new Set(
-          relations.map((r) =>
-            r.element_a === element.id ? r.element_b : r.element_a
-          )
-        ),
-      ];
-      const others = await getElementsByIds(otherIds);
-      const otherById = new Map(others.map((e) => [e.id, e]));
-      return relations
-        .map((relation) => {
-          const isA = relation.element_a === element.id;
-          const otherId = isA ? relation.element_b : relation.element_a;
-          const currentIsBefore = isA
-            ? relation.type === 'BEFORE'
-            : relation.type === 'AFTER';
-          return {
-            relation,
-            other: otherById.get(otherId),
-            label: currentIsBefore ? ('Avant' as const) : ('Après' as const),
-          };
-        })
-        .filter(
-          (entry): entry is typeof entry & { other: Element } =>
-            !!entry.other
-        );
-    },
-  });
-
-  const [temporalDirection, setTemporalDirection] =
-    useState<TemporalRelationType>('BEFORE');
-  const addTemporalMutation = useMutation({
-    mutationFn: (target: Element) =>
-      createTemporalRelation(element.id, temporalDirection, target.id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['temporal-relations', element.id],
-      });
-      queryClient.invalidateQueries({ queryKey: ['temporal-relations'] });
-    },
-  });
-  const deleteTemporalMutation = useMutation({
-    mutationFn: (relationId: string) => deleteTemporalRelation(relationId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['temporal-relations', element.id],
-      });
-      queryClient.invalidateQueries({ queryKey: ['temporal-relations'] });
-    },
-  });
-
-  const { data: tags } = useQuery({
-    queryKey: ['tags', element.id],
-    queryFn: () => listTagsForElement(element.id),
-  });
-  const [newTagName, setNewTagName] = useState('');
-  const addTagMutation = useMutation({
-    mutationFn: (tagName: string) => addTagToElement(element.id, tagName),
-    onSuccess: () => {
-      setNewTagName('');
-      queryClient.invalidateQueries({ queryKey: ['tags', element.id] });
-    },
-  });
-  const removeTagMutation = useMutation({
-    mutationFn: (tagId: string) => removeTagFromElement(element.id, tagId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tags', element.id] });
-    },
-  });
-
-  const { data: elementCollections } = useQuery({
-    queryKey: ['element-collections', element.id],
-    queryFn: () => listCollectionsForElement(element.id),
-  });
-  const [newCollectionName, setNewCollectionName] = useState('');
-  const addToCollectionMutation = useMutation({
-    mutationFn: (collectionName: string) =>
-      addElementToCollection(element.id, collectionName),
-    onSuccess: () => {
-      setNewCollectionName('');
-      queryClient.invalidateQueries({
-        queryKey: ['element-collections', element.id],
-      });
-      queryClient.invalidateQueries({ queryKey: ['collections'] });
-    },
-  });
-  const removeFromCollectionMutation = useMutation({
-    mutationFn: (collectionId: string) =>
-      removeElementFromCollection(collectionId, element.id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['element-collections', element.id],
-      });
-    },
-  });
+  const ancestors = allElements ? getAncestors(allElements, element.id) : [];
+  const childElements = sortByOrder(
+    (allElements ?? []).filter((e) => e.parent_id === element.id)
+  );
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const saved = await updateElement(element.id, { name, family, content });
+      const saved = await updateElement(element.id, { name, content });
       await syncMentionRelations(element.id, extractMentionIds(content));
       return saved;
     },
@@ -308,164 +126,46 @@ function ElementEditor({
     },
   });
 
-  const parentElement = allElements?.find((e) => e.id === element.parent_id);
-  const childElements = sortByOrder(
-    (allElements ?? []).filter((e) => e.parent_id === element.id)
-  );
-  const ancestors = allElements ? getAncestors(allElements, element.id) : [];
-  // Un Element ne peut pas devenir son propre parent, ni le parent d'un de
-  // ses ancêtres (ça créerait une boucle) : on l'exclut lui-même et tous
-  // ses descendants du choix.
-  const parentPickerExcludeIds = allElements
-    ? [element.id, ...getDescendantIds(allElements, element.id)]
-    : [element.id];
-
-  const [childName, setChildName] = useState('');
-  const [addingChild, setAddingChild] = useState(false);
-  const addChildMutation = useMutation({
-    mutationFn: (childNameToCreate: string) =>
-      createElement({
-        name: childNameToCreate,
-        family: element.family,
-        parentId: element.id,
-      }),
-    onSuccess: (created) => {
-      queryClient.invalidateQueries({ queryKey: ['elements'] });
-      setChildName('');
-      setAddingChild(false);
-      navigate(`/elements/${created.id}`);
-    },
-  });
-  const reorderChildMutation = useMutation({
-    mutationFn: ({
-      childId,
-      direction,
-    }: {
-      childId: string;
-      direction: 'up' | 'down';
-    }) => reorderSibling(childElements, childId, direction),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['elements'] }),
-  });
-
   return (
     <>
-      <Breadcrumb ancestors={ancestors} currentName={element.name} />
+      <input
+        ref={nameInputRef}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Sans titre"
+        className="w-full bg-transparent text-3xl font-semibold tracking-tight text-neutral-100 outline-none placeholder:text-neutral-700"
+      />
 
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="flex-1 bg-transparent text-2xl font-semibold outline-none"
-        />
-        <select
-          value={family}
-          onChange={(e) => setFamily(e.target.value as ElementFamily)}
-          className="rounded border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm outline-none focus:border-yellow-500"
+      <div className="mb-6 mt-2 flex flex-wrap items-center gap-1.5 text-xs text-neutral-500">
+        <button
+          onClick={() => navigate(`/space/${element.family}`)}
+          style={{ color: FAMILY_COLOR[element.family] }}
+          className="hover:underline"
         >
-          {FAMILIES.map((f) => (
-            <option key={f} value={f}>
-              {FAMILY_LABEL[f]}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="mb-6 flex items-center gap-2 text-sm text-neutral-500">
-        <span className="shrink-0">Parent :</span>
-        {parentElement ? (
-          <>
+          {element.family}
+        </button>
+        {ancestors.map((ancestor) => (
+          <span key={ancestor.id} className="flex items-center gap-1.5">
+            <span className="text-neutral-700">/</span>
             <button
-              onClick={() => navigate(`/elements/${parentElement.id}`)}
-              className="text-neutral-300 hover:underline"
+              onClick={() => navigate(`/elements/${ancestor.id}`)}
+              className="max-w-[160px] truncate hover:text-neutral-300"
             >
-              {parentElement.name}
-            </button>
-            <button
-              onClick={() => setParentMutation.mutate(null)}
-              className="text-xs text-neutral-600 hover:text-red-400"
-            >
-              (retirer)
-            </button>
-          </>
-        ) : (
-          <ElementPicker
-            excludeIds={parentPickerExcludeIds}
-            placeholder="Choisir un parent…"
-            onPick={(picked) => setParentMutation.mutate(picked.id)}
-          />
-        )}
-      </div>
-
-      <div className="mb-6 flex flex-wrap items-center gap-2 text-sm">
-        {tags?.map((tag) => (
-          <span
-            key={tag.id}
-            className="flex items-center gap-1 rounded-full bg-neutral-800 px-2.5 py-1 text-xs text-neutral-300"
-          >
-            #{tag.name}
-            <button
-              onClick={() => removeTagMutation.mutate(tag.id)}
-              aria-label={`Retirer le tag ${tag.name}`}
-              className="text-neutral-500 hover:text-red-400"
-            >
-              ×
+              {ancestor.name}
             </button>
           </span>
         ))}
-        <input
-          value={newTagName}
-          onChange={(e) => setNewTagName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && newTagName.trim()) {
-              e.preventDefault();
-              addTagMutation.mutate(newTagName);
-            }
-          }}
-          placeholder="+ tag"
-          className="w-24 rounded-full border border-neutral-800 bg-transparent px-2.5 py-1 text-xs text-neutral-400 outline-none focus:border-yellow-500"
-        />
       </div>
 
-      <div className="mb-6 flex flex-wrap items-center gap-2 text-sm">
-        {elementCollections?.map((c) => (
-          <span
-            key={c.id}
-            className="flex items-center gap-1 rounded border border-neutral-700 px-2.5 py-1 text-xs text-neutral-300"
-          >
-            <button
-              onClick={() => navigate(`/collections/${c.id}`)}
-              className="hover:underline"
-            >
-              📁 {c.name}
-            </button>
-            <button
-              onClick={() => removeFromCollectionMutation.mutate(c.id)}
-              aria-label={`Retirer de ${c.name}`}
-              className="text-neutral-500 hover:text-red-400"
-            >
-              ×
-            </button>
-          </span>
-        ))}
-        <input
-          value={newCollectionName}
-          onChange={(e) => setNewCollectionName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && newCollectionName.trim()) {
-              e.preventDefault();
-              addToCollectionMutation.mutate(newCollectionName);
-            }
-          }}
-          placeholder="+ collection"
-          className="w-32 rounded border border-dashed border-neutral-800 bg-transparent px-2.5 py-1 text-xs text-neutral-400 outline-none focus:border-yellow-500"
-        />
+      <div className="mb-2">
+        <PropertiesDisclosure element={element} />
       </div>
 
-      <div className="mb-6">
+      <div className="mb-8">
         <Editor content={content} onChange={setContent} />
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="mb-10 flex items-center justify-between">
         <button
           onClick={() => saveMutation.mutate()}
           disabled={saveMutation.isPending}
@@ -481,222 +181,16 @@ function ElementEditor({
         </button>
       </div>
 
-      <div className="mt-10 border-t border-neutral-800 pt-5">
-        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-          Relations
-        </h2>
-        {manualRelations && manualRelations.length > 0 && (
-          <ul className="mb-3 divide-y divide-neutral-800 rounded-lg border border-neutral-800">
-            {manualRelations.map(({ relation, other }) => (
-              <li
-                key={relation.id}
-                className="flex items-center justify-between px-4 py-2.5 text-sm"
-              >
-                <button
-                  onClick={() => navigate(`/elements/${other.id}`)}
-                  className="flex-1 truncate text-left hover:underline"
-                >
-                  {relation.label && (
-                    <span className="text-neutral-500">
-                      {relation.label} ·{' '}
-                    </span>
-                  )}
-                  {other.name}
-                </button>
-                <button
-                  onClick={() => deleteRelationMutation.mutate(relation.id)}
-                  aria-label="Supprimer la relation"
-                  className="ml-3 shrink-0 text-neutral-600 hover:text-red-400"
-                >
-                  ×
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className="flex gap-2">
-          <ElementPicker
-            excludeIds={[element.id]}
-            placeholder="Relier à un Element…"
-            onPick={(target) => addRelationMutation.mutate(target)}
-          />
-          <input
-            value={relationLabel}
-            onChange={(e) => setRelationLabel(e.target.value)}
-            placeholder="Label (optionnel)"
-            className="w-36 rounded border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm outline-none focus:border-yellow-500"
-          />
-        </div>
+      <div className="border-t border-neutral-900 pt-6">
+        <ConnectionsDisclosure elementId={element.id} onSelect={openPeek} />
       </div>
 
-      <div className="mt-10 border-t border-neutral-800 pt-5">
-        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-          Position temporelle
-        </h2>
-        {temporalItems && temporalItems.length > 0 && (
-          <ul className="mb-3 divide-y divide-neutral-800 rounded-lg border border-neutral-800">
-            {temporalItems.map(({ relation, other, label }) => (
-              <li
-                key={relation.id}
-                className="flex items-center justify-between px-4 py-2.5 text-sm"
-              >
-                <button
-                  onClick={() => navigate(`/elements/${other.id}`)}
-                  className="flex-1 truncate text-left hover:underline"
-                >
-                  <span className="text-neutral-500">{label} · </span>
-                  {other.name}
-                </button>
-                <button
-                  onClick={() => deleteTemporalMutation.mutate(relation.id)}
-                  aria-label="Supprimer la position temporelle"
-                  className="ml-3 shrink-0 text-neutral-600 hover:text-red-400"
-                >
-                  ×
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className="flex gap-2">
-          <select
-            value={temporalDirection}
-            onChange={(e) =>
-              setTemporalDirection(e.target.value as TemporalRelationType)
-            }
-            className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-sm outline-none focus:border-yellow-500"
-          >
-            <option value="BEFORE">Avant…</option>
-            <option value="AFTER">Après…</option>
-          </select>
-          <ElementPicker
-            excludeIds={[element.id]}
-            placeholder="Choisir un Element…"
-            onPick={(target) => addTemporalMutation.mutate(target)}
-          />
-        </div>
-      </div>
-
-      <div className="mt-10 border-t border-neutral-800 pt-5">
-        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-          Référencé par
-        </h2>
-        {!backlinkElements || backlinkElements.length === 0 ? (
-          <p className="text-sm text-neutral-600">
-            Aucun Element ne mentionne celui-ci pour l'instant.
-          </p>
-        ) : (
-          <ul className="divide-y divide-neutral-800 rounded-lg border border-neutral-800">
-            {backlinkElements.map((b) => (
-              <li key={b.id}>
-                <button
-                  onClick={() => navigate(`/elements/${b.id}`)}
-                  className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm hover:bg-neutral-900"
-                >
-                  <span>{b.name}</span>
-                  <span className="rounded bg-neutral-800 px-2 py-0.5 text-xs text-neutral-400">
-                    {FAMILY_LABEL[b.family]}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      <div className="mt-10 border-t border-neutral-800 pt-5">
-        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-          Enfants
-        </h2>
-        {childElements.length > 0 && (
-          <ul className="mb-3 divide-y divide-neutral-800 rounded-lg border border-neutral-800">
-            {childElements.map((child, index) => (
-              <li
-                key={child.id}
-                className="group flex items-center justify-between px-4 py-2.5 text-sm"
-              >
-                <button
-                  onClick={() => navigate(`/elements/${child.id}`)}
-                  className="flex-1 truncate text-left hover:underline"
-                >
-                  {child.name}
-                </button>
-                <span className="mr-2 hidden items-center gap-0.5 group-hover:flex">
-                  <button
-                    onClick={() =>
-                      reorderChildMutation.mutate({
-                        childId: child.id,
-                        direction: 'up',
-                      })
-                    }
-                    disabled={index === 0}
-                    aria-label="Monter"
-                    className="text-neutral-600 hover:text-neutral-300 disabled:opacity-20"
-                  >
-                    ↑
-                  </button>
-                  <button
-                    onClick={() =>
-                      reorderChildMutation.mutate({
-                        childId: child.id,
-                        direction: 'down',
-                      })
-                    }
-                    disabled={index === childElements.length - 1}
-                    aria-label="Descendre"
-                    className="text-neutral-600 hover:text-neutral-300 disabled:opacity-20"
-                  >
-                    ↓
-                  </button>
-                </span>
-                <span className="shrink-0 rounded bg-neutral-800 px-2 py-0.5 text-xs text-neutral-400">
-                  {FAMILY_LABEL[child.family]}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-        {addingChild ? (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (childName.trim()) addChildMutation.mutate(childName.trim());
-            }}
-            className="flex items-center gap-2"
-          >
-            <input
-              autoFocus
-              value={childName}
-              onChange={(e) => setChildName(e.target.value)}
-              placeholder="Nom de l'enfant"
-              className="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm outline-none focus:border-yellow-500"
-            />
-            <button
-              type="submit"
-              disabled={addChildMutation.isPending}
-              className="rounded bg-neutral-100 px-3 py-1.5 text-sm font-medium text-neutral-950 hover:bg-white disabled:opacity-50"
-            >
-              Créer
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setAddingChild(false);
-                setChildName('');
-              }}
-              className="text-sm text-neutral-500 hover:text-neutral-300"
-            >
-              Annuler
-            </button>
-          </form>
-        ) : (
-          <button
-            onClick={() => setAddingChild(true)}
-            className="text-sm text-neutral-500 hover:text-neutral-300"
-          >
-            + Enfant
-          </button>
-        )}
+      <div className="mt-8 border-t border-neutral-900 pt-6">
+        <ChildrenList
+          items={childElements}
+          parentId={element.id}
+          defaultFamily={element.family}
+        />
       </div>
     </>
   );

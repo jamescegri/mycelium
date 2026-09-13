@@ -15,7 +15,7 @@ export function LoginPage() {
   // active), on part vers l'app : rien dans le routing ne fait ce lien tout
   // seul, /login se contente d'afficher le formulaire.
   useEffect(() => {
-    if (session) navigate('/elements', { replace: true });
+    if (session) navigate('/dashboard', { replace: true });
   }, [session, navigate]);
 
   async function handleSubmit(e: FormEvent) {

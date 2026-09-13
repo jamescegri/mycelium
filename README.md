@@ -51,31 +51,51 @@ Le contenu d'un Element est un document Tiptap (JSON) stocké tel quel dans
 la colonne `jsonb` ; les Elements créés à l'étape 2 (contenu texte brut)
 restent lisibles sans migration.
 
-## Refonte navigation/UX (en cours)
+## Refonte navigation/UX
 
-Après validation du produit V1, une refonte de la navigation a été engagée
-en 4 phases (fondations → Dashboard multi-vues → fluidité façon Notion →
-vue Connexions), en gardant `Element + parent_id + relations + tags +
-collections + temporal_relations` comme seul modèle de données — aucun
-nouveau type introduit.
+Après validation du produit V1, la navigation a été entièrement repensée
+puis implémentée dans l'application réelle, en gardant `Element +
+parent_id + relations + tags + collections + temporal_relations` comme
+seul modèle de données — aucun nouveau type introduit, aucune donnée
+perdue.
 
-- ✅ Phase A — Fondations :
+- ✅ Fondations :
   - `sort_order` réellement utilisé : ordre stable entre frères et sœurs
-    (au lieu de `updated_at`), réorganisable via ↑↓ (arbre du Dashboard et
-    section "Enfants" d'un Element), calculé au même endroit pour toute
-    création (`createElement`) afin qu'un nouvel Element s'ajoute toujours
-    en dernière position plutôt que d'entrer en collision avec un
-    existant
-  - Fil d'Ariane complet et cliquable sur la page d'un Element
-    (`getAncestors` + composant `Breadcrumb`)
-  - Création contextuelle : "+ Enfant" depuis la page d'un Element, et
-    "+ Créer" à la volée dans tous les pickers (parent, relations,
-    position temporelle, collections) — plus seulement depuis `/`
-- ⬜ Phase B — Dashboard multi-vues (Arborescence / Temporelle /
-  Connexions) et navigation "par niveaux" façon Notion
-- ⬜ Phase C — Recherche globale, panneau latéral, menus contextuels
-- ⬜ Phase D — Vue Connexions par Element (relations + backlinks, visuel
-  simple en option, jamais un graphe complexe)
+    (au lieu de `updated_at`), réorganisable via ↑↓, calculé au même
+    endroit pour toute création (`createElement`) afin qu'un nouvel
+    Element s'ajoute toujours en dernière position
+  - Création contextuelle : "+ Créer" à la volée dans tous les pickers
+    (parent, relations, position temporelle, collections), pas seulement
+    depuis `/`
+- ✅ Dashboard multi-vues (`/dashboard`) : un seul espace à onglets légers
+  (Arborescence / Temporel / Connexions / Collections) plutôt que des
+  pages séparées — aucune de ces vues ne porte de donnée propre, tout est
+  dérivé de `parent_id`, `relations`, `temporal_relations` et
+  `collections`
+- ✅ Navigation par niveaux façon Notion : `/space/:family` (racines d'une
+  famille) puis la page d'un Element n'affiche jamais que ses enfants
+  directs (`ChildrenList`), jamais l'arbre complet ; "+ Nouvelle
+  sous-page" crée l'enfant immédiatement (nom "Sans titre", pas de
+  formulaire) et amène dessus avec le titre déjà sélectionné, prêt à être
+  renommé
+- ✅ Panneau latéral (peek) : cliquer une mention, un backlink ou une
+  relation ouvre l'Element visé dans un panneau à droite (`PeekPanel` +
+  `usePeek`) sans quitter la page ni perdre son scroll ; on peut
+  rebondir de connexion en connexion depuis le panneau lui-même
+  (`pushPeek`) et "Ouvrir en pleine page" bascule en navigation normale
+- ✅ Recherche globale Cmd/Ctrl+K (`CommandPalette`) : cherche, ouvre en
+  aperçu ou navigue, et propose "+ Créer" si l'Element n'existe pas
+  encore — utilisable comme méthode d'exploration à part entière
+- ✅ Connexions discrètes : repliées par défaut sur la page d'un Element
+  ("N connexions"), un seul clic les déplie (relations, référencé par,
+  position temporelle) ; le Dashboard (onglet Connexions) ne montre
+  qu'un classement simple des Elements les plus connectés + les
+  orphelins, jamais un graphe
+- ✅ Page d'un Element réorganisée dans l'ordre demandé : titre (sans
+  cadre) → ligne de contexte discrète (famille + chemin hiérarchique) →
+  éditeur → connexions repliables → sous-pages ; famille / parent / tags
+  / collections sont rangés sous un repli "Propriétés" pour ne jamais
+  rivaliser avec le contenu écrit
 
 ## Démarrer
 
@@ -154,6 +174,25 @@ l'étape 1.
 - Créer un Element depuis le picker "Relations" (option "+ Créer") le crée
   à la racine et l'insère aussitôt comme relation, sans passer par `/` ni
   par le Dashboard
+- Dashboard → clic sur SPACE → seuls les Elements racine de cette famille
+  apparaissent (jamais leurs petits-enfants) ; clic sur un Element → seuls
+  ses enfants directs apparaissent, niveau par niveau
+- "+ Nouvelle sous-page" crée l'enfant immédiatement et amène dessus avec
+  le titre déjà sélectionné, sans qu'aucun formulaire n'ait été affiché
+- Taper `/` puis choisir un Element existant l'insère comme mention sans
+  en faire un enfant hiérarchique — la mention ne crée qu'une relation
+  (`origin='mention'`), jamais un lien `parent_id`
+- Cliquer une mention ouvre l'Element dans un panneau latéral ; fermer le
+  panneau (Échap ou clic hors du panneau) laisse la page d'origine et son
+  scroll strictement inchangés
+- Cmd/Ctrl+K ouvre la recherche globale depuis n'importe quelle page ;
+  taper un nom absent propose "+ Créer" et navigue directement sur le
+  nouvel Element
+- `npm run build` et `npm run lint` passent sans erreur ; vérifié de bout
+  en bout avec Playwright contre une API Supabase simulée (32
+  vérifications sur la navigation par niveaux, la création de sous-pages,
+  le panneau latéral, les connexions repliables, la palette globale et
+  les onglets du Dashboard)
 
 ## Note technique : Vite 8
 
@@ -166,8 +205,22 @@ Vite 7.3.6 + `@vitejs/plugin-react` 5.2.0 (pipeline Rollup classique,
 éprouvé), avec lequel le build inclut correctement tout le code. À garder
 en tête avant de retenter Vite 8 plus tard.
 
+## Décision à valider : Elements créés depuis `/`
+
+Le cahier des charges de la refonte demande qu'un Element créé depuis `/`
+devienne enfant de la page courante "lorsque c'est pertinent", tout en
+répétant ailleurs que hiérarchie et connexions doivent rester totalement
+indépendantes (une mention ne doit jamais ranger quoi que ce soit). Ces
+deux demandes se contredisent dans le cas général. Choix fait ici : un
+Element créé depuis `/` reste toujours à la racine (comme avant), et seule
+la relation (`origin='mention'`) le lie à la page qui l'a créé — jamais un
+`parent_id`. À ranger ensuite manuellement si besoin (glisser sous un
+parent, ou "Propriétés → Parent"). À revoir si ce n'est pas le
+comportement voulu.
+
 ## Prochaine étape
 
-Phase B de la refonte : transformer le Dashboard en un espace unique à
-vues commutables (Arborescence / Temporelle / Connexions) plutôt que des
-pages séparées, avec une navigation "par niveaux" façon Notion.
+Le tri par glisser-déposer (mentionné comme piste dans le cahier des
+charges) n'est pas fait : la réorganisation reste au clic (↑↓). Le reste
+de la refonte demandée (Dashboard multi-vues, navigation par niveaux,
+panneau latéral, recherche globale, connexions discrètes) est implémenté.

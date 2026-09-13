@@ -1,12 +1,13 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './lib/auth';
 import { LoginPage } from './pages/LoginPage';
-import { ElementsListPage } from './pages/ElementsListPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { FamilyLevelPage } from './pages/FamilyLevelPage';
 import { ElementDetailPage } from './pages/ElementDetailPage';
-import { TimelinePage } from './pages/TimelinePage';
 import { TrashPage } from './pages/TrashPage';
-import { CollectionsPage } from './pages/CollectionsPage';
 import { CollectionDetailPage } from './pages/CollectionDetailPage';
+import { PeekProvider } from './components/PeekPanel';
+import { CommandPaletteProvider } from './components/CommandPalette';
 
 function RequireAuth({ children }: { children: React.ReactElement }) {
   const { session, loading } = useAuth();
@@ -22,14 +23,24 @@ function RequireAuth({ children }: { children: React.ReactElement }) {
 }
 
 export default function App() {
-  return (
+  const { session } = useAuth();
+
+  const routes = (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route
-        path="/elements"
+        path="/dashboard"
         element={
           <RequireAuth>
-            <ElementsListPage />
+            <DashboardPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/space/:family"
+        element={
+          <RequireAuth>
+            <FamilyLevelPage />
           </RequireAuth>
         }
       />
@@ -42,26 +53,10 @@ export default function App() {
         }
       />
       <Route
-        path="/timeline"
-        element={
-          <RequireAuth>
-            <TimelinePage />
-          </RequireAuth>
-        }
-      />
-      <Route
         path="/trash"
         element={
           <RequireAuth>
             <TrashPage />
-          </RequireAuth>
-        }
-      />
-      <Route
-        path="/collections"
-        element={
-          <RequireAuth>
-            <CollectionsPage />
           </RequireAuth>
         }
       />
@@ -73,7 +68,17 @@ export default function App() {
           </RequireAuth>
         }
       />
-      <Route path="*" element={<Navigate to="/elements" replace />} />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
+  );
+
+  // PeekPanel et CommandPalette n'ont de sens qu'authentifié (ils lisent les
+  // Elements de l'utilisateur) : inutile de les monter sur /login.
+  if (!session) return routes;
+
+  return (
+    <PeekProvider>
+      <CommandPaletteProvider>{routes}</CommandPaletteProvider>
+    </PeekProvider>
   );
 }

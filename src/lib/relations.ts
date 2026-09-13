@@ -103,6 +103,15 @@ export async function createManualRelation(
   return data as Relation;
 }
 
+// Toutes les relations (mention + manuelle), tous Elements confondus.
+// Sert au Dashboard (vue Connexions) pour repérer les Elements les plus
+// connectés et les orphelins — jamais pour construire un graphe.
+export async function listAllRelations(): Promise<Relation[]> {
+  const { data, error } = await supabase.from('relations').select('*');
+  if (error) throw error;
+  return data as Relation[];
+}
+
 export async function deleteRelation(id: string): Promise<void> {
   const { error } = await supabase.from('relations').delete().eq('id', id);
   if (error) throw error;

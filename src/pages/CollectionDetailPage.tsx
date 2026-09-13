@@ -52,7 +52,7 @@ export function CollectionDetailPage() {
     mutationFn: () => deleteCollection(id as string),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['collections'] });
-      navigate('/collections');
+      navigate('/dashboard');
     },
   });
 
@@ -75,10 +75,10 @@ export function CollectionDetailPage() {
   return (
     <Layout>
       <button
-        onClick={() => navigate('/collections')}
+        onClick={() => navigate('/dashboard')}
         className="mb-4 text-xs text-neutral-500 hover:text-neutral-300"
       >
-        ← Collections
+        ← Dashboard
       </button>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-lg font-semibold">{collection.name}</h1>

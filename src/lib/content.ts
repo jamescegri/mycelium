@@ -9,8 +9,30 @@ export function toEditorContent(content: unknown): string | object {
 
 interface MentionLikeNode {
   type?: string;
-  attrs?: { id?: string };
+  text?: string;
+  attrs?: { id?: string; label?: string };
   content?: MentionLikeNode[];
+}
+
+// Aperçu texte brut pour le panneau latéral (peek) : pas besoin d'y monter
+// un second éditeur Tiptap pour "juste comprendre" un Element avant
+// d'éventuellement l'ouvrir en pleine page.
+export function extractPlainText(content: unknown, maxLength = 240): string {
+  let text = '';
+  function walk(node: MentionLikeNode | null | undefined) {
+    if (!node) return;
+    if (typeof node.text === 'string') text += node.text;
+    if (node.type === 'mention') text += node.attrs?.label ?? '';
+    node.content?.forEach(walk);
+    if (node.type === 'paragraph') text += ' ';
+  }
+  if (typeof content === 'string') {
+    text = content;
+  } else if (content) {
+    walk(content as MentionLikeNode);
+  }
+  text = text.trim().replace(/\s+/g, ' ');
+  return text.length > maxLength ? text.slice(0, maxLength) + '…' : text;
 }
 
 export function extractMentionIds(doc: unknown): string[] {

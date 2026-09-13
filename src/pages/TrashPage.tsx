@@ -31,10 +31,10 @@ export function TrashPage() {
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-lg font-semibold">Corbeille</h1>
         <button
-          onClick={() => navigate('/elements')}
+          onClick={() => navigate('/dashboard')}
           className="text-sm text-neutral-400 hover:text-neutral-200"
         >
-          ← Elements
+          ← Dashboard
         </button>
       </div>
 

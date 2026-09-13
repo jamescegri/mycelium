@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { EditorContent, ReactRenderer, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -13,6 +12,7 @@ import type {
 import { MentionList } from './MentionList';
 import type { MentionItem, MentionListHandle } from './MentionList';
 import { createElement, searchElements } from '../lib/elements';
+import { usePeek } from './PeekPanel';
 
 interface EditorProps {
   content: string | object;
@@ -25,7 +25,7 @@ interface EditorProps {
 // idées demandé par le cahier des charges (pas de types narratifs imposés,
 // juste des liens libres entre Elements).
 export function Editor({ content, onChange }: EditorProps) {
-  const navigate = useNavigate();
+  const { openPeek } = usePeek();
   const onChangeRef = useRef(onChange);
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -143,11 +143,11 @@ export function Editor({ content, onChange }: EditorProps) {
     editorProps: {
       attributes: {
         class:
-          'prose-mycelium min-h-[240px] rounded-lg border border-neutral-800 bg-neutral-900 p-4 text-sm leading-relaxed outline-none focus:border-yellow-500',
+          'prose-mycelium min-h-[200px] text-[15px] leading-relaxed text-neutral-100 outline-none',
       },
       handleClickOn: (_view, _pos, node) => {
         if (node.type.name === 'mention' && node.attrs.id) {
-          navigate(`/elements/${node.attrs.id}`);
+          openPeek(node.attrs.id);
           return true;
         }
         return false;
