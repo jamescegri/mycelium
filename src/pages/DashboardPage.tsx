@@ -173,9 +173,10 @@ function GroupesTab({
   );
 }
 
-// Aperçu d'un Groupe : ses premiers enfants, imbriqués — une carte qu'on
-// ouvre pour plonger d'un niveau (même logique en cascade sur la page de
-// l'Element lui-même, qui montre à son tour ses propres enfants).
+// Aperçu d'un Groupe, comme un dossier qu'on entrouvre : ses premiers
+// enfants, et pour chacun un aperçu de SES propres enfants — deux niveaux
+// visibles sans avoir à cliquer. La carte elle-même ouvre la page du
+// Groupe, qui montre à son tour ses enfants en cascade.
 function GroupCard({
   group,
   elements,
@@ -188,27 +189,59 @@ function GroupCard({
   onNavigate: () => void;
 }) {
   const allChildren = childrenOf(links, elements, group.id);
-  const preview = allChildren.slice(0, 4);
+  const preview = allChildren.slice(0, 3);
   const remaining = allChildren.length - preview.length;
 
   return (
     <button
       onClick={onNavigate}
-      className="rounded-xl border border-neutral-200 p-5 text-left hover:border-neutral-400"
+      className="flex flex-col rounded-2xl border border-neutral-200 bg-neutral-50/60 p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-md"
     >
-      <div className="mb-2.5 truncate text-base font-medium text-neutral-900">
-        {group.name || 'Sans titre'}
+      <div className="mb-3 flex items-center gap-2.5">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-yellow-100 text-sm font-medium text-yellow-700">
+          {(group.name || '?').charAt(0).toUpperCase()}
+        </span>
+        <span className="truncate text-base font-medium text-neutral-900">
+          {group.name || 'Sans titre'}
+        </span>
       </div>
-      <div className="space-y-1">
-        {preview.map((child) => (
-          <div key={child.id} className="truncate text-sm text-neutral-500">
-            {child.name || 'Sans titre'}
-          </div>
-        ))}
-        {remaining > 0 && (
-          <div className="text-sm text-neutral-300">+{remaining} autres</div>
-        )}
-      </div>
+
+      {preview.length > 0 && (
+        <div className="space-y-2 border-l border-neutral-200 pl-3">
+          {preview.map((child) => {
+            const grandchildren = childrenOf(links, elements, child.id);
+            const gcPreview = grandchildren.slice(0, 2);
+            const gcRemaining = grandchildren.length - gcPreview.length;
+            return (
+              <div key={child.id}>
+                <div className="truncate text-sm text-neutral-600">
+                  {child.name || 'Sans titre'}
+                </div>
+                {gcPreview.length > 0 && (
+                  <div className="mt-1 space-y-0.5 border-l border-neutral-100 pl-3">
+                    {gcPreview.map((gc) => (
+                      <div
+                        key={gc.id}
+                        className="truncate text-xs text-neutral-400"
+                      >
+                        {gc.name || 'Sans titre'}
+                      </div>
+                    ))}
+                    {gcRemaining > 0 && (
+                      <div className="text-xs text-neutral-300">
+                        +{gcRemaining}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {remaining > 0 && (
+            <div className="text-sm text-neutral-300">+{remaining} autres</div>
+          )}
+        </div>
+      )}
     </button>
   );
 }
