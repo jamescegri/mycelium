@@ -60,3 +60,14 @@ export async function listRelationsForElement(
   if (error) throw error;
   return data as Relation[];
 }
+
+// Elements qui référencent celui-ci (mentions "/" pour l'instant, relations
+// manuelles à l'étape 5).
+export async function listBacklinks(elementId: string): Promise<Relation[]> {
+  const { data, error } = await supabase
+    .from('relations')
+    .select('*')
+    .eq('target_id', elementId);
+  if (error) throw error;
+  return data as Relation[];
+}

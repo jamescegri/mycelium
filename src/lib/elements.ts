@@ -69,6 +69,17 @@ export async function searchElements(
   return data as Element[];
 }
 
+export async function getElementsByIds(ids: string[]): Promise<Element[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .from('elements')
+    .select('*')
+    .in('id', ids)
+    .is('deleted_at', null);
+  if (error) throw error;
+  return data as Element[];
+}
+
 export async function updateElement(
   id: string,
   patch: Partial<Pick<Element, 'name' | 'family' | 'content' | 'notion_url' | 'absolute_date'>>

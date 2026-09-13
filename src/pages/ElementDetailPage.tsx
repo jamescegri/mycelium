@@ -3,10 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getElement,
+  getElementsByIds,
   softDeleteElement,
   updateElement,
 } from '../lib/elements';
-import { syncMentionRelations } from '../lib/relations';
+import { listBacklinks, syncMentionRelations } from '../lib/relations';
 import { extractMentionIds, toEditorContent } from '../lib/content';
 import { FAMILIES } from '../types';
 import type { Element, ElementFamily } from '../types';
@@ -81,12 +82,22 @@ function ElementEditor({
   element: Element;
   onRequestDelete: () => void;
 }) {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [name, setName] = useState(element.name);
   const [family, setFamily] = useState<ElementFamily>(element.family);
   const [content, setContent] = useState<object | string>(() =>
     toEditorContent(element.content)
   );
+
+  const { data: backlinkElements } = useQuery({
+    queryKey: ['backlinks', element.id],
+    queryFn: async () => {
+      const relations = await listBacklinks(element.id);
+      const sourceIds = [...new Set(relations.map((r) => r.source_id))];
+      return getElementsByIds(sourceIds);
+    },
+  });
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -141,9 +152,36 @@ function ElementEditor({
         </button>
       </div>
 
+      <div className="mt-10 border-t border-neutral-800 pt-5">
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          Référencé par
+        </h2>
+        {!backlinkElements || backlinkElements.length === 0 ? (
+          <p className="text-sm text-neutral-600">
+            Aucun Element ne mentionne celui-ci pour l'instant.
+          </p>
+        ) : (
+          <ul className="divide-y divide-neutral-800 rounded-lg border border-neutral-800">
+            {backlinkElements.map((b) => (
+              <li key={b.id}>
+                <button
+                  onClick={() => navigate(`/elements/${b.id}`)}
+                  className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm hover:bg-neutral-900"
+                >
+                  <span>{b.name}</span>
+                  <span className="rounded bg-neutral-800 px-2 py-0.5 text-xs text-neutral-400">
+                    {FAMILY_LABEL[b.family]}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       <p className="mt-8 text-xs text-neutral-600">
-        Backlinks, relations libres, hiérarchie, tags, collections et
-        timeline arrivent aux étapes suivantes du plan de développement.
+        Relations libres, hiérarchie, tags, collections et timeline arrivent
+        aux étapes suivantes du plan de développement.
       </p>
     </>
   );

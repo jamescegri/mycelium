@@ -28,7 +28,8 @@ pour le détail des principes et des non-objectifs.
   cliquable qui navigue vers la page de l'Element mentionné. Les mentions
   sont resynchronisées vers la table `relations` (origin='mention') à
   chaque sauvegarde.
-- ⬜ Étape 4 — Backlinks (afficher qui référence l'Element courant)
+- ✅ Étape 4 — Backlinks : chaque page d'Element affiche la liste des
+  Elements qui le référencent, dérivée de la table `relations`
 - ⬜ Étape 5 — Relations libres (UI dédiée, sans passer par une mention)
 - ⬜ Étape 6 — Hiérarchie (parent/enfant, profondeur illimitée, déplacement)
 - ⬜ Étape 7 — Timeline (dérivée des relations BEFORE/AFTER)
@@ -81,7 +82,9 @@ l'étape 1.
 - Cliquer sur un lien de mention navigue vers l'Element référencé, sans
   fuite du contenu de la page précédente
 - Sauvegarder synchronise les mentions du texte vers `relations`
-  (`origin='mention'`), ce qui alimentera les backlinks de l'étape suivante
+  (`origin='mention'`)
+- La page d'un Element mentionné affiche l'Element mentionnant dans sa
+  section "Référencé par", avec lien cliquable vers sa page
 - `npm run build` passe sans erreur TypeScript et produit un bundle
   fonctionnel (vérifié avec Playwright contre une API Supabase simulée)
 
@@ -98,5 +101,5 @@ en tête avant de retenter Vite 8 plus tard.
 
 ## Prochaine étape
 
-Étape 4 : backlinks — afficher automatiquement, sur la page d'un Element,
-la liste des Elements qui le référencent (dérivée de la table `relations`).
+Étape 5 : relations libres — pouvoir créer une relation manuelle entre deux
+Elements sans passer par une mention dans le texte.
