@@ -96,9 +96,9 @@ function PeekOverlay({
     allElements && element ? getAncestors(allElements, element.id) : [];
 
   return (
-    <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose}>
       <div
-        className="fixed right-0 top-0 h-full w-full max-w-md overflow-y-auto border-l border-neutral-800 bg-neutral-950 p-6"
+        className="fixed right-0 top-0 h-full w-full max-w-md overflow-y-auto border-l border-neutral-200 bg-white p-6"
         onClick={(e) => e.stopPropagation()}
       >
         {!element ? (
@@ -108,7 +108,7 @@ function PeekOverlay({
             <div className="mb-4 flex items-center justify-between text-xs text-neutral-500">
               <div className="flex items-center gap-2">
                 {hasBack && (
-                  <button onClick={onBack} className="hover:text-neutral-300">
+                  <button onClick={onBack} className="hover:text-neutral-700">
                     ←
                   </button>
                 )}
@@ -117,14 +117,14 @@ function PeekOverlay({
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => onOpenFull(element.id)}
-                  className="hover:text-neutral-300"
+                  className="hover:text-neutral-700"
                 >
                   Ouvrir en pleine page ↗
                 </button>
                 <button
                   onClick={onClose}
                   aria-label="Fermer"
-                  className="text-base leading-none text-neutral-400 hover:text-neutral-200"
+                  className="text-base leading-none text-neutral-600 hover:text-neutral-800"
                 >
                   ×
                 </button>
@@ -132,17 +132,17 @@ function PeekOverlay({
             </div>
 
             {ancestors.length > 0 && (
-              <div className="mb-1 truncate text-xs text-neutral-600">
+              <div className="mb-1 truncate text-xs text-neutral-400">
                 {ancestors.map((a) => a.name).join(' › ')}
               </div>
             )}
 
-            <h2 className="mb-3 text-xl font-semibold text-neutral-100">
+            <h2 className="mb-3 text-xl font-semibold text-neutral-900">
               {element.name || 'Sans titre'}
             </h2>
 
             {!!element.content && (
-              <p className="mb-4 text-sm leading-relaxed text-neutral-400">
+              <p className="mb-4 text-sm leading-relaxed text-neutral-600">
                 {extractPlainText(element.content)}
               </p>
             )}

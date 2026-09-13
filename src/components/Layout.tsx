@@ -12,7 +12,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const { open } = useCommandPalette();
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100">
+    <div className="min-h-screen bg-white text-neutral-900">
       <header className="flex items-center justify-between px-6 py-3">
         <button
           onClick={() => navigate('/dashboard')}
@@ -21,16 +21,16 @@ export function Layout({ children }: { children: ReactNode }) {
           Mycelium
         </button>
         <div className="flex items-center gap-4 text-sm text-neutral-500">
-          <button onClick={open} className="hover:text-neutral-300">
-            Rechercher <span className="text-neutral-700">⌘K</span>
+          <button onClick={open} className="hover:text-neutral-700">
+            Rechercher <span className="text-neutral-300">⌘K</span>
           </button>
           <button
             onClick={() => navigate('/trash')}
-            className="hover:text-neutral-300"
+            className="hover:text-neutral-700"
           >
             Corbeille
           </button>
-          <button onClick={() => signOut()} className="hover:text-neutral-300">
+          <button onClick={() => signOut()} className="hover:text-neutral-700">
             Se déconnecter
           </button>
         </div>

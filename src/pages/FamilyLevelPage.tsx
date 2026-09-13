@@ -35,7 +35,7 @@ export function FamilyLevelPage() {
     <Layout>
       <button
         onClick={() => navigate('/dashboard')}
-        className="mb-4 text-xs text-neutral-500 hover:text-neutral-300"
+        className="mb-4 text-xs text-neutral-500 hover:text-neutral-700"
       >
         Dashboard
       </button>

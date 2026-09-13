@@ -76,7 +76,7 @@ export function CollectionDetailPage() {
     <Layout>
       <button
         onClick={() => navigate('/dashboard')}
-        className="mb-4 text-xs text-neutral-500 hover:text-neutral-300"
+        className="mb-4 text-xs text-neutral-500 hover:text-neutral-700"
       >
         ← Dashboard
       </button>
@@ -88,7 +88,7 @@ export function CollectionDetailPage() {
               deleteMutation.mutate();
             }
           }}
-          className="text-sm text-red-400 hover:text-red-300"
+          className="text-sm text-red-600 hover:text-red-500"
         >
           Supprimer
         </button>
@@ -102,7 +102,7 @@ export function CollectionDetailPage() {
         />
       </div>
 
-      <ul className="divide-y divide-neutral-800 rounded-lg border border-neutral-800">
+      <ul className="divide-y divide-neutral-800 rounded-lg border border-neutral-200">
         {elements?.map((el) => (
           <li
             key={el.id}
@@ -114,13 +114,13 @@ export function CollectionDetailPage() {
             >
               {el.name}
             </button>
-            <span className="mr-3 rounded bg-neutral-800 px-2 py-0.5 text-xs text-neutral-400">
+            <span className="mr-3 rounded bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
               {FAMILY_LABEL[el.family]}
             </span>
             <button
               onClick={() => removeMutation.mutate(el.id)}
               aria-label="Retirer de la collection"
-              className="text-neutral-600 hover:text-red-400"
+              className="text-neutral-400 hover:text-red-600"
             >
               ×
             </button>

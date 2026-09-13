@@ -105,7 +105,7 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
     <div className="text-sm">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="text-neutral-500 hover:text-neutral-300"
+        className="text-neutral-500 hover:text-neutral-700"
       >
         {open ? '— Propriétés' : 'Propriétés'}
       </button>
@@ -113,7 +113,7 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
       {open && (
         <div className="mt-3 space-y-3">
           <div className="flex items-center gap-3">
-            <span className="w-20 shrink-0 text-xs text-neutral-600">
+            <span className="w-20 shrink-0 text-xs text-neutral-400">
               Famille
             </span>
             <select
@@ -121,7 +121,7 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
               onChange={(e) =>
                 setFamilyMutation.mutate(e.target.value as ElementFamily)
               }
-              className="border-b border-neutral-800 bg-transparent py-1 text-sm text-neutral-300 outline-none focus:border-neutral-500"
+              className="border-b border-neutral-200 bg-transparent py-1 text-sm text-neutral-700 outline-none focus:border-neutral-400"
             >
               {FAMILIES.map((f) => (
                 <option key={f} value={f}>
@@ -132,20 +132,20 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="w-20 shrink-0 text-xs text-neutral-600">
+            <span className="w-20 shrink-0 text-xs text-neutral-400">
               Parent
             </span>
             {parentElement ? (
               <>
                 <button
                   onClick={() => navigate(`/elements/${parentElement.id}`)}
-                  className="text-neutral-300 hover:underline"
+                  className="text-neutral-700 hover:underline"
                 >
                   {parentElement.name}
                 </button>
                 <button
                   onClick={() => setParentMutation.mutate(null)}
-                  className="text-xs text-neutral-600 hover:text-red-400"
+                  className="text-xs text-neutral-400 hover:text-red-600"
                 >
                   (retirer)
                 </button>
@@ -160,19 +160,19 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className="w-20 shrink-0 text-xs text-neutral-600">
+            <span className="w-20 shrink-0 text-xs text-neutral-400">
               Tags
             </span>
             {tags?.map((tag) => (
               <span
                 key={tag.id}
-                className="flex items-center gap-1 text-xs text-neutral-400"
+                className="flex items-center gap-1 text-xs text-neutral-600"
               >
                 #{tag.name}
                 <button
                   onClick={() => removeTagMutation.mutate(tag.id)}
                   aria-label={`Retirer le tag ${tag.name}`}
-                  className="text-neutral-600 hover:text-red-400"
+                  className="text-neutral-400 hover:text-red-600"
                 >
                   ×
                 </button>
@@ -188,18 +188,18 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
                 }
               }}
               placeholder="+ tag"
-              className="w-20 border-b border-neutral-800 bg-transparent px-1 py-1 text-xs text-neutral-400 outline-none focus:border-neutral-500"
+              className="w-20 border-b border-neutral-200 bg-transparent px-1 py-1 text-xs text-neutral-600 outline-none focus:border-neutral-400"
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className="w-20 shrink-0 text-xs text-neutral-600">
+            <span className="w-20 shrink-0 text-xs text-neutral-400">
               Collections
             </span>
             {elementCollections?.map((c) => (
               <span
                 key={c.id}
-                className="flex items-center gap-1 text-xs text-neutral-400"
+                className="flex items-center gap-1 text-xs text-neutral-600"
               >
                 <button
                   onClick={() => navigate(`/collections/${c.id}`)}
@@ -210,7 +210,7 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
                 <button
                   onClick={() => removeFromCollectionMutation.mutate(c.id)}
                   aria-label={`Retirer de ${c.name}`}
-                  className="text-neutral-600 hover:text-red-400"
+                  className="text-neutral-400 hover:text-red-600"
                 >
                   ×
                 </button>
@@ -226,7 +226,7 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
                 }
               }}
               placeholder="+ collection"
-              className="w-28 border-b border-dashed border-neutral-800 bg-transparent px-1 py-1 text-xs text-neutral-400 outline-none focus:border-neutral-500"
+              className="w-28 border-b border-dashed border-neutral-200 bg-transparent px-1 py-1 text-xs text-neutral-600 outline-none focus:border-neutral-400"
             />
           </div>
         </div>

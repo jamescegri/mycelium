@@ -32,7 +32,7 @@ export function TrashPage() {
         <h1 className="text-lg font-semibold">Corbeille</h1>
         <button
           onClick={() => navigate('/dashboard')}
-          className="text-sm text-neutral-400 hover:text-neutral-200"
+          className="text-sm text-neutral-600 hover:text-neutral-800"
         >
           ← Dashboard
         </button>
@@ -40,7 +40,7 @@ export function TrashPage() {
 
       {isLoading && <p className="text-sm text-neutral-500">Chargement…</p>}
 
-      <ul className="divide-y divide-neutral-800 rounded-lg border border-neutral-800">
+      <ul className="divide-y divide-neutral-800 rounded-lg border border-neutral-200">
         {elements?.map((el) => (
           <li
             key={el.id}
@@ -48,7 +48,7 @@ export function TrashPage() {
           >
             <div className="flex items-center gap-2">
               <span>{el.name}</span>
-              <span className="rounded bg-neutral-800 px-2 py-0.5 text-xs text-neutral-400">
+              <span className="rounded bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
                 {FAMILY_LABEL[el.family]}
               </span>
             </div>

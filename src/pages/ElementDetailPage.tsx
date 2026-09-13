@@ -133,7 +133,7 @@ function ElementEditor({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Sans titre"
-        className="w-full bg-transparent text-3xl font-semibold tracking-tight text-neutral-100 outline-none placeholder:text-neutral-700"
+        className="w-full bg-transparent text-3xl font-semibold tracking-tight text-neutral-900 outline-none placeholder:text-neutral-300"
       />
 
       <div className="mb-6 mt-2 flex flex-wrap items-center gap-1.5 text-xs text-neutral-500">
@@ -146,10 +146,10 @@ function ElementEditor({
         </button>
         {ancestors.map((ancestor) => (
           <span key={ancestor.id} className="flex items-center gap-1.5">
-            <span className="text-neutral-700">/</span>
+            <span className="text-neutral-300">/</span>
             <button
               onClick={() => navigate(`/elements/${ancestor.id}`)}
-              className="max-w-[160px] truncate hover:text-neutral-300"
+              className="max-w-[160px] truncate hover:text-neutral-700"
             >
               {ancestor.name}
             </button>
@@ -169,23 +169,23 @@ function ElementEditor({
         <button
           onClick={() => saveMutation.mutate()}
           disabled={saveMutation.isPending}
-          className="rounded bg-yellow-500 px-4 py-2 text-sm font-medium text-neutral-950 hover:bg-yellow-400 disabled:opacity-50"
+          className="rounded bg-yellow-500 px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-yellow-400 disabled:opacity-50"
         >
           {saveMutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
         </button>
         <button
           onClick={onRequestDelete}
-          className="text-sm text-red-400 hover:text-red-300"
+          className="text-sm text-red-600 hover:text-red-500"
         >
           Supprimer
         </button>
       </div>
 
-      <div className="border-t border-neutral-900 pt-6">
+      <div className="border-t border-neutral-100 pt-6">
         <ConnectionsDisclosure elementId={element.id} onSelect={openPeek} />
       </div>
 
-      <div className="mt-8 border-t border-neutral-900 pt-6">
+      <div className="mt-8 border-t border-neutral-100 pt-6">
         <ChildrenList
           items={childElements}
           parentId={element.id}

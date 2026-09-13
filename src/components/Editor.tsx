@@ -143,7 +143,7 @@ export function Editor({ content, onChange }: EditorProps) {
     editorProps: {
       attributes: {
         class:
-          'prose-mycelium min-h-[200px] text-[15px] leading-relaxed text-neutral-100 outline-none',
+          'prose-mycelium min-h-[200px] text-[15px] leading-relaxed text-neutral-900 outline-none',
       },
       handleClickOn: (_view, _pos, node) => {
         if (node.type.name === 'mention' && node.attrs.id) {

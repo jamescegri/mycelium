@@ -34,15 +34,15 @@ export function DashboardPage() {
 
   return (
     <Layout>
-      <nav className="mb-8 flex gap-6 border-b border-neutral-900 pb-3 text-sm">
+      <nav className="mb-8 flex gap-6 border-b border-neutral-100 pb-3 text-sm">
         {(Object.keys(TAB_LABEL) as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={
               tab === t
-                ? 'text-neutral-100'
-                : 'text-neutral-500 hover:text-neutral-300'
+                ? 'text-neutral-900'
+                : 'text-neutral-500 hover:text-neutral-700'
             }
           >
             {TAB_LABEL[t]}
@@ -89,7 +89,7 @@ function ArborescenceTab({
             >
               {f}
             </div>
-            <div className="mt-1 text-xs text-neutral-600 group-hover:text-neutral-400">
+            <div className="mt-1 text-xs text-neutral-400 group-hover:text-neutral-600">
               {count} Element{count !== 1 ? 's' : ''}
             </div>
           </button>
@@ -138,7 +138,7 @@ function TemporalTab() {
         <button
           key={el.id}
           onClick={() => navigate(`/elements/${el.id}`)}
-          className="block text-left text-[15px] text-neutral-200 hover:text-yellow-500"
+          className="block text-left text-[15px] text-neutral-800 hover:text-yellow-500"
         >
           {el.name || 'Sans titre'}
         </button>
@@ -183,18 +183,18 @@ function ConnexionsTab({ elements }: { elements: Element[] }) {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-xs text-neutral-600">
+        <p className="text-xs text-neutral-400">
           Pas un graphe — un point de départ pour explorer.
         </p>
         <button
           onClick={() => setShowOrphans((v) => !v)}
-          className="text-xs text-neutral-500 hover:text-neutral-300"
+          className="text-xs text-neutral-500 hover:text-neutral-700"
         >
           {showOrphans ? '← Les plus connectés' : 'Elements orphelins →'}
         </button>
       </div>
       {list.length === 0 && (
-        <p className="text-sm text-neutral-600">
+        <p className="text-sm text-neutral-400">
           {showOrphans
             ? 'Aucun Element orphelin — tout est relié à quelque chose.'
             : "Aucune connexion pour l'instant."}
@@ -205,10 +205,10 @@ function ConnexionsTab({ elements }: { elements: Element[] }) {
           <button
             key={el.id}
             onClick={() => navigate(`/elements/${el.id}`)}
-            className="flex w-full items-center justify-between text-left text-[15px] text-neutral-200 hover:text-yellow-500"
+            className="flex w-full items-center justify-between text-left text-[15px] text-neutral-800 hover:text-yellow-500"
           >
             <span className="truncate">{el.name || 'Sans titre'}</span>
-            <span className="ml-2 shrink-0 text-xs text-neutral-600">
+            <span className="ml-2 shrink-0 text-xs text-neutral-400">
               {count}
             </span>
           </button>
@@ -250,13 +250,13 @@ function CollectionsTab() {
           <button
             key={c.id}
             onClick={() => navigate(`/collections/${c.id}`)}
-            className="block text-left text-[15px] text-neutral-200 hover:text-yellow-500"
+            className="block text-left text-[15px] text-neutral-800 hover:text-yellow-500"
           >
             {c.name}
           </button>
         ))}
         {collections?.length === 0 && (
-          <p className="text-sm text-neutral-600">
+          <p className="text-sm text-neutral-400">
             Aucune collection pour l'instant.
           </p>
         )}
@@ -268,11 +268,11 @@ function CollectionsTab() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Nom de la collection"
-            className="flex-1 border-b border-neutral-800 bg-transparent px-1 py-1 text-sm text-neutral-100 outline-none focus:border-neutral-500"
+            className="flex-1 border-b border-neutral-200 bg-transparent px-1 py-1 text-sm text-neutral-900 outline-none focus:border-neutral-400"
           />
           <button
             type="submit"
-            className="text-sm text-neutral-400 hover:text-neutral-200"
+            className="text-sm text-neutral-600 hover:text-neutral-800"
           >
             Créer
           </button>
@@ -280,7 +280,7 @@ function CollectionsTab() {
       ) : (
         <button
           onClick={() => setCreating(true)}
-          className="mt-3 text-sm text-neutral-500 hover:text-neutral-300"
+          className="mt-3 text-sm text-neutral-500 hover:text-neutral-700"
         >
           + Nouvelle collection
         </button>

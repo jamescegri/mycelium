@@ -49,14 +49,14 @@ export const MentionList = forwardRef<MentionListHandle, MentionListProps>(
 
     if (items.length === 0) {
       return (
-        <div className="w-64 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm text-neutral-500 shadow-xl">
+        <div className="w-64 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-500 shadow-xl">
           Tape pour chercher un Element…
         </div>
       );
     }
 
     return (
-      <div className="max-h-64 w-64 overflow-y-auto rounded-lg border border-neutral-800 bg-neutral-900 py-1 shadow-xl">
+      <div className="max-h-64 w-64 overflow-y-auto rounded-lg border border-neutral-200 bg-neutral-50 py-1 shadow-xl">
         {items.map((item, index) => (
           <button
             key={item.id}
@@ -64,8 +64,8 @@ export const MentionList = forwardRef<MentionListHandle, MentionListProps>(
             onClick={() => selectItem(index)}
             className={`flex w-full items-center gap-1.5 px-3 py-2 text-left text-sm ${
               index === selectedIndex
-                ? 'bg-neutral-800 text-neutral-100'
-                : 'text-neutral-300 hover:bg-neutral-800/60'
+                ? 'bg-neutral-100 text-neutral-900'
+                : 'text-neutral-700 hover:bg-neutral-100/60'
             }`}
           >
             {item.isCreate && (

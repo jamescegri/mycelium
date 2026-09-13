@@ -49,7 +49,7 @@ export function ChildrenList({
         >
           <button
             onClick={() => navigate(`/elements/${item.id}`)}
-            className="truncate text-left text-[15px] text-neutral-200 hover:text-yellow-500"
+            className="truncate text-left text-[15px] text-neutral-800 hover:text-yellow-500"
           >
             {item.name || 'Sans titre'}
           </button>
@@ -60,7 +60,7 @@ export function ChildrenList({
               }
               disabled={index === 0}
               aria-label="Monter"
-              className="text-neutral-600 hover:text-neutral-300 disabled:opacity-20"
+              className="text-neutral-400 hover:text-neutral-700 disabled:opacity-20"
             >
               ↑
             </button>
@@ -73,7 +73,7 @@ export function ChildrenList({
               }
               disabled={index === items.length - 1}
               aria-label="Descendre"
-              className="text-neutral-600 hover:text-neutral-300 disabled:opacity-20"
+              className="text-neutral-400 hover:text-neutral-700 disabled:opacity-20"
             >
               ↓
             </button>
@@ -84,7 +84,7 @@ export function ChildrenList({
       <button
         onClick={() => createMutation.mutate()}
         disabled={createMutation.isPending}
-        className="mt-1 text-sm text-neutral-500 hover:text-neutral-300 disabled:opacity-50"
+        className="mt-1 text-sm text-neutral-500 hover:text-neutral-700 disabled:opacity-50"
       >
         + Nouvelle sous-page
       </button>
