@@ -131,11 +131,29 @@ export async function updateElement(
   return data as Element;
 }
 
-// Soft delete : on ne perd jamais rien silencieusement (corbeille, étape 15).
+// Soft delete : on ne perd jamais rien silencieusement (corbeille).
 export async function softDeleteElement(id: string): Promise<void> {
   const { error } = await supabase
     .from('elements')
     .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function listTrashed(): Promise<Element[]> {
+  const { data, error } = await supabase
+    .from('elements')
+    .select('*')
+    .not('deleted_at', 'is', null)
+    .order('deleted_at', { ascending: false });
+  if (error) throw error;
+  return data as Element[];
+}
+
+export async function restoreElement(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('elements')
+    .update({ deleted_at: null })
     .eq('id', id);
   if (error) throw error;
 }

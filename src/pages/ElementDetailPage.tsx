@@ -21,6 +21,16 @@ import {
   deleteTemporalRelation,
   listTemporalRelationsForElement,
 } from '../lib/temporal';
+import {
+  addTagToElement,
+  listTagsForElement,
+  removeTagFromElement,
+} from '../lib/tags';
+import {
+  addElementToCollection,
+  listCollectionsForElement,
+  removeElementFromCollection,
+} from '../lib/collections';
 import { extractMentionIds, toEditorContent } from '../lib/content';
 import { FAMILIES } from '../types';
 import type {
@@ -236,6 +246,51 @@ function ElementEditor({
     },
   });
 
+  const { data: tags } = useQuery({
+    queryKey: ['tags', element.id],
+    queryFn: () => listTagsForElement(element.id),
+  });
+  const [newTagName, setNewTagName] = useState('');
+  const addTagMutation = useMutation({
+    mutationFn: (tagName: string) => addTagToElement(element.id, tagName),
+    onSuccess: () => {
+      setNewTagName('');
+      queryClient.invalidateQueries({ queryKey: ['tags', element.id] });
+    },
+  });
+  const removeTagMutation = useMutation({
+    mutationFn: (tagId: string) => removeTagFromElement(element.id, tagId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tags', element.id] });
+    },
+  });
+
+  const { data: elementCollections } = useQuery({
+    queryKey: ['element-collections', element.id],
+    queryFn: () => listCollectionsForElement(element.id),
+  });
+  const [newCollectionName, setNewCollectionName] = useState('');
+  const addToCollectionMutation = useMutation({
+    mutationFn: (collectionName: string) =>
+      addElementToCollection(element.id, collectionName),
+    onSuccess: () => {
+      setNewCollectionName('');
+      queryClient.invalidateQueries({
+        queryKey: ['element-collections', element.id],
+      });
+      queryClient.invalidateQueries({ queryKey: ['collections'] });
+    },
+  });
+  const removeFromCollectionMutation = useMutation({
+    mutationFn: (collectionId: string) =>
+      removeElementFromCollection(collectionId, element.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['element-collections', element.id],
+      });
+    },
+  });
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       const saved = await updateElement(element.id, { name, family, content });
@@ -304,6 +359,71 @@ function ElementEditor({
             onPick={(picked) => setParentMutation.mutate(picked.id)}
           />
         )}
+      </div>
+
+      <div className="mb-6 flex flex-wrap items-center gap-2 text-sm">
+        {tags?.map((tag) => (
+          <span
+            key={tag.id}
+            className="flex items-center gap-1 rounded-full bg-neutral-800 px-2.5 py-1 text-xs text-neutral-300"
+          >
+            #{tag.name}
+            <button
+              onClick={() => removeTagMutation.mutate(tag.id)}
+              aria-label={`Retirer le tag ${tag.name}`}
+              className="text-neutral-500 hover:text-red-400"
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        <input
+          value={newTagName}
+          onChange={(e) => setNewTagName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && newTagName.trim()) {
+              e.preventDefault();
+              addTagMutation.mutate(newTagName);
+            }
+          }}
+          placeholder="+ tag"
+          className="w-24 rounded-full border border-neutral-800 bg-transparent px-2.5 py-1 text-xs text-neutral-400 outline-none focus:border-yellow-500"
+        />
+      </div>
+
+      <div className="mb-6 flex flex-wrap items-center gap-2 text-sm">
+        {elementCollections?.map((c) => (
+          <span
+            key={c.id}
+            className="flex items-center gap-1 rounded border border-neutral-700 px-2.5 py-1 text-xs text-neutral-300"
+          >
+            <button
+              onClick={() => navigate(`/collections/${c.id}`)}
+              className="hover:underline"
+            >
+              📁 {c.name}
+            </button>
+            <button
+              onClick={() => removeFromCollectionMutation.mutate(c.id)}
+              aria-label={`Retirer de ${c.name}`}
+              className="text-neutral-500 hover:text-red-400"
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        <input
+          value={newCollectionName}
+          onChange={(e) => setNewCollectionName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && newCollectionName.trim()) {
+              e.preventDefault();
+              addToCollectionMutation.mutate(newCollectionName);
+            }
+          }}
+          placeholder="+ collection"
+          className="w-32 rounded border border-dashed border-neutral-800 bg-transparent px-2.5 py-1 text-xs text-neutral-400 outline-none focus:border-yellow-500"
+        />
       </div>
 
       <div className="mb-6">

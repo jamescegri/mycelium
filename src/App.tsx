@@ -4,6 +4,9 @@ import { LoginPage } from './pages/LoginPage';
 import { ElementsListPage } from './pages/ElementsListPage';
 import { ElementDetailPage } from './pages/ElementDetailPage';
 import { TimelinePage } from './pages/TimelinePage';
+import { TrashPage } from './pages/TrashPage';
+import { CollectionsPage } from './pages/CollectionsPage';
+import { CollectionDetailPage } from './pages/CollectionDetailPage';
 
 function RequireAuth({ children }: { children: React.ReactElement }) {
   const { session, loading } = useAuth();
@@ -43,6 +46,30 @@ export default function App() {
         element={
           <RequireAuth>
             <TimelinePage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/trash"
+        element={
+          <RequireAuth>
+            <TrashPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/collections"
+        element={
+          <RequireAuth>
+            <CollectionsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/collections/:id"
+        element={
+          <RequireAuth>
+            <CollectionDetailPage />
           </RequireAuth>
         }
       />

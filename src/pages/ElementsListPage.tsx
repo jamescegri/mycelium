@@ -130,12 +130,20 @@ export function ElementsListPage() {
     <Layout>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-lg font-semibold">Elements</h1>
-        <button
-          onClick={() => setCreating((v) => !v)}
-          className="rounded bg-yellow-500 px-3 py-1.5 text-sm font-medium text-neutral-950 hover:bg-yellow-400"
-        >
-          + Nouvel Element
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('/trash')}
+            className="text-sm text-neutral-500 hover:text-neutral-300"
+          >
+            Corbeille
+          </button>
+          <button
+            onClick={() => setCreating((v) => !v)}
+            className="rounded bg-yellow-500 px-3 py-1.5 text-sm font-medium text-neutral-950 hover:bg-yellow-400"
+          >
+            + Nouvel Element
+          </button>
+        </div>
       </div>
 
       {creating && (

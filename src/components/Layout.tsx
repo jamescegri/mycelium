@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth';
 const NAV_ITEMS = [
   { to: '/elements', label: 'Elements' },
   { to: '/timeline', label: 'Timeline' },
+  { to: '/collections', label: 'Collections' },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {

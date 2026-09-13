@@ -42,6 +42,10 @@ pour le détail des principes et des non-objectifs.
   les Elements pris dans au moins une relation BEFORE/AFTER par ordre
   chronologique (tri topologique) ; la position temporelle se modifie
   depuis la page de l'Element ("avant"/"après" un autre Element)
+- ✅ Étape 8 — Corbeille, tags, collections : page `/trash` pour restaurer un
+  Element supprimé ; tags libres par Element (création à la volée,
+  déduplication insensible à la casse) ; collections nommées avec leur
+  propre page listant leurs Elements
 
 Le contenu d'un Element est un document Tiptap (JSON) stocké tel quel dans
 la colonne `jsonb` ; les Elements créés à l'étape 2 (contenu texte brut)
@@ -81,8 +85,8 @@ l'étape 1.
   liste et sa page existe (aucune étape de configuration intermédiaire)
 - Édition du nom, de la famille et du contenu → persistance en base au clic
   sur "Enregistrer"
-- Suppression → l'Element disparaît de la liste (soft delete, restauration
-  prévue à l'étape 15)
+- Suppression → l'Element disparaît de la liste, apparaît dans `/trash`,
+  et "Restaurer" le remet dans la liste sans rien perdre
 - Taper `/` dans l'éditeur ouvre une recherche d'Elements existants ; en
   sélectionner un insère un lien cliquable vers sa page
 - Taper `/` suivi d'un nom qui n'existe pas propose "+ Créer" : valider crée
@@ -108,6 +112,12 @@ l'étape 1.
   "après" un autre le fait apparaître dans /timeline, dans le bon ordre
   chronologique ; l'autre Element affiche automatiquement la relation
   réciproque ("après" / "avant")
+- Taper un tag et appuyer sur Entrée l'ajoute comme pastille ; le retaper
+  avec une casse différente réutilise le même tag plutôt que d'en créer un
+  doublon
+- Taper un nom de collection dans "+ collection" la crée si besoin et y
+  ajoute l'Element ; la collection a sa propre page (`/collections/:id`)
+  listant tous ses Elements, avec un picker pour en ajouter d'autres
 - `npm run build` passe sans erreur TypeScript et produit un bundle
   fonctionnel (vérifié avec Playwright contre une API Supabase simulée)
 
@@ -124,7 +134,7 @@ en tête avant de retenter Vite 8 plus tard.
 
 ## Prochaine étape
 
-Les 10 priorités V1 du cahier des charges (créer, écrire, relier, organiser,
-explorer) et la timeline sont maintenant toutes en place. La suite
-naturelle — tags, collections, corbeille restaurable — n'a pas encore été
-priorisée dans le détail : à discuter avant de continuer.
+Tout ce qui était identifié dans le cahier des charges (les 10 priorités
+V1, la timeline, les tags, les collections, la corbeille) est maintenant en
+place. La suite dépend de l'usage réel : à voir ensemble ce qui manque le
+plus une fois testé en conditions réelles.
