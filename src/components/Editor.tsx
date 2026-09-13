@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Extension } from '@tiptap/core';
 import { PluginKey } from '@tiptap/pm/state';
 import { EditorContent, ReactRenderer, useEditor } from '@tiptap/react';
@@ -16,9 +16,10 @@ import type {
 } from '@tiptap/suggestion';
 import { MentionList } from './MentionList';
 import type { MentionItem, MentionListHandle } from './MentionList';
-import { createElement, searchElements } from '../lib/elements';
+import { createElement, listElements, searchElements } from '../lib/elements';
 import { linkChild, listAllLinks, wouldCreateCycle } from '../lib/links';
 import { usePeek } from './PeekPanel';
+import type { Element, ElementLink } from '../types';
 
 interface EditorProps {
   elementId: string;
@@ -41,18 +42,29 @@ async function mentionItems({ query }: { query: string }): Promise<MentionItem[]
 
 // Popup partagé par les trois déclencheurs ("/", "@", "+") : même liste,
 // même recherche, même "+ Créer" — seul ce qui se passe au choix diffère.
-function suggestionRender(): SuggestionOptions<MentionItem>['render'] {
+// Sans texte tapé, le popup permet aussi de parcourir les Groupes en
+// profondeur (getBrowseData fournit toujours les données les plus
+// fraîches, lues au moment où le popup s'ouvre, pas au moment où
+// l'extension a été créée).
+function suggestionRender(
+  getBrowseData: () => { elements: Element[]; links: ElementLink[] }
+): SuggestionOptions<MentionItem>['render'] {
   return () => {
     let component: ReactRenderer<
       MentionListHandle,
-      { items: MentionItem[]; command: (item: MentionItem) => void }
+      {
+        items: MentionItem[];
+        command: (item: MentionItem) => void;
+        query: string;
+        browse?: { elements: Element[]; links: ElementLink[] };
+      }
     >;
     let popup: TippyInstance[];
 
     return {
       onStart: (props: SuggestionProps<MentionItem>) => {
         component = new ReactRenderer(MentionList, {
-          props,
+          props: { ...props, browse: getBrowseData() },
           editor: props.editor,
         });
         if (!props.clientRect) return;
@@ -67,7 +79,7 @@ function suggestionRender(): SuggestionOptions<MentionItem>['render'] {
         });
       },
       onUpdate(props: SuggestionProps<MentionItem>) {
-        component.updateProps(props);
+        component.updateProps({ ...props, browse: getBrowseData() });
         if (!props.clientRect) return;
         popup[0].setProps({
           getReferenceClientRect: () => props.clientRect?.() ?? new DOMRect(),
@@ -95,7 +107,8 @@ function suggestionRender(): SuggestionOptions<MentionItem>['render'] {
 function createStructuralTrigger(
   name: string,
   char: string,
-  onPick: (pickedId: string) => void | Promise<void>
+  onPick: (pickedId: string) => void | Promise<void>,
+  getBrowseData: () => { elements: Element[]; links: ElementLink[] }
 ) {
   return Extension.create({
     name,
@@ -123,7 +136,7 @@ function createStructuralTrigger(
             }
             void run();
           },
-          render: suggestionRender(),
+          render: suggestionRender(getBrowseData),
         }),
       ];
     },
@@ -142,6 +155,30 @@ export function Editor({ elementId, content, onChange }: EditorProps) {
   const onChangeRef = useRef(onChange);
   useEffect(() => {
     onChangeRef.current = onChange;
+  });
+
+  // Lus au moment où le popup "/"/"@"/"+" s'ouvre (pas au moment où
+  // l'éditeur a été créé) : les refs restent à jour même si ces données
+  // arrivent ou changent après le premier rendu.
+  const { data: allElements } = useQuery({
+    queryKey: ['elements'],
+    queryFn: listElements,
+  });
+  const { data: allLinks } = useQuery({
+    queryKey: ['links'],
+    queryFn: listAllLinks,
+  });
+  const elementsRef = useRef<Element[]>([]);
+  const linksRef = useRef<ElementLink[]>([]);
+  useEffect(() => {
+    elementsRef.current = allElements ?? [];
+  }, [allElements]);
+  useEffect(() => {
+    linksRef.current = allLinks ?? [];
+  }, [allLinks]);
+  const getBrowseData = () => ({
+    elements: elementsRef.current,
+    links: linksRef.current,
   });
 
   async function attachAsChildOf(parentId: string) {
@@ -209,11 +246,16 @@ export function Editor({ elementId, content, onChange }: EditorProps) {
             }
             void run();
           },
-          render: suggestionRender(),
+          render: suggestionRender(getBrowseData),
         },
       }),
-      createStructuralTrigger('mentionParent', '@', attachAsChildOf),
-      createStructuralTrigger('mentionChild', '+', attachChild),
+      createStructuralTrigger(
+        'mentionParent',
+        '@',
+        attachAsChildOf,
+        getBrowseData
+      ),
+      createStructuralTrigger('mentionChild', '+', attachChild, getBrowseData),
     ],
     content,
     editorProps: {
