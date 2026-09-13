@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  getDescendantIds,
   getElement,
   getElementsByIds,
+  listElements,
   softDeleteElement,
   updateElement,
 } from '../lib/elements';
@@ -97,6 +99,20 @@ function ElementEditor({
     toEditorContent(element.content)
   );
 
+  const { data: allElements } = useQuery({
+    queryKey: ['elements'],
+    queryFn: listElements,
+  });
+
+  const setParentMutation = useMutation({
+    mutationFn: (parentId: string | null) =>
+      updateElement(element.id, { parent_id: parentId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['elements'] });
+      queryClient.invalidateQueries({ queryKey: ['elements', element.id] });
+    },
+  });
+
   const { data: backlinkElements } = useQuery({
     queryKey: ['backlinks', element.id],
     queryFn: async () => {
@@ -167,6 +183,17 @@ function ElementEditor({
     },
   });
 
+  const parentElement = allElements?.find((e) => e.id === element.parent_id);
+  const childElements = (allElements ?? []).filter(
+    (e) => e.parent_id === element.id
+  );
+  // Un Element ne peut pas devenir son propre parent, ni le parent d'un de
+  // ses ancêtres (ça créerait une boucle) : on l'exclut lui-même et tous
+  // ses descendants du choix.
+  const parentPickerExcludeIds = allElements
+    ? [element.id, ...getDescendantIds(allElements, element.id)]
+    : [element.id];
+
   return (
     <>
       <div className="mb-6 flex items-center justify-between gap-4">
@@ -186,6 +213,32 @@ function ElementEditor({
             </option>
           ))}
         </select>
+      </div>
+
+      <div className="mb-6 flex items-center gap-2 text-sm text-neutral-500">
+        <span className="shrink-0">Parent :</span>
+        {parentElement ? (
+          <>
+            <button
+              onClick={() => navigate(`/elements/${parentElement.id}`)}
+              className="text-neutral-300 hover:underline"
+            >
+              {parentElement.name}
+            </button>
+            <button
+              onClick={() => setParentMutation.mutate(null)}
+              className="text-xs text-neutral-600 hover:text-red-400"
+            >
+              (retirer)
+            </button>
+          </>
+        ) : (
+          <ElementPicker
+            excludeIds={parentPickerExcludeIds}
+            placeholder="Choisir un parent…"
+            onPick={(picked) => setParentMutation.mutate(picked.id)}
+          />
+        )}
       </div>
 
       <div className="mb-6">
@@ -243,7 +296,7 @@ function ElementEditor({
         )}
         <div className="flex gap-2">
           <ElementPicker
-            excludeId={element.id}
+            excludeIds={[element.id]}
             placeholder="Relier à un Element…"
             onPick={(target) => addRelationMutation.mutate(target)}
           />
@@ -283,9 +336,32 @@ function ElementEditor({
         )}
       </div>
 
+      {childElements.length > 0 && (
+        <div className="mt-10 border-t border-neutral-800 pt-5">
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+            Enfants
+          </h2>
+          <ul className="divide-y divide-neutral-800 rounded-lg border border-neutral-800">
+            {childElements.map((child) => (
+              <li key={child.id}>
+                <button
+                  onClick={() => navigate(`/elements/${child.id}`)}
+                  className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm hover:bg-neutral-900"
+                >
+                  <span>{child.name}</span>
+                  <span className="rounded bg-neutral-800 px-2 py-0.5 text-xs text-neutral-400">
+                    {FAMILY_LABEL[child.family]}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <p className="mt-8 text-xs text-neutral-600">
-        Hiérarchie, tags, collections et timeline arrivent aux étapes
-        suivantes du plan de développement.
+        Tags, collections et timeline arrivent aux étapes suivantes du plan
+        de développement.
       </p>
     </>
   );

@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listElements, createElement } from '../lib/elements';
 import { FAMILIES } from '../types';
-import type { ElementFamily } from '../types';
+import type { Element, ElementFamily } from '../types';
 import { Layout } from '../components/Layout';
 
 const FAMILY_LABEL: Record<ElementFamily, string> = {
@@ -12,6 +12,38 @@ const FAMILY_LABEL: Record<ElementFamily, string> = {
   SPACE: 'Space',
   ELEMENTS: 'Elements',
 };
+
+interface TreeNode {
+  element: Element;
+  children: TreeNode[];
+}
+
+// Arborescence libre : un Element sans parent (ou dont le parent a disparu)
+// est une racine. Profondeur illimitée, pas de contrainte de famille.
+function buildTree(elements: Element[]): TreeNode[] {
+  const byId = new Map(elements.map((e) => [e.id, e]));
+  const childrenByParent = new Map<string, Element[]>();
+  const roots: Element[] = [];
+
+  for (const el of elements) {
+    if (el.parent_id && byId.has(el.parent_id)) {
+      const list = childrenByParent.get(el.parent_id) ?? [];
+      list.push(el);
+      childrenByParent.set(el.parent_id, list);
+    } else {
+      roots.push(el);
+    }
+  }
+
+  function toNode(el: Element): TreeNode {
+    return {
+      element: el,
+      children: (childrenByParent.get(el.id) ?? []).map(toNode),
+    };
+  }
+
+  return roots.map(toNode);
+}
 
 export function ElementsListPage() {
   const navigate = useNavigate();
@@ -24,6 +56,9 @@ export function ElementsListPage() {
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
   const [family, setFamily] = useState<ElementFamily>('ELEMENTS');
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  const tree = useMemo(() => buildTree(elements ?? []), [elements]);
 
   const createMutation = useMutation({
     mutationFn: createElement,
@@ -39,6 +74,56 @@ export function ElementsListPage() {
     e.preventDefault();
     if (!name.trim()) return;
     createMutation.mutate({ name: name.trim(), family });
+  }
+
+  function toggleCollapsed(id: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function renderNode(node: TreeNode, depth: number) {
+    const hasChildren = node.children.length > 0;
+    const isCollapsed = collapsed.has(node.element.id);
+    return (
+      <li key={node.element.id}>
+        <div
+          className="flex items-center justify-between px-4 py-3 hover:bg-neutral-900"
+          style={{ paddingLeft: `${16 + depth * 20}px` }}
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            {hasChildren ? (
+              <button
+                onClick={() => toggleCollapsed(node.element.id)}
+                className="w-4 shrink-0 text-neutral-500 hover:text-neutral-300"
+                aria-label={isCollapsed ? 'Déplier' : 'Replier'}
+              >
+                {isCollapsed ? '▸' : '▾'}
+              </button>
+            ) : (
+              <span className="w-4 shrink-0" />
+            )}
+            <button
+              onClick={() => navigate(`/elements/${node.element.id}`)}
+              className="truncate text-left"
+            >
+              {node.element.name}
+            </button>
+          </div>
+          <span className="ml-3 shrink-0 rounded bg-neutral-800 px-2 py-0.5 text-xs text-neutral-400">
+            {FAMILY_LABEL[node.element.family]}
+          </span>
+        </div>
+        {hasChildren && !isCollapsed && (
+          <ul>
+            {node.children.map((child) => renderNode(child, depth + 1))}
+          </ul>
+        )}
+      </li>
+    );
   }
 
   return (
@@ -94,25 +179,19 @@ export function ElementsListPage() {
       )}
 
       <ul className="divide-y divide-neutral-800 rounded-lg border border-neutral-800">
-        {elements?.map((el) => (
-          <li key={el.id}>
-            <button
-              onClick={() => navigate(`/elements/${el.id}`)}
-              className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-neutral-900"
-            >
-              <span>{el.name}</span>
-              <span className="rounded bg-neutral-800 px-2 py-0.5 text-xs text-neutral-400">
-                {FAMILY_LABEL[el.family]}
-              </span>
-            </button>
-          </li>
-        ))}
+        {tree.map((node) => renderNode(node, 0))}
         {elements?.length === 0 && (
           <li className="px-4 py-6 text-center text-sm text-neutral-500">
             Aucun Element pour l'instant. Crée le premier ci-dessus.
           </li>
         )}
       </ul>
+      {elements && elements.length > 0 && (
+        <p className="mt-3 text-xs text-neutral-600">
+          Change le parent d'un Element depuis sa propre page pour le
+          déplacer dans l'arborescence.
+        </p>
+      )}
     </Layout>
   );
 }

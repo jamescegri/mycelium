@@ -47,10 +47,11 @@ export async function createElement(input: {
   return data as Element;
 }
 
-// Recherche utilisée par le système de mention "/" dans l'éditeur.
+// Recherche utilisée par le système de mention "/" et par les pickers
+// (relations libres, choix du parent).
 export async function searchElements(
   query: string,
-  excludeId?: string
+  excludeIds?: string[]
 ): Promise<Element[]> {
   let request = supabase
     .from('elements')
@@ -61,12 +62,38 @@ export async function searchElements(
   if (query.trim()) {
     request = request.ilike('name', `%${query.trim()}%`);
   }
-  if (excludeId) {
-    request = request.neq('id', excludeId);
+  if (excludeIds && excludeIds.length > 0) {
+    request = request.not('id', 'in', `(${excludeIds.join(',')})`);
   }
   const { data, error } = await request;
   if (error) throw error;
   return data as Element[];
+}
+
+// Garde anti-cycle : calcule, à partir d'une liste d'Elements déjà chargée
+// (ex. listElements), tous les descendants de rootId. Utilisé pour exclure
+// un Element et ses propres descendants du choix de son nouveau parent —
+// sinon on pourrait créer une boucle parent → enfant → parent.
+export function getDescendantIds(
+  elements: Element[],
+  rootId: string
+): Set<string> {
+  const childrenByParent = new Map<string, string[]>();
+  for (const el of elements) {
+    if (!el.parent_id) continue;
+    const list = childrenByParent.get(el.parent_id) ?? [];
+    list.push(el.id);
+    childrenByParent.set(el.parent_id, list);
+  }
+  const descendants = new Set<string>();
+  const queue = [...(childrenByParent.get(rootId) ?? [])];
+  while (queue.length > 0) {
+    const id = queue.shift() as string;
+    if (descendants.has(id)) continue;
+    descendants.add(id);
+    queue.push(...(childrenByParent.get(id) ?? []));
+  }
+  return descendants;
 }
 
 export async function getElementsByIds(ids: string[]): Promise<Element[]> {
@@ -82,7 +109,17 @@ export async function getElementsByIds(ids: string[]): Promise<Element[]> {
 
 export async function updateElement(
   id: string,
-  patch: Partial<Pick<Element, 'name' | 'family' | 'content' | 'notion_url' | 'absolute_date'>>
+  patch: Partial<
+    Pick<
+      Element,
+      | 'name'
+      | 'family'
+      | 'content'
+      | 'notion_url'
+      | 'absolute_date'
+      | 'parent_id'
+    >
+  >
 ): Promise<Element> {
   const { data, error } = await supabase
     .from('elements')

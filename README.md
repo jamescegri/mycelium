@@ -33,7 +33,11 @@ pour le détail des principes et des non-objectifs.
 - ✅ Étape 5 — Relations libres : relier deux Elements sans passer par une
   mention (recherche + label optionnel), affichage symétrique des deux
   côtés, suppression à tout moment
-- ⬜ Étape 6 — Hiérarchie (parent/enfant, profondeur illimitée, déplacement)
+- ✅ Étape 6 — Hiérarchie : vue arborescente (pliable/dépliable) sur la liste
+  des Elements ; page d'un Element affiche son parent et ses enfants, avec
+  un sélecteur pour changer/retirer le parent (déplacement facile) et une
+  garde anti-cycle (un Element ne peut pas devenir le parent d'un de ses
+  propres descendants)
 - ⬜ Étape 7 — Timeline (dérivée des relations BEFORE/AFTER)
 
 Le contenu d'un Element est un document Tiptap (JSON) stocké tel quel dans
@@ -92,6 +96,11 @@ l'étape 1.
   label) ; la supprimer d'un côté la fait disparaître de l'autre aussi
 - "Référencé par" (mentions automatiques) et "Relations" (manuelles) ne se
   chevauchent jamais, même si elles pointent vers le même Element
+- La liste des Elements s'affiche en arbre (A > B > C), pliable/dépliable
+  par nœud
+- Depuis la page d'un Element, choisir un parent le déplace dans
+  l'arborescence ; un Element et ses propres descendants sont exclus du
+  choix (impossible de créer une boucle)
 - `npm run build` passe sans erreur TypeScript et produit un bundle
   fonctionnel (vérifié avec Playwright contre une API Supabase simulée)
 
@@ -108,5 +117,5 @@ en tête avant de retenter Vite 8 plus tard.
 
 ## Prochaine étape
 
-Étape 6 : hiérarchie libre — parent/enfant, profondeur illimitée, familles
-mélangeables, avec la garde anti-cycle décrite dans le cahier des charges.
+Étape 7 : timeline — construite à partir des relations temporelles
+BEFORE/AFTER entre Elements.

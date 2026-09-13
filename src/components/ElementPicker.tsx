@@ -3,11 +3,11 @@ import { searchElements } from '../lib/elements';
 import type { Element } from '../types';
 
 export function ElementPicker({
-  excludeId,
+  excludeIds,
   placeholder,
   onPick,
 }: {
-  excludeId: string;
+  excludeIds: string[];
   placeholder: string;
   onPick: (element: Element) => void;
 }) {
@@ -15,14 +15,17 @@ export function ElementPicker({
   const [results, setResults] = useState<Element[]>([]);
   const [open, setOpen] = useState(false);
   const requestId = useRef(0);
+  const excludeKey = excludeIds.join(',');
 
   useEffect(() => {
     if (!open) return;
     const id = ++requestId.current;
-    searchElements(query, excludeId).then((found) => {
-      if (id === requestId.current) setResults(found);
-    });
-  }, [query, open, excludeId]);
+    searchElements(query, excludeKey ? excludeKey.split(',') : []).then(
+      (found) => {
+        if (id === requestId.current) setResults(found);
+      }
+    );
+  }, [query, open, excludeKey]);
 
   return (
     <div className="relative flex-1">
