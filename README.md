@@ -30,7 +30,9 @@ pour le détail des principes et des non-objectifs.
   chaque sauvegarde.
 - ✅ Étape 4 — Backlinks : chaque page d'Element affiche la liste des
   Elements qui le référencent, dérivée de la table `relations`
-- ⬜ Étape 5 — Relations libres (UI dédiée, sans passer par une mention)
+- ✅ Étape 5 — Relations libres : relier deux Elements sans passer par une
+  mention (recherche + label optionnel), affichage symétrique des deux
+  côtés, suppression à tout moment
 - ⬜ Étape 6 — Hiérarchie (parent/enfant, profondeur illimitée, déplacement)
 - ⬜ Étape 7 — Timeline (dérivée des relations BEFORE/AFTER)
 
@@ -85,6 +87,11 @@ l'étape 1.
   (`origin='mention'`)
 - La page d'un Element mentionné affiche l'Element mentionnant dans sa
   section "Référencé par", avec lien cliquable vers sa page
+- Depuis la section "Relations", chercher et choisir un Element crée une
+  relation manuelle visible immédiatement des deux côtés (avec ou sans
+  label) ; la supprimer d'un côté la fait disparaître de l'autre aussi
+- "Référencé par" (mentions automatiques) et "Relations" (manuelles) ne se
+  chevauchent jamais, même si elles pointent vers le même Element
 - `npm run build` passe sans erreur TypeScript et produit un bundle
   fonctionnel (vérifié avec Playwright contre une API Supabase simulée)
 
@@ -101,5 +108,5 @@ en tête avant de retenter Vite 8 plus tard.
 
 ## Prochaine étape
 
-Étape 5 : relations libres — pouvoir créer une relation manuelle entre deux
-Elements sans passer par une mention dans le texte.
+Étape 6 : hiérarchie libre — parent/enfant, profondeur illimitée, familles
+mélangeables, avec la garde anti-cycle décrite dans le cahier des charges.

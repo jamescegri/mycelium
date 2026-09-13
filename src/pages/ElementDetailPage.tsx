@@ -7,12 +7,19 @@ import {
   softDeleteElement,
   updateElement,
 } from '../lib/elements';
-import { listBacklinks, syncMentionRelations } from '../lib/relations';
+import {
+  createManualRelation,
+  deleteRelation,
+  listBacklinks,
+  listManualRelations,
+  syncMentionRelations,
+} from '../lib/relations';
 import { extractMentionIds, toEditorContent } from '../lib/content';
 import { FAMILIES } from '../types';
-import type { Element, ElementFamily } from '../types';
+import type { Element, ElementFamily, Relation } from '../types';
 import { Layout } from '../components/Layout';
 import { Editor } from '../components/Editor';
+import { ElementPicker } from '../components/ElementPicker';
 
 const FAMILY_LABEL: Record<ElementFamily, string> = {
   TIME: 'Time',
@@ -99,6 +106,55 @@ function ElementEditor({
     },
   });
 
+  const { data: manualRelations } = useQuery({
+    queryKey: ['manual-relations', element.id],
+    queryFn: async () => {
+      const relations = await listManualRelations(element.id);
+      const otherIds = [
+        ...new Set(
+          relations.map((r) =>
+            r.source_id === element.id ? r.target_id : r.source_id
+          )
+        ),
+      ];
+      const others = await getElementsByIds(otherIds);
+      const otherById = new Map(others.map((e) => [e.id, e]));
+      return relations
+        .map((relation) => ({
+          relation,
+          other: otherById.get(
+            relation.source_id === element.id
+              ? relation.target_id
+              : relation.source_id
+          ),
+        }))
+        .filter(
+          (entry): entry is { relation: Relation; other: Element } =>
+            !!entry.other
+        );
+    },
+  });
+
+  const [relationLabel, setRelationLabel] = useState('');
+  const addRelationMutation = useMutation({
+    mutationFn: (target: Element) =>
+      createManualRelation(element.id, target.id, relationLabel),
+    onSuccess: () => {
+      setRelationLabel('');
+      queryClient.invalidateQueries({
+        queryKey: ['manual-relations', element.id],
+      });
+    },
+  });
+  const deleteRelationMutation = useMutation({
+    mutationFn: (relationId: string) => deleteRelation(relationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['manual-relations', element.id],
+      });
+    },
+  });
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       const saved = await updateElement(element.id, { name, family, content });
@@ -154,6 +210,54 @@ function ElementEditor({
 
       <div className="mt-10 border-t border-neutral-800 pt-5">
         <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          Relations
+        </h2>
+        {manualRelations && manualRelations.length > 0 && (
+          <ul className="mb-3 divide-y divide-neutral-800 rounded-lg border border-neutral-800">
+            {manualRelations.map(({ relation, other }) => (
+              <li
+                key={relation.id}
+                className="flex items-center justify-between px-4 py-2.5 text-sm"
+              >
+                <button
+                  onClick={() => navigate(`/elements/${other.id}`)}
+                  className="flex-1 truncate text-left hover:underline"
+                >
+                  {relation.label && (
+                    <span className="text-neutral-500">
+                      {relation.label} ·{' '}
+                    </span>
+                  )}
+                  {other.name}
+                </button>
+                <button
+                  onClick={() => deleteRelationMutation.mutate(relation.id)}
+                  aria-label="Supprimer la relation"
+                  className="ml-3 shrink-0 text-neutral-600 hover:text-red-400"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="flex gap-2">
+          <ElementPicker
+            excludeId={element.id}
+            placeholder="Relier à un Element…"
+            onPick={(target) => addRelationMutation.mutate(target)}
+          />
+          <input
+            value={relationLabel}
+            onChange={(e) => setRelationLabel(e.target.value)}
+            placeholder="Label (optionnel)"
+            className="w-36 rounded border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm outline-none focus:border-yellow-500"
+          />
+        </div>
+      </div>
+
+      <div className="mt-10 border-t border-neutral-800 pt-5">
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
           Référencé par
         </h2>
         {!backlinkElements || backlinkElements.length === 0 ? (
@@ -180,8 +284,8 @@ function ElementEditor({
       </div>
 
       <p className="mt-8 text-xs text-neutral-600">
-        Relations libres, hiérarchie, tags, collections et timeline arrivent
-        aux étapes suivantes du plan de développement.
+        Hiérarchie, tags, collections et timeline arrivent aux étapes
+        suivantes du plan de développement.
       </p>
     </>
   );
