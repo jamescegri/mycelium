@@ -7,6 +7,7 @@ import { linkChild, listAllLinks, parentsOf } from '../lib/links';
 import { usePeek } from './PeekPanel';
 import type { Element } from '../types';
 import { displayName } from '../lib/display';
+import { searchElements } from '../lib/search';
 
 interface CommandPaletteContextValue {
   open: () => void;
@@ -72,10 +73,18 @@ function CommandPaletteOverlay({ onClose }: { onClose: () => void }) {
 
   const all = elements ?? [];
   const trimmed = query.trim().toLowerCase();
+  // La recherche regarde le texte autant que les titres : on se souvient
+  // d'une phrase plus souvent que du nom de la page qui la contient.
   const matches = trimmed
-    ? all.filter((e) => e.name.toLowerCase().includes(trimmed))
-    : all.slice(0, 8);
-  const hasExact = matches.some((e) => e.name.toLowerCase() === trimmed);
+    ? searchElements(all, query)
+    : all.slice(0, 8).map((element) => ({
+        element,
+        inName: true,
+        excerpt: null,
+      }));
+  const hasExact = matches.some(
+    (m) => m.element.name.toLowerCase() === trimmed
+  );
 
   // Créer depuis la palette place le nouvel Element là où c'est le plus
   // probable : en enfant de la page Element courante (si on est sur une
@@ -127,7 +136,7 @@ function CommandPaletteOverlay({ onClose }: { onClose: () => void }) {
           className="w-full border-b border-line bg-transparent px-4 py-3 text-[15px] text-ink outline-none"
         />
         <div className="max-h-80 overflow-y-auto p-1.5">
-          {matches.map((el) => (
+          {matches.map(({ element: el, excerpt }) => (
             <div
               key={el.id}
               className="flex items-center justify-between rounded px-2.5 py-2 hover:bg-surface-3"
@@ -139,11 +148,14 @@ function CommandPaletteOverlay({ onClose }: { onClose: () => void }) {
                 }}
                 className="min-w-0 flex-1 text-left"
               >
-                <div className="truncate text-[16px] text-ink">
+                <div className="truncate text-[15px] text-ink">
                   {displayName(el)}
                 </div>
-                <div className="truncate text-[13.5px] text-ink-4">
-                  {pathOf(el)}
+                {/* Le passage trouvé plutôt que le chemin : quand la
+                    correspondance est dans le texte, c'est lui qui dit si
+                    c'est le bon résultat. */}
+                <div className="truncate text-[12.5px] text-ink-3">
+                  {excerpt ?? pathOf(el)}
                 </div>
               </button>
               <button
@@ -151,8 +163,8 @@ function CommandPaletteOverlay({ onClose }: { onClose: () => void }) {
                   onClose();
                   openPeek(el.id);
                 }}
-                aria-label={`Aperçu de ${el.name}`}
-                className="ml-2 shrink-0 text-ink-4 hover:text-ink"
+                aria-label={`Aperçu de ${displayName(el)}`}
+                className="ml-2 shrink-0 text-ink-3 hover:text-ink"
               >
                 ⇢
               </button>

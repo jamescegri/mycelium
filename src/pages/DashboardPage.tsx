@@ -8,6 +8,7 @@ import { listAllRelations } from '../lib/relations';
 import { listAllElementTags, listAllTags } from '../lib/tags';
 import { usePeek } from '../components/PeekPanel';
 import { displayName, isUntitled } from '../lib/display';
+import { searchElements } from '../lib/search';
 import { TimelineTree } from '../components/TimelineTree';
 import type { Element, ElementLink } from '../types';
 
@@ -63,24 +64,39 @@ export function DashboardPage() {
 // coup d'œil ce qui reste à nommer.
 function ElementRow({
   element,
+  excerpt,
   onNavigate,
 }: {
   element: Element;
+  excerpt?: string | null;
   onNavigate: () => void;
 }) {
   const untitled = isUntitled(element);
   return (
     <button
       onClick={onNavigate}
-      className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left text-[18px] transition hover:bg-surface-2"
+      className="flex w-full items-start gap-3 rounded-lg px-2 py-2 text-left transition hover:bg-surface-2"
     >
       {element.timeline ? (
-        <Clock size={17} strokeWidth={2} className="shrink-0 text-ink-4" />
+        <Clock size={15} strokeWidth={2} className="mt-1 shrink-0 text-ink-4" />
       ) : (
-        <FileText size={17} strokeWidth={2} className="shrink-0 text-ink-4" />
+        <FileText size={15} strokeWidth={2} className="mt-1 shrink-0 text-ink-4" />
       )}
-      <span className={`truncate ${untitled ? 'text-ink-3 italic' : 'text-ink'}`}>
-        {displayName(element)}
+      <span className="min-w-0 flex-1">
+        <span
+          className={`block truncate text-[15.5px] ${
+            untitled ? 'text-ink-3 italic' : 'text-ink'
+          }`}
+        >
+          {displayName(element)}
+        </span>
+        {/* Le passage trouvé : sans lui, un résultat dont le titre ne
+            contient pas le mot cherché paraît arriver là par erreur. */}
+        {excerpt && (
+          <span className="mt-0.5 block truncate text-[12.5px] text-ink-3">
+            {excerpt}
+          </span>
+        )}
       </span>
     </button>
   );
@@ -99,41 +115,45 @@ function ElementsTab({
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return elements;
-    return elements.filter((e) => displayName(e).toLowerCase().includes(q));
-  }, [elements, query]);
+  // La recherche regarde le texte autant que les titres — voir lib/search.
+  const hits = useMemo(
+    () =>
+      query.trim()
+        ? searchElements(elements, query)
+        : elements.map((element) => ({ element, inName: true, excerpt: null })),
+    [elements, query]
+  );
 
   return (
     <div>
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Filtrer…"
-        className="mb-6 w-full border-b border-line bg-transparent pb-2.5 text-[17px] text-ink outline-none transition placeholder:text-ink-4 focus:border-ink"
+        placeholder="Chercher un nom, une phrase…"
+        className="mb-6 w-full border-b border-line bg-transparent pb-2.5 text-[15px] text-ink outline-none transition placeholder:text-ink-4 focus:border-ink"
       />
 
-      {filtered.length === 0 ? (
-        <p className="text-[16px] text-ink-4">
+      {hits.length === 0 ? (
+        <p className="text-[15px] text-ink-3">
           {elements.length === 0
             ? "Rien encore. Écris une première idée depuis l'accueil."
             : 'Aucun Element ne correspond.'}
         </p>
       ) : (
         <div className="space-y-0.5">
-          {filtered.map((el) => {
+          {hits.map(({ element: el, excerpt }) => {
             const parents = parentsOf(links, elements, el.id);
             return (
               <div key={el.id} className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <ElementRow
                     element={el}
+                    excerpt={excerpt}
                     onNavigate={() => navigate(`/elements/${el.id}`)}
                   />
                 </div>
                 {parents.length > 0 && (
-                  <span className="hidden shrink-0 text-[13.5px] text-ink-4 sm:block">
+                  <span className="hidden shrink-0 text-[13px] text-ink-3 sm:block">
                     {displayName(parents[0])}
                     {parents.length > 1 && ` +${parents.length - 1}`}
                   </span>

@@ -17,6 +17,7 @@ import { listTemporalRelations } from '../lib/temporal';
 import { timelineRows } from '../lib/chronology';
 import { extractPlainText } from '../lib/content';
 import { displayName, isUntitled } from '../lib/display';
+import { searchElements } from '../lib/search';
 import { pastelFor } from '../lib/palette';
 import { useCommandPalette } from './CommandPalette';
 import type { Element, ElementLink } from '../types';
@@ -108,7 +109,7 @@ export function NavColumn({ wide = false }: { wide?: boolean }) {
         <input
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          placeholder="Filtrer cette liste…"
+          placeholder="Chercher un nom, une phrase…"
           className="w-full border-b border-line bg-transparent pb-2 text-[13px] text-ink outline-none transition placeholder:text-ink-4 focus:border-ink"
         />
       </div>
@@ -324,10 +325,10 @@ function GroupesPanel({
     queryFn: listAllRelations,
   });
 
-  // Filtrer, c'est chercher dans tout l'univers : on quitte alors
+  // Chercher ou filtrer, c'est interroger tout l'univers : on quitte alors
   // l'arborescence pour une liste de résultats. Garder l'imbrication
   // ferait chercher les réponses dans des dossiers à ouvrir un par un.
-  const searching = isFiltering(filters);
+  const searching = isFiltering(filters) || filter.trim() !== '';
   // Figé à l'ouverture : "récent" ne doit pas se déplacer sous les yeux
   // pendant qu'on lit la liste.
   const [mountedAt] = useState(() => Date.now());
@@ -355,11 +356,16 @@ function GroupesPanel({
   );
 
   const matches = useMemo(() => {
-    const q = filter.trim().toLowerCase();
-    const byName = (e: Element) =>
-      !q || displayName(e).toLowerCase().includes(q);
+    const q = filter.trim();
+    // La recherche textuelle regarde le contenu, pas seulement les titres.
+    const found = q ? searchElements(all, q) : null;
+    const foundIds = found && new Set(found.map((h) => h.element.id));
+    const byName = (e: Element) => !foundIds || foundIds.has(e.id);
+    const excerptOf = new Map(
+      (found ?? []).map((h) => [h.element.id, h.excerpt])
+    );
 
-    if (!searching) return { list: [] as Element[], byName };
+    if (!searching) return { list: [] as Element[], byName, excerptOf };
 
     const linked = new Set<string>();
     for (const r of relations ?? []) {
@@ -387,7 +393,7 @@ function GroupesPanel({
       }
       return true;
     });
-    return { list, byName };
+    return { list, byName, excerptOf };
   }, [
     all,
     filter,
@@ -493,6 +499,7 @@ function GroupesPanel({
             <ExplorerRow
               key={`${row.element.id}-${i}`}
               row={row}
+              excerpt={matches.excerptOf.get(row.element.id) ?? null}
               expanded={expanded.has(row.element.id)}
               active={location.pathname === `/elements/${row.element.id}`}
               onToggle={() => toggle(row.element.id)}
@@ -531,12 +538,14 @@ function GroupesPanel({
 // rien. Un Groupe se déplie au clic et s'ouvre au double clic.
 function ExplorerRow({
   row,
+  excerpt,
   expanded,
   active,
   onToggle,
   onOpen,
 }: {
   row: TreeRow;
+  excerpt: string | null;
   expanded: boolean;
   active: boolean;
   onToggle: () => void;
@@ -548,7 +557,7 @@ function ExplorerRow({
   return (
     <div
       style={{ paddingLeft: row.depth * 18 }}
-      className={`flex items-center gap-1 rounded-lg pr-2 transition ${
+      className={`flex items-start gap-1 rounded-lg pr-2 transition ${
         active ? 'bg-surface-3' : 'hover:bg-surface-2'
       }`}
     >
@@ -573,25 +582,34 @@ function ExplorerRow({
         onClick={isGroup ? onToggle : onOpen}
         onDoubleClick={onOpen}
         title={isGroup ? 'Double-clic pour ouvrir' : undefined}
-        className="flex min-w-0 flex-1 items-center gap-2 py-1.5 text-left"
+        className="flex min-w-0 flex-1 items-start gap-2 py-1.5 text-left"
       >
         <span
-          className="size-2.5 shrink-0 rounded-[3px]"
+          className="mt-[5px] size-2.5 shrink-0 rounded-[3px]"
           style={
             isGroup
               ? { backgroundColor: tone.bg }
               : { boxShadow: `inset 0 0 0 2px ${tone.bg}` }
           }
         />
-        <span
-          className={`truncate text-[13.5px] ${
-            active ? 'font-semibold' : isGroup ? 'font-medium' : ''
-          } ${isUntitled(row.element) ? 'text-ink-3 italic' : ''}`}
-        >
-          {displayName(row.element)}
+        <span className="min-w-0 flex-1">
+          <span
+            className={`block truncate text-[13.5px] ${
+              active ? 'font-semibold' : isGroup ? 'font-medium' : ''
+            } ${isUntitled(row.element) ? 'text-ink-3 italic' : ''}`}
+          >
+            {displayName(row.element)}
+          </span>
+          {/* Le passage trouvé : sans lui, un résultat dont le titre ne
+              contient pas le mot cherché paraît arriver là par erreur. */}
+          {excerpt && (
+            <span className="mt-0.5 block truncate text-[12px] text-ink-3">
+              {excerpt}
+            </span>
+          )}
         </span>
         {isGroup && (
-          <span className="ml-auto shrink-0 text-[12px] tabular-nums text-ink-4">
+          <span className="mt-0.5 shrink-0 text-[12px] tabular-nums text-ink-4">
             {row.items.length}
           </span>
         )}
