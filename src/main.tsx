@@ -1,48 +1,42 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
-import {
-  MutationCache,
-  QueryCache,
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query'
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import './index.css'
 import App from './App.tsx'
 import { AuthProvider } from './lib/auth'
-import { reportError } from './lib/errors'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { createQueryClient, persister } from './lib/offline'
 
-// Toute requête ou écriture qui échoue remonte ici. Sans ça, une table
-// manquante ou un refus RLS donnait exactement le même écran qu'un dossier
-// vide, et on cherchait l'erreur de son côté.
-const queryClient = new QueryClient({
-  queryCache: new QueryCache({ onError: reportError }),
-  mutationCache: new MutationCache({ onError: reportError }),
-  defaultOptions: {
-    queries: {
-      // Par défaut React Query réessaie trois fois avec un délai croissant :
-      // une table absente ou un refus RLS mettrait sept secondes à
-      // s'afficher. Ces erreurs-là ne se réparent pas en réessayant, on les
-      // montre tout de suite. Seules les pannes réseau valent un second essai.
-      retry: (failureCount, error) => {
-        const code = (error as { code?: unknown } | null)?.code;
-        if (typeof code === 'string' && code) return false;
-        return failureCount < 1;
-      },
-    },
-  },
-});
+// Le cache est recopié dans IndexedDB : l'app rouvre sur ses données même
+// sans réseau. Et les écritures faites hors ligne, mises en attente par
+// React Query, sont reprises ici dès que la connexion revient — y compris
+// celles d'une session précédente, puisqu'elles ont été persistées avec le
+// reste. Voir lib/offline.
+const queryClient = createQueryClient();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
       <BrowserRouter>
-        <QueryClientProvider client={queryClient}>
+        <PersistQueryClientProvider
+          client={queryClient}
+          persistOptions={{
+            persister,
+            maxAge: 1000 * 60 * 60 * 24 * 14,
+            // Un changement de version invalide le cache : mieux vaut
+            // repartir du serveur que réhydrater des données dans un
+            // format que le code ne comprend plus.
+            buster: 'v1',
+          }}
+          onSuccess={() => {
+            void queryClient.resumePausedMutations();
+          }}
+        >
           <AuthProvider>
             <App />
           </AuthProvider>
-        </QueryClientProvider>
+        </PersistQueryClientProvider>
       </BrowserRouter>
     </ErrorBoundary>
   </StrictMode>,

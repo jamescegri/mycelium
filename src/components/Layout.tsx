@@ -13,6 +13,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
+import { clearOfflineCache } from '../lib/offline';
 import { useCommandPalette } from './CommandPalette';
 import { NavColumn } from './NavColumn';
 import { Logo } from './Logo';
@@ -102,7 +103,15 @@ export function Layout() {
             active={location.pathname.startsWith('/trash')}
             onClick={() => navigate('/trash')}
           />
-          <RailButton icon={LogOut} label="Sortir" onClick={() => signOut()} />
+          <RailButton
+            icon={LogOut}
+            label="Sortir"
+            onClick={() => {
+              // Le cache local part avec la session : il contient le texte
+              // des Elements en clair.
+              void clearOfflineCache().then(() => signOut());
+            }}
+          />
         </div>
       </nav>
 

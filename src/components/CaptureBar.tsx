@@ -3,7 +3,8 @@ import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Clock, PenLine, Plus } from 'lucide-react';
-import { createElement } from '../lib/elements';
+import { MUTATION, type CreateElementInput } from '../lib/offline';
+import type { Element } from '../types';
 
 // Ce qu'on tape ici devient le TEXTE de l'Element, pas son titre : une idée
 // arrive rarement déjà nommée. L'Element s'ouvre donc sans titre, curseur
@@ -20,23 +21,34 @@ export function CaptureBar() {
   const queryClient = useQueryClient();
   const [text, setText] = useState('');
 
-  const createMutation = useMutation({
-    mutationFn: (input: { text: string; timeline: boolean }) =>
-      createElement({
-        name: '',
-        content: input.text ? paragraphDoc(input.text) : null,
-        timeline: input.timeline,
-      }),
+  // La mutation est nommée plutôt que définie ici : c'est ce qui lui
+  // permet d'être reprise après un rechargement, quand cet écran n'existe
+  // plus — une note écrite dans le métro doit partir même si l'app a été
+  // fermée entre-temps. Sa fonction vit dans lib/offline.
+  const createMutation = useMutation<Element, Error, CreateElementInput>({
+    mutationKey: MUTATION.createElement,
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['elements'] });
-      setText('');
       navigate(`/elements/${created.id}`, { state: { isNew: true } });
     },
   });
 
+  function capture(input: { text: string; timeline: boolean }) {
+    // Le champ se vide tout de suite, sans attendre le serveur : hors
+    // ligne la mutation est mise en attente et `onSuccess` ne viendra que
+    // bien plus tard. Garder le texte à l'écran ferait croire qu'il n'a
+    // pas été pris.
+    setText('');
+    createMutation.mutate({
+      name: '',
+      content: input.text ? paragraphDoc(input.text) : null,
+      timeline: input.timeline,
+    });
+  }
+
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (text.trim()) createMutation.mutate({ text: text.trim(), timeline: false });
+    if (text.trim()) capture({ text: text.trim(), timeline: false });
   }
 
   return (
@@ -64,7 +76,7 @@ export function CaptureBar() {
       <div className="mt-2 flex flex-wrap gap-1">
         <button
           onClick={() =>
-            createMutation.mutate({ text: text.trim(), timeline: false })
+            capture({ text: text.trim(), timeline: false })
           }
           disabled={createMutation.isPending}
           className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13.5px] text-ink-2 transition hover:bg-surface-2 hover:text-ink disabled:opacity-50"
@@ -74,7 +86,7 @@ export function CaptureBar() {
         </button>
         <button
           onClick={() =>
-            createMutation.mutate({ text: text.trim(), timeline: true })
+            capture({ text: text.trim(), timeline: true })
           }
           disabled={createMutation.isPending}
           className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13.5px] text-ink-2 transition hover:bg-surface-2 hover:text-ink disabled:opacity-50"

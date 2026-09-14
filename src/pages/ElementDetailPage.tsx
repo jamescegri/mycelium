@@ -2,10 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, Trash2 } from 'lucide-react';
-import { getElement, listElements, softDeleteElement, updateElement } from '../lib/elements';
+import { getElement, listElements, softDeleteElement } from '../lib/elements';
+import { MUTATION, type SaveElementInput } from '../lib/offline';
 import { hasChildren, listAllLinks, parentsOf } from '../lib/links';
-import { syncMentionRelations } from '../lib/relations';
-import { extractMentionIds, toEditorContent } from '../lib/content';
+import { toEditorContent } from '../lib/content';
 import { pastelFor } from '../lib/palette';
 import { displayName } from '../lib/display';
 import type { Element } from '../types';
@@ -106,19 +106,11 @@ function ElementEditor({
     latestRef.current = { name, content };
   }, [name, content]);
 
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const current = latestRef.current;
-      const saved = await updateElement(element.id, {
-        name: current.name,
-        content: current.content,
-      });
-      await syncMentionRelations(
-        element.id,
-        extractMentionIds(current.content)
-      );
-      return saved;
-    },
+  // Mutation nommée : hors ligne elle est mise en attente, survit à la
+  // fermeture de l'app et repart au retour du réseau. Sa fonction vit dans
+  // lib/offline, pour qu'elle reste rejouable quand cette page a disparu.
+  const saveMutation = useMutation<Element, Error, SaveElementInput>({
+    mutationKey: MUTATION.saveElement,
     onSuccess: () => {
       dirtyRef.current = false;
       queryClient.invalidateQueries({ queryKey: ['elements'] });
@@ -126,14 +118,26 @@ function ElementEditor({
     },
   });
 
+  // Le texte est lu au moment de l'envoi, jamais capturé à la création de
+  // la mutation : un enregistrement déclenché depuis un timeout ou depuis
+  // le démontage écrirait sinon une version périmée.
+  const save = () => {
+    const current = latestRef.current;
+    saveMutation.mutate({
+      id: element.id,
+      name: current.name,
+      content: current.content,
+    });
+  };
+
   // Enregistrement automatique. Écrire puis cliquer sur une mention faisait
   // perdre le texte : il n'existait qu'un seul chemin de sauvegarde, le
   // bouton. Deux filets désormais — une pause de 800 ms dans la frappe, et
   // le démontage de la page (navigation vers un autre Element comprise).
   const dirtyRef = useRef(false);
-  const saveRef = useRef(saveMutation.mutate);
+  const saveRef = useRef(save);
   useEffect(() => {
-    saveRef.current = saveMutation.mutate;
+    saveRef.current = save;
   });
 
   const isFirstRender = useRef(true);

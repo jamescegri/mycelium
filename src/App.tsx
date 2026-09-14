@@ -10,6 +10,7 @@ import { HomeView } from './components/HomeView';
 import { PeekProvider } from './components/PeekPanel';
 import { CommandPaletteProvider } from './components/CommandPalette';
 import { Toaster } from './components/Toaster';
+import { SyncStatus } from './components/SyncStatus';
 
 function RequireAuth({ children }: { children: React.ReactElement }) {
   const { session, loading } = useAuth();
@@ -78,6 +79,7 @@ export default function App() {
   return (
     <PeekProvider>
       <CommandPaletteProvider>{routes}</CommandPaletteProvider>
+      <SyncStatus />
       <Toaster />
     </PeekProvider>
   );
