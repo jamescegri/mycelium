@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, FolderClosed, Plus, Search } from 'lucide-react';
+import { ArrowRight, FolderClosed } from 'lucide-react';
 import { createElement, listElements } from '../lib/elements';
 import {
   childrenOf,
@@ -17,7 +17,7 @@ import { extractPlainText } from '../lib/content';
 import { pastelFor } from '../lib/palette';
 import { Layout } from '../components/Layout';
 import { Pill } from '../components/Pill';
-import { useCommandPalette } from '../components/CommandPalette';
+import { Callout } from '../components/Callout';
 import type { Element, ElementLink } from '../types';
 
 type Tab = 'groupes' | 'temporal' | 'connexions';
@@ -73,12 +73,12 @@ export function DashboardPage() {
   );
 }
 
-// Écrire, chercher, ou créer un nouvel Element : le point d'entrée
-// principal, toujours en haut, avant même les vues.
+// Écrire un nom et créer directement : Rechercher et +Nouvel Element vivent
+// maintenant dans la sidebar, toujours visibles — pas besoin de les
+// dupliquer ici.
 function CaptureBar() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { open: openPalette } = useCommandPalette();
   const [name, setName] = useState('');
 
   const createMutation = useMutation({
@@ -96,29 +96,13 @@ function CaptureBar() {
   }
 
   return (
-    <form className="mb-10 flex items-center gap-6 text-sm" onSubmit={handleSubmit}>
+    <form className="mb-10" onSubmit={handleSubmit}>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Écrire quelque chose…"
-        className="flex-1 border-b border-neutral-200 bg-transparent py-2.5 text-xl text-neutral-900 outline-none focus:border-neutral-400"
+        placeholder="Écrire quelque chose… (Entrée pour créer)"
+        className="w-full border-b border-neutral-200 bg-transparent py-2.5 text-xl text-neutral-900 outline-none focus:border-neutral-400"
       />
-      <button
-        type="button"
-        onClick={openPalette}
-        className="flex shrink-0 items-center gap-1.5 text-neutral-500 hover:text-neutral-700"
-      >
-        <Search size={16} strokeWidth={1.75} />
-        Rechercher <span className="text-neutral-300">⌘K</span>
-      </button>
-      <button
-        type="submit"
-        disabled={!name.trim() || createMutation.isPending}
-        className="flex shrink-0 items-center gap-1.5 text-neutral-500 hover:text-neutral-700 disabled:opacity-40"
-      >
-        <Plus size={16} strokeWidth={1.75} />
-        Nouvel Element
-      </button>
     </form>
   );
 }
@@ -139,14 +123,11 @@ function GroupesTab({
     <div>
       <div className="mb-8">
         {groups.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-10 text-center">
-            <FolderClosed className="text-neutral-300" size={28} strokeWidth={1.5} />
-            <p className="text-sm text-neutral-400">
-              Pas encore de Groupe — rattache un enfant à un Element (bouton
-              "+ Nouvelle sous-page" ou "+" dans l'éditeur) pour qu'il en
-              devienne un.
-            </p>
-          </div>
+          <Callout icon={FolderClosed} tone="yellow">
+            Pas encore de Groupe — rattache un enfant à un Element (bouton "+
+            Nouvelle sous-page" ou "+" dans l'éditeur) pour qu'il en devienne
+            un.
+          </Callout>
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {groups.map((group) => (
@@ -287,11 +268,11 @@ function TemporalTab() {
 
   if (ordered.length === 0) {
     return (
-      <p className="text-sm text-neutral-500">
+      <Callout>
         Aucune position temporelle définie pour l'instant. Depuis un
         Element, section "Connexions", relie-le "avant" ou "après" un autre
         pour le faire apparaître ici.
-      </p>
+      </Callout>
     );
   }
 

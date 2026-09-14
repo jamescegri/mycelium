@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Trash2 } from 'lucide-react';
-import { getElement, softDeleteElement, updateElement } from '../lib/elements';
+import { ChevronRight, Trash2 } from 'lucide-react';
+import { getElement, listElements, softDeleteElement, updateElement } from '../lib/elements';
+import { listAllLinks, parentsOf } from '../lib/links';
 import { syncMentionRelations } from '../lib/relations';
 import { extractMentionIds, toEditorContent } from '../lib/content';
 import { FAMILY_COLOR } from '../lib/family';
@@ -114,26 +115,64 @@ function ElementEditor({
 
   const avatarColors = pastelFor(element.id);
 
+  const { data: allElements } = useQuery({
+    queryKey: ['elements'],
+    queryFn: listElements,
+  });
+  const { data: allLinks } = useQuery({
+    queryKey: ['links'],
+    queryFn: listAllLinks,
+  });
+  const navigate = useNavigate();
+  const parents =
+    allElements && allLinks ? parentsOf(allLinks, allElements, element.id) : [];
+
   return (
     <>
-      <div className="flex items-center gap-3">
-        <span
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg font-semibold"
-          style={{ backgroundColor: avatarColors.bg, color: avatarColors.text }}
+      <nav className="mb-6 flex items-center gap-1 text-sm text-neutral-400">
+        <button
+          onClick={() => navigate('/dashboard')}
+          className="hover:text-neutral-600"
         >
-          {(name || '?').charAt(0).toUpperCase()}
+          Dashboard
+        </button>
+        {parents[0] && (
+          <>
+            <ChevronRight size={14} strokeWidth={1.75} />
+            <button
+              onClick={() => navigate(`/elements/${parents[0].id}`)}
+              className="max-w-[200px] truncate hover:text-neutral-600"
+            >
+              {parents[0].name || 'Sans titre'}
+            </button>
+          </>
+        )}
+        {parents.length > 1 && (
+          <span className="text-xs text-neutral-300">+{parents.length - 1}</span>
+        )}
+        <ChevronRight size={14} strokeWidth={1.75} />
+        <span className="max-w-[200px] truncate text-neutral-600">
+          {name || 'Sans titre'}
         </span>
-        <input
-          ref={nameInputRef}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Sans titre"
-          className="w-full bg-transparent text-4xl font-semibold tracking-tight text-neutral-900 outline-none placeholder:text-neutral-300"
-        />
-      </div>
+      </nav>
+
+      <span
+        className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl text-2xl font-semibold"
+        style={{ backgroundColor: avatarColors.bg, color: avatarColors.text }}
+      >
+        {(name || '?').charAt(0).toUpperCase()}
+      </span>
+
+      <input
+        ref={nameInputRef}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Sans titre"
+        className="w-full bg-transparent text-5xl font-semibold tracking-tight text-neutral-900 outline-none placeholder:text-neutral-300"
+      />
 
       <div
-        className="mb-8 ml-14 mt-2 text-sm font-medium tracking-wide"
+        className="mb-8 mt-2 text-sm font-medium tracking-wide"
         style={{ color: FAMILY_COLOR[element.family] }}
       >
         {element.family}
