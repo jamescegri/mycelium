@@ -1,0 +1,15 @@
+{
+  // Mycelium est une SPA : Vite produit un dossier de fichiers statiques,
+  // il n'y a pas de code serveur. Wrangler sert donc `dist` tel quel, sans
+  // script Worker — d'où `assets` seul, sans `main`.
+  "name": "mycelium",
+  "compatibility_date": "2026-09-11",
+  "assets": {
+    "directory": "./dist",
+    // Le routage vit dans le navigateur (react-router). Sans ça, ouvrir
+    // directement /dashboard ou /elements/<id> — un lien partagé, un
+    // rafraîchissement — chercherait un fichier de ce nom et renverrait
+    // 404. On rend index.html à la place et l'app prend le relais.
+    "not_found_handling": "single-page-application"
+  }
+}
