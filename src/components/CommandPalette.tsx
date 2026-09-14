@@ -7,7 +7,7 @@ import { linkChild, listAllLinks, parentsOf } from '../lib/links';
 import { usePeek } from './PeekPanel';
 import type { Element } from '../types';
 import { displayName } from '../lib/display';
-import { searchElements } from '../lib/search';
+import { searchFullText } from '../lib/search';
 
 interface CommandPaletteContextValue {
   open: () => void;
@@ -76,7 +76,7 @@ function CommandPaletteOverlay({ onClose }: { onClose: () => void }) {
   // La recherche regarde le texte autant que les titres : on se souvient
   // d'une phrase plus souvent que du nom de la page qui la contient.
   const matches = trimmed
-    ? searchElements(all, query)
+    ? searchFullText(all, query)
     : all.slice(0, 8).map((element) => ({
         element,
         inName: true,

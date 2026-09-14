@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Extension } from '@tiptap/core';
 import { PluginKey } from '@tiptap/pm/state';
@@ -6,6 +6,8 @@ import { EditorContent, ReactRenderer, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Mention from '@tiptap/extension-mention';
+import Image from '@tiptap/extension-image';
+import { ImagePlus } from 'lucide-react';
 import Suggestion from '@tiptap/suggestion';
 import type { SuggestionOptions } from '@tiptap/suggestion';
 import tippy from 'tippy.js';
@@ -18,6 +20,8 @@ import { MentionList } from './MentionList';
 import type { MentionItem, MentionListHandle, TriggerChar } from './MentionList';
 import { createElement, listElements, searchElements } from '../lib/elements';
 import { linkChild, listAllLinks, wouldCreateCycle } from '../lib/links';
+import { isUploadableImage, uploadImage } from '../lib/images';
+import { reportError } from '../lib/errors';
 import { usePeek } from './PeekPanel';
 import type { Element, ElementLink } from '../types';
 
@@ -151,6 +155,8 @@ function createStructuralTrigger(
 export function Editor({ elementId, content, onChange }: EditorProps) {
   const { openPeek } = usePeek();
   const queryClient = useQueryClient();
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const onChangeRef = useRef(onChange);
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -202,6 +208,11 @@ export function Editor({ elementId, content, onChange }: EditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit,
+      // Les images sont envoyées au stockage et n'entrent dans le document
+      // que par leur URL — voir lib/images.
+      Image.configure({
+        HTMLAttributes: { class: 'element-image' },
+      }),
       Placeholder.configure({
         placeholder:
           'Écris librement… "/" pour lier, "@" pour un parent, "+" pour un enfant',
@@ -257,7 +268,7 @@ export function Editor({ elementId, content, onChange }: EditorProps) {
     editorProps: {
       attributes: {
         class:
-          'prose-mycelium min-h-[260px] text-[20px] leading-[1.65] text-ink outline-none',
+          'prose-mycelium min-h-[260px] text-[17px] leading-[1.65] text-ink outline-none',
       },
       handleClickOn: (_view, _pos, node) => {
         if (node.type.name === 'mention' && node.attrs.id) {
@@ -266,11 +277,88 @@ export function Editor({ elementId, content, onChange }: EditorProps) {
         }
         return false;
       },
+      // Déposer une image dans le texte, ou la coller depuis le presse-
+      // papier : c'est le geste qu'on fait naturellement, bien avant de
+      // chercher un bouton.
+      handleDrop: (_view, event) => {
+        const files = [...(event.dataTransfer?.files ?? [])];
+        const images = files.filter(isUploadableImage);
+        if (images.length === 0) return false;
+        event.preventDefault();
+        void insertImages(images);
+        return true;
+      },
+      handlePaste: (_view, event) => {
+        const files = [...(event.clipboardData?.files ?? [])];
+        const images = files.filter(isUploadableImage);
+        if (images.length === 0) return false;
+        event.preventDefault();
+        void insertImages(images);
+        return true;
+      },
     },
     onUpdate: ({ editor: tiptapEditor }) => {
       onChangeRef.current(tiptapEditor.getJSON());
     },
   });
 
-  return <EditorContent editor={editor} />;
+  // Les envois se suivent plutôt que de partir ensemble : à cinq planches
+  // lâchées d'un coup, les lancer en parallèle sature la connexion et les
+  // images arrivent dans le désordre.
+  async function insertImages(files: File[]) {
+    setUploading(true);
+    try {
+      for (const file of files) {
+        const src = await uploadImage(file);
+        editorRef.current
+          ?.chain()
+          .focus()
+          .setImage({ src, alt: file.name })
+          .run();
+      }
+    } catch (error) {
+      reportError(error);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  // `handleDrop` et `handlePaste` sont figés à la création de l'éditeur :
+  // sans cette référence, ils appelleraient toujours la première instance.
+  const editorRef = useRef(editor);
+  useEffect(() => {
+    editorRef.current = editor;
+  }, [editor]);
+
+  return (
+    <div>
+      <EditorContent editor={editor} />
+
+      <div className="mt-3 flex items-center gap-3 border-t border-line-soft pt-3">
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-[13px] text-ink-3 transition hover:bg-surface-2 hover:text-ink disabled:opacity-50"
+        >
+          <ImagePlus size={14} strokeWidth={2} />
+          {uploading ? 'Envoi…' : 'Ajouter une image'}
+        </button>
+        <span className="text-[12.5px] text-ink-4">
+          ou dépose-la dans le texte
+        </span>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          hidden
+          onChange={(e) => {
+            const files = [...(e.target.files ?? [])].filter(isUploadableImage);
+            if (files.length > 0) void insertImages(files);
+            e.target.value = '';
+          }}
+        />
+      </div>
+    </div>
+  );
 }

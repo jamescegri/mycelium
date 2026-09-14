@@ -17,7 +17,7 @@ import { listTemporalRelations } from '../lib/temporal';
 import { timelineRows } from '../lib/chronology';
 import { extractPlainText } from '../lib/content';
 import { displayName, isUntitled } from '../lib/display';
-import { searchElements } from '../lib/search';
+import { searchFullText } from '../lib/search';
 import { pastelFor } from '../lib/palette';
 import { useCommandPalette } from './CommandPalette';
 import type { Element, ElementLink } from '../types';
@@ -358,7 +358,7 @@ function GroupesPanel({
   const matches = useMemo(() => {
     const q = filter.trim();
     // La recherche textuelle regarde le contenu, pas seulement les titres.
-    const found = q ? searchElements(all, q) : null;
+    const found = q ? searchFullText(all, q) : null;
     const foundIds = found && new Set(found.map((h) => h.element.id));
     const byName = (e: Element) => !foundIds || foundIds.has(e.id);
     const excerptOf = new Map(

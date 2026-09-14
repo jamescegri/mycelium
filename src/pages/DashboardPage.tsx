@@ -8,7 +8,7 @@ import { listAllRelations } from '../lib/relations';
 import { listAllElementTags, listAllTags } from '../lib/tags';
 import { usePeek } from '../components/PeekPanel';
 import { displayName, isUntitled } from '../lib/display';
-import { searchElements } from '../lib/search';
+import { searchFullText } from '../lib/search';
 import { TimelineTree } from '../components/TimelineTree';
 import type { Element, ElementLink } from '../types';
 
@@ -119,7 +119,7 @@ function ElementsTab({
   const hits = useMemo(
     () =>
       query.trim()
-        ? searchElements(elements, query)
+        ? searchFullText(elements, query)
         : elements.map((element) => ({ element, inName: true, excerpt: null })),
     [elements, query]
   );

@@ -189,3 +189,38 @@ drop policy if exists "own element_links" on element_links;
 create policy "own element_links" on element_links for all
   using (exists (select 1 from elements e where e.id = parent_id and e.user_id = auth.uid()))
   with check (exists (select 1 from elements e where e.id = parent_id and e.user_id = auth.uid()));
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Images
+--
+-- Elles vivent dans le stockage, pas dans le contenu des Elements :
+-- encoder un character design de 4 Mo dans la colonne jsonb ferait
+-- rapatrier l'image entière à chaque chargement, même pour afficher une
+-- liste de titres.
+--
+-- Le bucket est public en lecture — une URL d'image doit pouvoir être
+-- affichée par la balise <img> sans jeton — mais on n'écrit que dans son
+-- propre dossier, dont le nom est l'identifiant de l'auteur.
+-- ─────────────────────────────────────────────────────────────────────
+
+insert into storage.buckets (id, name, public)
+values ('images', 'images', true)
+on conflict (id) do nothing;
+
+drop policy if exists "images readable" on storage.objects;
+create policy "images readable" on storage.objects for select
+  using (bucket_id = 'images');
+
+drop policy if exists "own images insert" on storage.objects;
+create policy "own images insert" on storage.objects for insert
+  with check (
+    bucket_id = 'images'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "own images delete" on storage.objects;
+create policy "own images delete" on storage.objects for delete
+  using (
+    bucket_id = 'images'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );

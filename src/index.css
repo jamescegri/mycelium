@@ -160,6 +160,23 @@ select:focus-visible,
   color: var(--color-ink-4);
 }
 
+/* Une image posée dans le texte : coins adoucis comme les panneaux, et
+   jamais plus large que la colonne. `height: auto` avec la largeur permet
+   au navigateur de réserver la place avant le chargement, pour que le
+   texte ne saute pas sous les yeux pendant qu'on lit. */
+.element-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  margin: 1.1em 0;
+  display: block;
+}
+
+.element-image.ProseMirror-selectednode {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
 /* Une mention reste du texte courant — surlignée, pas encapsulée dans
    un widget. Le fond fluo la rend repérable en diagonale sans casser la
    ligne de base ni l'interligne du paragraphe. */

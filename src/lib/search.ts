@@ -52,7 +52,7 @@ function excerptAround(text: string, at: number, length: number): string {
   );
 }
 
-export function searchElements(
+export function searchFullText(
   elements: Element[],
   query: string
 ): SearchHit[] {
