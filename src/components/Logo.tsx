@@ -4,12 +4,15 @@
 //
 // `currentColor` plutôt qu'un noir écrit en dur, pour qu'il suive la
 // couleur du texte là où il est posé — sur fond sombre comme sur fond clair.
-export function Logo({ size = 22 }: { size?: number }) {
+// Le viewBox est resserré sur le tracé : le fichier d'origine laissait une
+// large marge vide autour, qui faisait paraître la marque deux fois plus
+// petite que la place qu'elle occupait.
+export function Logo({ size = 30 }: { size?: number }) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 715 701"
+      viewBox="105 100 530 492"
       fill="none"
       aria-hidden="true"
     >

@@ -9,6 +9,7 @@ import { listAllElementTags, listAllTags } from '../lib/tags';
 import { usePeek } from '../components/PeekPanel';
 import { displayName, isUntitled } from '../lib/display';
 import { Layout } from '../components/Layout';
+import { NavColumn } from '../components/NavColumn';
 import { TimelineTree } from '../components/TimelineTree';
 import type { Element, ElementLink } from '../types';
 
@@ -31,10 +32,16 @@ export function DashboardPage() {
     queryFn: listAllLinks,
   });
 
-  // Sur l'accueil, il n'y a rien à lire à droite : on explore. Rendre
-  // `null` fait tomber la troisième colonne et laisse l'explorateur
-  // prendre toute la place — voir Layout.
-  if (path === '/dashboard') return <Layout>{null}</Layout>;
+  // L'accueil EST l'explorateur : il occupe la fenêtre principale, sans
+  // titre ni chapeau au-dessus — on vient y chercher quelque chose, pas
+  // lire une présentation.
+  if (path === '/dashboard') {
+    return (
+      <Layout>
+        <NavColumn wide />
+      </Layout>
+    );
+  }
 
   const title =
     path === '/liste' ? 'Tous les Elements'
@@ -50,16 +57,18 @@ export function DashboardPage() {
 
   return (
     <Layout>
-      <h1 className="title-display mb-2 text-[44px] text-ink">{title}</h1>
-      <p className="mb-9 max-w-[62ch] text-[17px] text-ink-3">{sub}</p>
+      <div className="mx-auto max-w-[56rem] px-6 py-10 sm:px-10">
+        <h1 className="title-display mb-2 text-[40px] text-ink">{title}</h1>
+        <p className="mb-8 max-w-[62ch] text-[16.5px] text-ink-3">{sub}</p>
 
-      {path === '/liste' && (
-        <ElementsTab elements={elements ?? []} links={links ?? []} />
-      )}
-      {path === '/temporel' && <TimelineTree />}
-      {path === '/connexions' && (
-        <ConnexionsTab elements={elements ?? []} links={links ?? []} />
-      )}
+        {path === '/liste' && (
+          <ElementsTab elements={elements ?? []} links={links ?? []} />
+        )}
+        {path === '/temporel' && <TimelineTree />}
+        {path === '/connexions' && (
+          <ConnexionsTab elements={elements ?? []} links={links ?? []} />
+        )}
+      </div>
     </Layout>
   );
 }

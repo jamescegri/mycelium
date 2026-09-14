@@ -37,7 +37,10 @@ export function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { open: openPalette } = useCommandPalette();
 
-  const reading = children !== null;
+  // Un seul critère, et il est visible dans l'adresse : on lit un Element,
+  // ou on explore. Toutes les vues — groupes, liste, chronologie, tags,
+  // liens — sont de l'exploration et occupent donc la fenêtre principale.
+  const reading = location.pathname.startsWith('/elements/');
 
   return (
     <div className="flex h-screen gap-2.5 bg-surface-2 p-2.5 text-ink">
@@ -48,9 +51,9 @@ export function Layout({ children }: { children: ReactNode }) {
         <button
           onClick={() => navigate('/dashboard')}
           aria-label="Mycelium — accueil"
-          className="flex size-9 items-center justify-center text-ink"
+          className="flex size-11 items-center justify-center text-ink"
         >
-          <Logo size={24} />
+          <Logo size={34} />
         </button>
 
         {/* Les destinations sont groupées au centre : au repos l'œil s'y
@@ -79,20 +82,23 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       </nav>
 
-      <div
-        className={`flex min-h-0 overflow-hidden rounded-2xl bg-surface ${
-          reading ? 'w-[300px] shrink-0 max-lg:hidden' : 'flex-1'
-        }`}
-      >
-        <NavColumn wide={!reading} />
-      </div>
-
-      {reading && (
-        <main className="animate-panel-in min-w-0 flex-1 overflow-y-auto rounded-2xl bg-surface">
-          <div className="mx-auto max-w-[52rem] px-6 py-12 sm:px-12">
-            {children}
+      {reading ? (
+        <>
+          {/* La navigation se resserre mais reste là : on continue de
+              parcourir pendant qu'on lit, sans repasser par un écran. */}
+          <div className="flex min-h-0 w-[300px] shrink-0 overflow-hidden rounded-2xl bg-surface max-lg:hidden">
+            <NavColumn />
           </div>
-        </main>
+          <main className="animate-panel-in min-w-0 flex-1 overflow-y-auto rounded-2xl bg-surface">
+            <div className="mx-auto max-w-[52rem] px-6 py-12 sm:px-12">
+              {children}
+            </div>
+          </main>
+        </>
+      ) : (
+        <div className="min-w-0 flex-1 overflow-y-auto rounded-2xl bg-surface">
+          {children}
+        </div>
       )}
     </div>
   );

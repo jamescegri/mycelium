@@ -3,7 +3,7 @@ import {
   deleteTemporalRelation,
 } from './temporal';
 import { updateElement } from './elements';
-import { childrenOf, parentsOf } from './links';
+import { childrenOf, getAncestorIds } from './links';
 import type { Element, ElementLink, TemporalRelation } from '../types';
 
 // La chronologie est une chaîne : chaque Element placé est relié à ses
@@ -187,15 +187,16 @@ export interface TimelineRow {
   childCount: number;
 }
 
-// Les Elements temporels qui n'ont aucun parent temporel : les grandes
-// entrées du récit (les arcs). Une scène rangée dans un Groupe non temporel
-// ("Brouillons") compte aussi comme racine — c'est bien ce qu'on veut, elle
-// flotte en attendant d'être rangée dans un chapitre.
+// Les grandes entrées du récit : les Elements chronologiques qu'aucun autre
+// ne contient déjà. On regarde toute la lignée, pas seulement le parent
+// direct — sinon un arc contenant un groupe ordinaire qui contient un
+// chapitre ferait réapparaître ce chapitre en tête, alors qu'il est déjà
+// visible à sa place.
 function timelineRoots(elements: Element[], links: ElementLink[]): Element[] {
   const inTimeline = elements.filter((e) => e.timeline);
   const temporal = new Set(inTimeline.map((e) => e.id));
   return inTimeline.filter(
-    (e) => !parentsOf(links, elements, e.id).some((p) => temporal.has(p.id))
+    (e) => ![...getAncestorIds(links, e.id)].some((id) => temporal.has(id))
   );
 }
 
@@ -221,9 +222,11 @@ export function timelineRows(
     index: number,
     trail: Set<string>
   ) {
-    const children = childrenOf(links, elements, element.id).filter(
-      (c) => c.timeline
-    );
+    // Appartenir à la chronologie s'hérite : ce qu'un Element chronologique
+    // contient en fait partie, sans avoir à le marquer un par un. C'est ce
+    // qui permet de bâtir son récit dans l'explorateur, puis de faire
+    // entrer l'arc entier d'un seul geste.
+    const children = childrenOf(links, elements, element.id);
     rows.push({ element, depth, parentId, index, childCount: children.length });
     if (trail.has(element.id)) return;
     const deeper = new Set(trail).add(element.id);
