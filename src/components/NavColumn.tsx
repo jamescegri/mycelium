@@ -235,9 +235,13 @@ function FilterBar({
                 onClick={() => toggleTag(tag.id)}
                 aria-pressed={on}
                 className={`rounded-full px-2.5 py-1 text-[13px] font-medium transition ${
-                  on ? 'shadow-[0_0_0_1.5px_var(--color-ink)]' : 'opacity-70 hover:opacity-100'
+                  on ? '' : 'opacity-70 hover:opacity-100'
                 }`}
-                style={{ backgroundColor: tone.bg, color: tone.text }}
+                style={{
+                  backgroundColor: tone.bg,
+                  color: tone.text,
+                  boxShadow: on ? `0 0 0 2px ${tone.ring}` : undefined,
+                }}
               >
                 {tag.name}
               </button>
@@ -657,7 +661,7 @@ function ExplorerRow({
             ? // La cible se signale par un cadre plein plutôt qu'un simple
               // fond : pendant un glisser, plusieurs lignes se survolent
               // en une seconde et un aplat discret se remarque mal.
-              'shadow-[inset_0_0_0_2px_var(--color-ink)] bg-surface-2'
+              'shadow-[inset_0_0_0_1.5px_var(--color-ink-4)] bg-surface-2'
             : active
               ? 'bg-surface-3'
               : 'hover:bg-surface-2'
@@ -749,7 +753,7 @@ function GalleryCard({
       aria-current={active ? 'true' : undefined}
       className={`flex flex-col gap-2.5 rounded-2xl border p-4 text-left transition ${
         active
-          ? 'border-ink shadow-[0_0_0_1px_var(--color-ink)]'
+          ? 'border-ink-4 bg-surface-2'
           : 'border-line hover:border-ink-4'
       }`}
     >
@@ -856,11 +860,13 @@ function TagsPanel({ filter }: { filter: string }) {
               onClick={() => navigate(`/tags?tag=${tag.id}`)}
               aria-current={active ? 'true' : undefined}
               className={`inline-flex items-baseline gap-1.5 rounded-full px-2.5 py-1 text-[14px] font-medium transition ${
-                active
-                  ? 'shadow-[0_0_0_1.5px_var(--color-ink)]'
-                  : 'opacity-85 hover:opacity-100'
+                active ? '' : 'opacity-85 hover:opacity-100'
               }`}
-              style={{ backgroundColor: tone.bg, color: tone.text }}
+              style={{
+                backgroundColor: tone.bg,
+                color: tone.text,
+                boxShadow: active ? `0 0 0 2px ${tone.ring}` : undefined,
+              }}
             >
               {tag.name}
               <span className="text-[12px] tabular-nums opacity-60">{count}</span>

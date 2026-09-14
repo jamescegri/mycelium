@@ -15,7 +15,7 @@ export function Toaster() {
         <div
           key={e.id}
           role="alert"
-          className="flex items-start gap-3 rounded-xl border-2 border-ink bg-surface p-4 shadow-[0_18px_44px_-16px_rgba(0,0,0,0.45)]"
+          className="flex items-start gap-3 rounded-xl border border-line bg-surface p-4 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.22)]"
         >
           <div className="min-w-0 flex-1">
             <p className="text-[15px] font-semibold text-ink">{e.message}</p>

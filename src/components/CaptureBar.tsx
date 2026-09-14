@@ -54,7 +54,7 @@ export function CaptureBar() {
   return (
     <div>
       <form
-        className="flex items-center gap-3 rounded-2xl border-2 border-line bg-surface px-4 py-3 transition focus-within:border-ink"
+        className="flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3 transition focus-within:border-ink-4"
         onSubmit={handleSubmit}
       >
         <PenLine size={18} strokeWidth={2} className="shrink-0 text-ink-4" />

@@ -62,7 +62,7 @@ export function ElementPicker({
         className="w-full rounded-lg border border-transparent bg-transparent px-2 py-1 text-[13.5px] text-ink-2 outline-none transition placeholder:text-ink-3 hover:bg-surface-2 focus:border-line focus:bg-surface"
       />
       {open && (results.length > 0 || showCreate) && (
-        <div className="absolute z-10 mt-1 max-h-64 w-full min-w-[260px] overflow-y-auto rounded-xl border-2 border-ink bg-surface py-1 shadow-[0_18px_44px_-16px_rgba(0,0,0,0.45)]">
+        <div className="absolute z-10 mt-1 max-h-64 w-full min-w-[260px] overflow-y-auto rounded-xl border border-line bg-surface py-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.22)]">
           {results.map((el) => (
             <button
               key={el.id}

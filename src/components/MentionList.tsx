@@ -98,7 +98,7 @@ export const MentionList = forwardRef<MentionListHandle, MentionListProps>(
     }));
 
     return (
-      <div className="max-h-80 w-80 overflow-y-auto rounded-xl border-2 border-ink bg-surface shadow-[0_18px_44px_-16px_rgba(0,0,0,0.45)]">
+      <div className="max-h-80 w-80 overflow-y-auto rounded-xl border border-line bg-surface shadow-[0_16px_40px_-12px_rgba(0,0,0,0.22)]">
         {trigger && (
           <div
             className="flex items-center gap-2 px-3.5 py-2 text-[13px] font-semibold text-ink"
