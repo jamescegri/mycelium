@@ -146,6 +146,33 @@ function createStructuralTrigger(
   });
 }
 
+// L'extension Image de Tiptap ne connaît qu'une source : une planche
+// arrivait donc toujours en pleine largeur, sans moyen de la réduire. On
+// lui ajoute une largeur, écrite dans le document et donc conservée.
+//
+// Des largeurs nommées plutôt qu'un redimensionnement libre : un auteur
+// veut « petite » ou « pleine largeur », pas 437 pixels, et une poignée à
+// tirer se manque au doigt sur téléphone.
+const SizedImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: null,
+        parseHTML: (element: HTMLElement) => element.style.width || null,
+        renderHTML: (attributes: { width?: string | null }) =>
+          attributes.width ? { style: `width: ${attributes.width}` } : {},
+      },
+    };
+  },
+});
+
+const IMAGE_SIZES = [
+  { label: 'Petite', value: '34%' },
+  { label: 'Moyenne', value: '62%' },
+  { label: 'Pleine largeur', value: null },
+];
+
 // Éditeur riche du contenu d'un Element.
 // "/" cherche/crée un Element et insère un lien cliquable dans le texte.
 // "@" rattache l'Element courant comme enfant de celui choisi (celui-ci
@@ -156,6 +183,13 @@ export function Editor({ elementId, content, onChange }: EditorProps) {
   const { openPeek } = usePeek();
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
+  // `null` quand la sélection n'est pas une image ; sinon la largeur
+  // courante, pour marquer le bouton actif.
+  const [imageWidth, setImageWidth] = useState<string | null | undefined>(
+    undefined
+  );
+  const imageSelected = imageWidth !== undefined;
+  const currentWidth = imageWidth ?? null;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const onChangeRef = useRef(onChange);
   useEffect(() => {
@@ -210,7 +244,7 @@ export function Editor({ elementId, content, onChange }: EditorProps) {
       StarterKit,
       // Les images sont envoyées au stockage et n'entrent dans le document
       // que par leur URL — voir lib/images.
-      Image.configure({
+      SizedImage.configure({
         HTMLAttributes: { class: 'element-image' },
       }),
       Placeholder.configure({
@@ -299,8 +333,23 @@ export function Editor({ elementId, content, onChange }: EditorProps) {
     },
     onUpdate: ({ editor: tiptapEditor }) => {
       onChangeRef.current(tiptapEditor.getJSON());
+      syncImageSelection(tiptapEditor);
+    },
+    onSelectionUpdate: ({ editor: tiptapEditor }) => {
+      syncImageSelection(tiptapEditor);
     },
   });
+
+  function syncImageSelection(tiptapEditor: {
+    isActive: (name: string) => boolean;
+    getAttributes: (name: string) => Record<string, unknown>;
+  }) {
+    setImageWidth(
+      tiptapEditor.isActive('image')
+        ? ((tiptapEditor.getAttributes('image').width as string) ?? null)
+        : undefined
+    );
+  }
 
   // Les envois se suivent plutôt que de partir ensemble : à cinq planches
   // lâchées d'un coup, les lancer en parallèle sature la connexion et les
@@ -334,18 +383,48 @@ export function Editor({ elementId, content, onChange }: EditorProps) {
     <div>
       <EditorContent editor={editor} />
 
-      <div className="mt-3 flex items-center gap-3 border-t border-line-soft pt-3">
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-[13px] text-ink-3 transition hover:bg-surface-2 hover:text-ink disabled:opacity-50"
-        >
-          <ImagePlus size={14} strokeWidth={2} />
-          {uploading ? 'Envoi…' : 'Ajouter une image'}
-        </button>
-        <span className="text-[12.5px] text-ink-4">
-          ou dépose-la dans le texte
-        </span>
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-line-soft pt-3">
+        {/* Quand une image est sélectionnée, la barre passe à sa taille :
+            c'est la seule chose qu'on veut régler à ce moment-là. */}
+        {imageSelected ? (
+          <>
+            <span className="text-[12.5px] text-ink-3">Taille</span>
+            {IMAGE_SIZES.map((size) => (
+              <button
+                key={size.label}
+                onClick={() =>
+                  editor
+                    ?.chain()
+                    .focus()
+                    .updateAttributes('image', { width: size.value })
+                    .run()
+                }
+                aria-pressed={currentWidth === size.value}
+                className={`rounded-lg px-2 py-1 text-[13px] transition ${
+                  currentWidth === size.value
+                    ? 'bg-surface-3 font-semibold text-ink'
+                    : 'text-ink-3 hover:bg-surface-2 hover:text-ink'
+                }`}
+              >
+                {size.label}
+              </button>
+            ))}
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-[13px] text-ink-3 transition hover:bg-surface-2 hover:text-ink disabled:opacity-50"
+            >
+              <ImagePlus size={14} strokeWidth={2} />
+              {uploading ? 'Envoi…' : 'Ajouter une image'}
+            </button>
+            <span className="text-[12.5px] text-ink-4">
+              ou dépose-la dans le texte
+            </span>
+          </>
+        )}
         <input
           ref={fileInputRef}
           type="file"

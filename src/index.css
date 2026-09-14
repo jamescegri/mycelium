@@ -172,9 +172,11 @@ select:focus-visible,
   display: block;
 }
 
+/* L'image sélectionnée : un liseré gris suffit à dire laquelle on règle,
+   là où un trait noir épais faisait croire à une erreur. */
 .element-image.ProseMirror-selectednode {
-  outline: 2px solid var(--color-ink);
-  outline-offset: 2px;
+  outline: 2px solid var(--color-ink-4);
+  outline-offset: 3px;
 }
 
 /* Une mention reste du texte courant — surlignée, pas encapsulée dans
