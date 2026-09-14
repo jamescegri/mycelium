@@ -30,7 +30,7 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       {/* Les quatre angles partagent la même page : ce sont des façons de
           regarder le même réseau, pas quatre bases de données séparées. */}
-      {['/dashboard', '/liste', '/temporel', '/connexions'].map((path) => (
+      {['/dashboard', '/groupes', '/liste', '/temporel', '/connexions'].map((path) => (
         <Route
           key={path}
           path={path}

@@ -26,6 +26,12 @@ function panelFor(pathname: string): Panel {
   return 'groupes';
 }
 
+// La capture n'a de sens que dans l'explorateur de Groupes : sur les Tags,
+// la colonne sert à choisir un filtre, pas à écrire.
+function showsCapture(pathname: string): boolean {
+  return panelFor(pathname) === 'groupes';
+}
+
 // `wide` : tant qu'aucun Element n'est ouvert, la colonne prend toute la
 // place — on est en train d'explorer, autant le faire au large. Elle se
 // resserre dès qu'il y a quelque chose à lire à côté. La largeur et le fond
@@ -66,7 +72,7 @@ export function NavColumn({ wide = false }: { wide?: boolean }) {
 
       {/* Au large, on a la place d'écrire une idée sans quitter
           l'exploration — c'est le geste le plus fréquent de l'app. */}
-      {wide && (
+      {wide && showsCapture(location.pathname) && (
         <div className={`${inner} px-4 pb-4`}>
           <CaptureBar />
         </div>

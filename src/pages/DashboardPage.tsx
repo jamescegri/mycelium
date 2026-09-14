@@ -9,6 +9,7 @@ import { listAllElementTags, listAllTags } from '../lib/tags';
 import { usePeek } from '../components/PeekPanel';
 import { displayName, isUntitled } from '../lib/display';
 import { Layout } from '../components/Layout';
+import { HomeView } from '../components/HomeView';
 import { NavColumn } from '../components/NavColumn';
 import { TimelineTree } from '../components/TimelineTree';
 import type { Element, ElementLink } from '../types';
@@ -32,10 +33,18 @@ export function DashboardPage() {
     queryFn: listAllLinks,
   });
 
-  // L'accueil EST l'explorateur : il occupe la fenêtre principale, sans
-  // titre ni chapeau au-dessus — on vient y chercher quelque chose, pas
-  // lire une présentation.
   if (path === '/dashboard') {
+    return (
+      <Layout>
+        <HomeView />
+      </Layout>
+    );
+  }
+
+  // Les Groupes sont un explorateur : on y descend de dossier en dossier,
+  // et on n'ouvre la fenêtre de lecture qu'une fois arrivé sur un Element.
+  // Pas de titre ni de chapeau — on vient y chercher, pas lire.
+  if (path === '/groupes') {
     return (
       <Layout>
         <NavColumn wide />

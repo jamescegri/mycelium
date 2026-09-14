@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { GripVertical, Plus } from 'lucide-react';
+import { ChevronRight, GripVertical, Plus } from 'lucide-react';
 import { createElement, listElements } from '../lib/elements';
 import { listAllLinks, moveChild } from '../lib/links';
 import { listAllRelations } from '../lib/relations';
@@ -37,7 +37,7 @@ type Item =
 // Les lignes plates deviennent une suite d'items où chaque emplacement
 // libre est matérialisé. On ferme un groupe dès qu'on rencontre une ligne
 // moins profonde : c'est là que se glisse son "ajouter à la fin".
-function toItems(rows: TimelineRow[]): Item[] {
+function toItems(rows: TimelineRow[], collapsed: Set<string>): Item[] {
   const items: Item[] = [];
   const open: TimelineRow[] = [];
 
@@ -62,7 +62,9 @@ function toItems(rows: TimelineRow[]): Item[] {
       depth: row.depth,
     });
     items.push({ kind: 'row', row });
-    if (row.childCount > 0) open.push(row);
+    // Un groupe replié n'offre pas d'emplacement à l'intérieur : proposer
+    // d'y ajouter quelque chose qu'on ne verrait pas apparaître.
+    if (row.childCount > 0 && !collapsed.has(row.element.id)) open.push(row);
   }
 
   closeDownTo(-1);
@@ -74,6 +76,15 @@ export function TimelineTree() {
   const queryClient = useQueryClient();
   const [dragged, setDragged] = useState<TimelineRow | null>(null);
   const [creatingAt, setCreatingAt] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  const toggle = (id: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const { data: elements } = useQuery({
     queryKey: ['elements'],
@@ -93,10 +104,10 @@ export function TimelineTree() {
   const allLinks = links ?? [];
 
   const rows = useMemo(
-    () => timelineRows(all, allLinks, temporal ?? []),
-    [all, allLinks, temporal]
+    () => timelineRows(all, allLinks, temporal ?? [], collapsed),
+    [all, allLinks, temporal, collapsed]
   );
-  const items = useMemo(() => toItems(rows), [rows]);
+  const items = useMemo(() => toItems(rows, collapsed), [rows, collapsed]);
 
   // Ce à quoi chaque Element est relié, quelle que soit sa place dans le
   // récit : c'est ce qui fait de la chronologie une porte d'entrée vers le
@@ -231,7 +242,9 @@ export function TimelineTree() {
               key={`row-${row.element.id}-${i}`}
               row={row}
               connections={connections}
+              collapsed={collapsed.has(row.element.id)}
               dimmed={dragged?.element.id === row.element.id}
+              onToggle={() => toggle(row.element.id)}
               onDragStart={() => setDragged(row)}
               onDragEnd={() => setDragged(null)}
               onOpen={() => navigate(`/elements/${row.element.id}`)}
@@ -268,7 +281,9 @@ export function TimelineTree() {
 function TimelineEntry({
   row,
   connections,
+  collapsed,
   dimmed,
+  onToggle,
   onDragStart,
   onDragEnd,
   onOpen,
@@ -276,7 +291,9 @@ function TimelineEntry({
 }: {
   row: TimelineRow;
   connections: Element[];
+  collapsed: boolean;
   dimmed: boolean;
+  onToggle: () => void;
   onDragStart: () => void;
   onDragEnd: () => void;
   onOpen: () => void;
@@ -285,6 +302,7 @@ function TimelineEntry({
   const tone = pastelFor(row.element.id);
   const shown = connections.slice(0, 3);
   const rest = connections.length - shown.length;
+  const isGroup = row.childCount > 0;
 
   return (
     <div
@@ -292,7 +310,7 @@ function TimelineEntry({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       style={{ marginLeft: row.depth * INDENT }}
-      className={`group flex cursor-grab items-start gap-2.5 rounded-xl px-2 py-2 transition active:cursor-grabbing ${
+      className={`group flex cursor-grab items-start gap-1.5 rounded-xl px-2 py-2 transition active:cursor-grabbing ${
         dimmed ? 'opacity-35' : 'hover:bg-surface-2'
       }`}
     >
@@ -302,12 +320,32 @@ function TimelineEntry({
         className="mt-1 shrink-0 text-ink-4 opacity-0 transition group-hover:opacity-100"
       />
 
+      {/* Replier un chapitre de trente scènes, c'est pouvoir atteindre le
+          suivant sans le traverser. Le compte reste affiché à droite pour
+          qu'un groupe replié ne passe pas pour un groupe vide. */}
+      {isGroup ? (
+        <button
+          onClick={onToggle}
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? 'Déplier' : 'Replier'}
+          className="mt-0.5 shrink-0 rounded p-0.5 text-ink-4 transition hover:text-ink"
+        >
+          <ChevronRight
+            size={14}
+            strokeWidth={2.4}
+            className={`transition-transform ${collapsed ? '' : 'rotate-90'}`}
+          />
+        </button>
+      ) : (
+        <span className="w-[19px] shrink-0" aria-hidden />
+      )}
+
       {/* La pastille dit la profondeur sans qu'on ait à compter : pleine
           pour une grande entrée, creuse pour une scène. */}
       <span
         className="mt-[7px] size-2.5 shrink-0 rounded-[3px]"
         style={
-          row.childCount > 0
+          isGroup
             ? { backgroundColor: tone.bg }
             : { boxShadow: `inset 0 0 0 2px ${tone.bg}` }
         }
@@ -319,7 +357,7 @@ function TimelineEntry({
           className={`block max-w-full truncate text-left ${
             row.depth === 0
               ? 'text-[19px] font-semibold'
-              : row.childCount > 0
+              : isGroup
                 ? 'text-[16.5px] font-medium'
                 : 'text-[16px]'
           }`}
@@ -349,7 +387,7 @@ function TimelineEntry({
         )}
       </div>
 
-      {row.childCount > 0 && (
+      {isGroup && (
         <span className="mt-1 shrink-0 text-[12px] tabular-nums text-ink-4">
           {row.childCount}
         </span>

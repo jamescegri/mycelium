@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Clock,
+  FolderTree,
   Home,
   LayoutGrid,
   Link2,
@@ -25,6 +26,7 @@ import { Logo } from './Logo';
 // on voit d'où il vient, donc on comprend qu'on peut y revenir.
 const RAIL = [
   { to: '/dashboard', label: 'Accueil', icon: Home },
+  { to: '/groupes', label: 'Groupes', icon: FolderTree },
   { to: '/liste', label: 'Éléments', icon: LayoutGrid },
   { to: '/temporel', label: 'Temps', icon: Clock },
   { to: '/tags', label: 'Tags', icon: Tag },
@@ -37,10 +39,12 @@ export function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { open: openPalette } = useCommandPalette();
 
-  // Un seul critère, et il est visible dans l'adresse : on lit un Element,
-  // ou on explore. Toutes les vues — groupes, liste, chronologie, tags,
-  // liens — sont de l'exploration et occupent donc la fenêtre principale.
-  const reading = location.pathname.startsWith('/elements/');
+  // Deux fenêtres seulement quand quelque chose à gauche sert à choisir ce
+  // qu'on voit à droite : les Tags (on clique un tag, on lit ses Elements)
+  // et la lecture d'un Element (on continue de parcourir à côté). Partout
+  // ailleurs, la vue se suffit et prend toute la place.
+  const path = location.pathname;
+  const twoPane = path.startsWith('/elements/') || path.startsWith('/tags');
 
   return (
     <div className="flex h-screen gap-2.5 bg-surface-2 p-2.5 text-ink">
@@ -82,7 +86,7 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       </nav>
 
-      {reading ? (
+      {twoPane ? (
         <>
           {/* La navigation se resserre mais reste là : on continue de
               parcourir pendant qu'on lit, sans repasser par un écran. */}
@@ -90,9 +94,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <NavColumn />
           </div>
           <main className="animate-panel-in min-w-0 flex-1 overflow-y-auto rounded-2xl bg-surface">
-            <div className="mx-auto max-w-[52rem] px-6 py-12 sm:px-12">
-              {children}
-            </div>
+            {children}
           </main>
         </>
       ) : (

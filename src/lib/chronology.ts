@@ -203,10 +203,15 @@ function timelineRoots(elements: Element[], links: ElementLink[]): Element[] {
 // L'arbre chronologique aplati en lignes prêtes à afficher : chaque ligne
 // sait sa profondeur, son parent et son rang, ce qui suffit à dessiner
 // l'imbrication et à viser un emplacement d'insertion.
+// `collapsed` : les Elements dont on ne veut pas voir le contenu. Ils
+// restent affichés avec leur compte d'enfants — replier un chapitre de
+// trente scènes doit permettre d'atteindre le suivant, pas faire croire
+// qu'il s'est vidé.
 export function timelineRows(
   elements: Element[],
   links: ElementLink[],
-  relations: TemporalRelation[]
+  relations: TemporalRelation[],
+  collapsed?: Set<string>
 ): TimelineRow[] {
   const roots = chronologyOrder(timelineRoots(elements, links), relations);
   const rows: TimelineRow[] = [];
@@ -228,7 +233,7 @@ export function timelineRows(
     // entrer l'arc entier d'un seul geste.
     const children = childrenOf(links, elements, element.id);
     rows.push({ element, depth, parentId, index, childCount: children.length });
-    if (trail.has(element.id)) return;
+    if (trail.has(element.id) || collapsed?.has(element.id)) return;
     const deeper = new Set(trail).add(element.id);
     children.forEach((child, i) =>
       walk(child, depth + 1, element.id, i, deeper)
