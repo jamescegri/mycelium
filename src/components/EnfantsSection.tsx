@@ -12,6 +12,7 @@ import {
 } from '../lib/links';
 import { ElementPicker } from './ElementPicker';
 import type { Element } from '../types';
+import { displayName } from '../lib/display';
 
 // "Enfants" : ce que cet Element contient (il en devient un Groupe dès
 // qu'il en a au moins un). Un enfant peut aussi appartenir à d'autres
@@ -40,7 +41,7 @@ export function EnfantsSection({ element }: { element: Element }) {
   const createChildMutation = useMutation({
     mutationFn: async () => {
       const created = await createElement({
-        name: 'Sans titre',
+        name: '',
         family: element.family,
       });
       await linkChild(element.id, created.id);
@@ -102,7 +103,7 @@ export function EnfantsSection({ element }: { element: Element }) {
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-fluo-child">
                   <FileText size={13} strokeWidth={2} className="text-ink" />
                 </span>
-                <span className="truncate">{child.name || 'Sans titre'}</span>
+                <span className="truncate">{displayName(child)}</span>
               </button>
               <span className="ml-2 hidden shrink-0 items-center gap-1 group-hover:flex">
                 <button

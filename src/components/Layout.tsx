@@ -19,7 +19,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const { open: openPalette } = useCommandPalette();
 
   const createMutation = useMutation({
-    mutationFn: () => createElement({ name: 'Sans titre', family: 'ELEMENTS' }),
+    mutationFn: () => createElement({ name: '', family: 'ELEMENTS' }),
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['elements'] });
       navigate(`/elements/${created.id}`, { state: { isNew: true } });

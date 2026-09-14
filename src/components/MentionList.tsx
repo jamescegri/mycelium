@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { childrenOf, hasChildren, rootElements } from '../lib/links';
 import type { Element, ElementLink } from '../types';
+import { displayName } from '../lib/display';
 
 export interface MentionItem {
   id: string;
@@ -45,7 +46,7 @@ export const MentionList = forwardRef<MentionListHandle, MentionListProps>(
       ? (currentGroupId
           ? childrenOf(browse!.links, browse!.elements, currentGroupId)
           : rootElements(browse!.links, browse!.elements)
-        ).map((e) => ({ id: e.id, name: e.name || 'Sans titre' }))
+        ).map((e) => ({ id: e.id, name: displayName(e) }))
       : [];
     const displayItems = isBrowsing ? browseItems : items;
 

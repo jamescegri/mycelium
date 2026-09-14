@@ -31,6 +31,7 @@ export async function getElement(id: string): Promise<Element | null> {
 export async function createElement(input: {
   name: string;
   family: ElementFamily;
+  content?: object | string | null;
 }): Promise<Element> {
   const {
     data: { user },
@@ -42,6 +43,7 @@ export async function createElement(input: {
     .insert({
       name: input.name,
       family: input.family,
+      content: input.content ?? null,
       user_id: user.id,
     })
     .select('*')

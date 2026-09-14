@@ -13,6 +13,7 @@ import {
 import { ElementPicker } from './ElementPicker';
 import { Pill } from './Pill';
 import type { Element } from '../types';
+import { displayName } from '../lib/display';
 
 // "Parents" : les Groupes auxquels cet Element appartient — il peut y en
 // avoir plusieurs (rien n'est figé). Toujours visible, jamais replié :
@@ -72,7 +73,7 @@ export function ParentsSection({ element }: { element: Element }) {
                 onClick={() => navigate(`/elements/${parent.id}`)}
                 className="cursor-pointer text-ink"
               >
-                {parent.name || 'Sans titre'}
+                {displayName(parent)}
               </button>
               <button
                 onClick={() => removeParentMutation.mutate(parent.id)}

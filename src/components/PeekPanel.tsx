@@ -6,6 +6,7 @@ import { getElement, listElements } from '../lib/elements';
 import { listAllLinks, parentsOf } from '../lib/links';
 import { extractPlainText } from '../lib/content';
 import { ConnectionsDisclosure } from './ConnectionsDisclosure';
+import { displayName } from '../lib/display';
 
 interface PeekContextValue {
   openPeek: (id: string) => void;
@@ -145,7 +146,7 @@ function PeekOverlay({
             )}
 
             <h2 className="mb-3 text-2xl font-semibold text-ink">
-              {element.name || 'Sans titre'}
+              {displayName(element)}
             </h2>
 
             {!!element.content && (

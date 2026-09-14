@@ -6,6 +6,7 @@ import { createElement, listElements } from '../lib/elements';
 import { linkChild, listAllLinks, parentsOf } from '../lib/links';
 import { usePeek } from './PeekPanel';
 import type { Element } from '../types';
+import { displayName } from '../lib/display';
 
 interface CommandPaletteContextValue {
   open: () => void;
@@ -140,7 +141,7 @@ function CommandPaletteOverlay({ onClose }: { onClose: () => void }) {
                 className="min-w-0 flex-1 text-left"
               >
                 <div className="truncate text-[16px] text-ink">
-                  {el.name || 'Sans titre'}
+                  {displayName(el)}
                 </div>
                 <div className="truncate text-[13.5px] text-ink-4">
                   {pathOf(el) || el.family}

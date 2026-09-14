@@ -6,6 +6,7 @@ import { ElementDetailPage } from './pages/ElementDetailPage';
 import { TrashPage } from './pages/TrashPage';
 import { PeekProvider } from './components/PeekPanel';
 import { CommandPaletteProvider } from './components/CommandPalette';
+import { Toaster } from './components/Toaster';
 
 function RequireAuth({ children }: { children: React.ReactElement }) {
   const { session, loading } = useAuth();
@@ -26,14 +27,19 @@ export default function App() {
   const routes = (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route
-        path="/dashboard"
-        element={
-          <RequireAuth>
-            <DashboardPage />
-          </RequireAuth>
-        }
-      />
+      {/* Les quatre angles partagent la même page : ce sont des façons de
+          regarder le même réseau, pas quatre bases de données séparées. */}
+      {['/dashboard', '/liste', '/temporel', '/connexions'].map((path) => (
+        <Route
+          key={path}
+          path={path}
+          element={
+            <RequireAuth>
+              <DashboardPage />
+            </RequireAuth>
+          }
+        />
+      ))}
       <Route
         path="/elements/:id"
         element={
@@ -56,11 +62,19 @@ export default function App() {
 
   // PeekPanel et CommandPalette n'ont de sens qu'authentifié (ils lisent les
   // Elements de l'utilisateur) : inutile de les monter sur /login.
-  if (!session) return routes;
+  if (!session) {
+    return (
+      <>
+        {routes}
+        <Toaster />
+      </>
+    );
+  }
 
   return (
     <PeekProvider>
       <CommandPaletteProvider>{routes}</CommandPaletteProvider>
+      <Toaster />
     </PeekProvider>
   );
 }

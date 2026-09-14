@@ -8,6 +8,7 @@ import { syncMentionRelations } from '../lib/relations';
 import { extractMentionIds, toEditorContent } from '../lib/content';
 import { FAMILY_COLOR, FAMILY_LABEL } from '../lib/family';
 import { pastelFor } from '../lib/palette';
+import { displayName } from '../lib/display';
 import type { Element } from '../types';
 import { Layout } from '../components/Layout';
 import { Editor } from '../components/Editor';
@@ -101,17 +102,71 @@ function ElementEditor({
     toEditorContent(element.content)
   );
 
+  // La sauvegarde lit toujours latestRef, jamais les variables d'état
+  // capturées à la création de la mutation : un enregistrement déclenché
+  // depuis un timeout ou depuis le démontage écrirait sinon une version
+  // périmée du texte.
+  const latestRef = useRef({ name, content });
+  useEffect(() => {
+    latestRef.current = { name, content };
+  }, [name, content]);
+
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const saved = await updateElement(element.id, { name, content });
-      await syncMentionRelations(element.id, extractMentionIds(content));
+      const current = latestRef.current;
+      const saved = await updateElement(element.id, {
+        name: current.name,
+        content: current.content,
+      });
+      await syncMentionRelations(
+        element.id,
+        extractMentionIds(current.content)
+      );
       return saved;
     },
     onSuccess: () => {
+      dirtyRef.current = false;
       queryClient.invalidateQueries({ queryKey: ['elements'] });
       queryClient.invalidateQueries({ queryKey: ['elements', element.id] });
     },
   });
+
+  // Enregistrement automatique. Écrire puis cliquer sur une mention faisait
+  // perdre le texte : il n'existait qu'un seul chemin de sauvegarde, le
+  // bouton. Deux filets désormais — une pause de 800 ms dans la frappe, et
+  // le démontage de la page (navigation vers un autre Element comprise).
+  const dirtyRef = useRef(false);
+  const saveRef = useRef(saveMutation.mutate);
+  useEffect(() => {
+    saveRef.current = saveMutation.mutate;
+  });
+
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    dirtyRef.current = true;
+    const timer = setTimeout(() => saveRef.current(), 800);
+    return () => clearTimeout(timer);
+  }, [name, content]);
+
+  useEffect(() => {
+    return () => {
+      if (dirtyRef.current) saveRef.current();
+    };
+  }, []);
+
+  // Fermeture d'onglet ou rechargement pendant la fenêtre de 800 ms : on
+  // prévient plutôt que de laisser filer.
+  useEffect(() => {
+    function warn(e: BeforeUnloadEvent) {
+      if (dirtyRef.current) e.preventDefault();
+    }
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, []);
 
   const { data: allElements } = useQuery({
     queryKey: ['elements'],
@@ -151,7 +206,7 @@ function ElementEditor({
                 onClick={() => navigate(`/elements/${parents[0].id}`)}
                 className="max-w-[180px] truncate transition hover:text-ink-2"
               >
-                {parents[0].name || 'Sans titre'}
+                {displayName(parents[0])}
               </button>
             </>
           )}
@@ -164,16 +219,19 @@ function ElementEditor({
           <span className="truncate text-ink-2">{name || 'Sans titre'}</span>
         </nav>
 
-        {/* Les actions vivent en haut à droite, comme dans Notion — elles ne
-            coupent plus la zone d'écriture en deux. */}
-        <div className="flex shrink-0 items-center gap-1">
-          <button
-            onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending}
-            className="rounded-xl px-4 py-2 text-[15px] font-semibold text-ink transition hover:bg-surface-3 disabled:opacity-50"
+        {/* Plus de bouton "Enregistrer" : l'enregistrement est automatique,
+            il ne reste qu'à dire où il en est. */}
+        <div className="flex shrink-0 items-center gap-2">
+          <span
+            aria-live="polite"
+            className="text-[14px] text-ink-4 transition"
           >
-            {saveMutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
-          </button>
+            {saveMutation.isPending
+              ? 'Enregistrement…'
+              : saveMutation.isSuccess
+                ? 'Enregistré'
+                : ''}
+          </span>
           <button
             onClick={onRequestDelete}
             aria-label="Supprimer cet Element"
