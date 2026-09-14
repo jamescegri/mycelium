@@ -266,6 +266,20 @@ panneau latéral, recherche globale, connexions discrètes) est implémenté.
 
 ## v3 — la Timeline devient une option, plus une famille
 
+### Appliquer le schéma
+
+Coller `supabase/schema.sql` dans Supabase → SQL Editor → New query → Run.
+
+Le script est **rejouable** : sur une base vide il installe tout, sur une
+base existante il ne crée que ce qui manque et met à niveau le reste sans
+toucher aux données. Les montées de version sont incluses — les Elements
+de l'ancienne famille `TIME` entrent automatiquement dans la chronologie,
+et une hiérarchie encore stockée dans `parent_id` (v1) est reprise dans
+`element_links`.
+
+Vérifié sur PostgreSQL 16 : installation à vide, trois exécutions
+successives, migration v2 → v3 avec données, migration v1 → v3.
+
 ### Le modèle
 
 `elements.family` est supprimée. À la place, `elements.timeline` (booléen) :
