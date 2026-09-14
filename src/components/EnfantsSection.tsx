@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { FileText, Plus, X } from 'lucide-react';
 import { createElement, listElements } from '../lib/elements';
 import {
   childrenOf,
@@ -91,13 +92,18 @@ export function EnfantsSection({ element }: { element: Element }) {
           {children.map((child, index) => (
             <div
               key={child.id}
-              className="group flex items-center justify-between py-1"
+              className="group flex items-center justify-between rounded-lg py-1.5 hover:bg-neutral-50"
             >
               <button
                 onClick={() => navigate(`/elements/${child.id}`)}
-                className="truncate text-left text-neutral-700 hover:text-yellow-600"
+                className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left text-neutral-700 hover:text-yellow-600"
               >
-                {child.name || 'Sans titre'}
+                <FileText
+                  size={15}
+                  strokeWidth={1.75}
+                  className="shrink-0 text-neutral-300"
+                />
+                <span className="truncate">{child.name || 'Sans titre'}</span>
               </button>
               <span className="ml-2 hidden shrink-0 items-center gap-1 group-hover:flex">
                 <button
@@ -106,7 +112,7 @@ export function EnfantsSection({ element }: { element: Element }) {
                   }
                   disabled={index === 0}
                   aria-label="Monter"
-                  className="text-neutral-300 hover:text-neutral-600 disabled:opacity-20"
+                  className="cursor-pointer text-neutral-300 hover:text-neutral-600 disabled:cursor-default disabled:opacity-20"
                 >
                   ↑
                 </button>
@@ -119,29 +125,30 @@ export function EnfantsSection({ element }: { element: Element }) {
                   }
                   disabled={index === children.length - 1}
                   aria-label="Descendre"
-                  className="text-neutral-300 hover:text-neutral-600 disabled:opacity-20"
+                  className="cursor-pointer text-neutral-300 hover:text-neutral-600 disabled:cursor-default disabled:opacity-20"
                 >
                   ↓
                 </button>
                 <button
                   onClick={() => removeChildMutation.mutate(child.id)}
                   aria-label={`Retirer ${child.name}`}
-                  className="text-neutral-300 hover:text-red-600"
+                  className="cursor-pointer text-neutral-300 hover:text-red-600"
                 >
-                  ×
+                  <X size={13} strokeWidth={2} />
                 </button>
               </span>
             </div>
           ))}
         </div>
       )}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-4">
         <button
           onClick={() => createChildMutation.mutate()}
           disabled={createChildMutation.isPending}
-          className="text-neutral-500 hover:text-neutral-700 disabled:opacity-50"
+          className="flex cursor-pointer items-center gap-1.5 text-neutral-500 hover:text-neutral-700 disabled:cursor-default disabled:opacity-50"
         >
-          + Nouvelle sous-page
+          <Plus size={15} strokeWidth={1.75} />
+          Nouvelle sous-page
         </button>
         <ElementPicker
           excludeIds={excludeIds}

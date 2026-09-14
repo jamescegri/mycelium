@@ -12,6 +12,30 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* Tous les éléments cliquables ont un curseur pointeur explicite, et un
+   anneau de focus visible au clavier (Tab) — la navigation au clavier ne
+   doit jamais devenir invisible. */
+button:not(:disabled),
+[role="button"] {
+  cursor: pointer;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--color-yellow-500);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
 .prose-mycelium p {
   margin: 0.5em 0;
 }

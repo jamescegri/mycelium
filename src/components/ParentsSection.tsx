@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { X } from 'lucide-react';
 import { listElements } from '../lib/elements';
 import {
   getDescendantIds,
@@ -10,6 +11,7 @@ import {
   wouldCreateCycle,
 } from '../lib/links';
 import { ElementPicker } from './ElementPicker';
+import { Pill } from './Pill';
 import type { Element } from '../types';
 
 // "Parents" : les Groupes auxquels cet Element appartient — il peut y en
@@ -60,26 +62,23 @@ export function ParentsSection({ element }: { element: Element }) {
           Aucun parent — cet Element est à la racine.
         </p>
       ) : (
-        <div className="mb-2 flex flex-wrap gap-x-1 gap-y-1">
-          {parents.map((parent, i) => (
-            <span key={parent.id} className="flex items-center gap-1">
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          {parents.map((parent) => (
+            <Pill key={parent.id} className="pr-1.5">
               <button
                 onClick={() => navigate(`/elements/${parent.id}`)}
-                className="text-neutral-700 hover:text-yellow-600"
+                className="cursor-pointer text-neutral-700 hover:text-yellow-600"
               >
                 {parent.name || 'Sans titre'}
               </button>
               <button
                 onClick={() => removeParentMutation.mutate(parent.id)}
                 aria-label={`Retirer de ${parent.name}`}
-                className="text-neutral-300 hover:text-red-600"
+                className="cursor-pointer text-neutral-400 hover:text-red-600"
               >
-                ×
+                <X size={12} strokeWidth={2} />
               </button>
-              {i < parents.length - 1 && (
-                <span className="text-neutral-300">,</span>
-              )}
-            </span>
+            </Pill>
           ))}
         </div>
       )}

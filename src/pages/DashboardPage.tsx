@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowRight, FolderClosed, Plus, Search } from 'lucide-react';
 import { createElement, listElements } from '../lib/elements';
 import {
   childrenOf,
@@ -12,7 +13,10 @@ import {
 import { listAllRelations } from '../lib/relations';
 import { listTemporalRelations } from '../lib/temporal';
 import { normalizeEdges, topologicalOrder } from '../lib/timeline';
+import { extractPlainText } from '../lib/content';
+import { pastelFor } from '../lib/palette';
 import { Layout } from '../components/Layout';
+import { Pill } from '../components/Pill';
 import { useCommandPalette } from '../components/CommandPalette';
 import type { Element, ElementLink } from '../types';
 
@@ -102,16 +106,18 @@ function CaptureBar() {
       <button
         type="button"
         onClick={openPalette}
-        className="shrink-0 text-neutral-500 hover:text-neutral-700"
+        className="flex shrink-0 items-center gap-1.5 text-neutral-500 hover:text-neutral-700"
       >
+        <Search size={16} strokeWidth={1.75} />
         Rechercher <span className="text-neutral-300">⌘K</span>
       </button>
       <button
         type="submit"
         disabled={!name.trim() || createMutation.isPending}
-        className="shrink-0 text-neutral-500 hover:text-neutral-700 disabled:opacity-40"
+        className="flex shrink-0 items-center gap-1.5 text-neutral-500 hover:text-neutral-700 disabled:opacity-40"
       >
-        + Nouvel Element
+        <Plus size={16} strokeWidth={1.75} />
+        Nouvel Element
       </button>
     </form>
   );
@@ -133,11 +139,14 @@ function GroupesTab({
     <div>
       <div className="mb-8">
         {groups.length === 0 ? (
-          <p className="text-sm text-neutral-400">
-            Pas encore de Groupe — rattache un enfant à un Element (bouton "+
-            Nouvelle sous-page" ou "+" dans l'éditeur) pour qu'il en devienne
-            un.
-          </p>
+          <div className="flex flex-col items-center gap-2 py-10 text-center">
+            <FolderClosed className="text-neutral-300" size={28} strokeWidth={1.5} />
+            <p className="text-sm text-neutral-400">
+              Pas encore de Groupe — rattache un enfant à un Element (bouton
+              "+ Nouvelle sous-page" ou "+" dans l'éditeur) pour qu'il en
+              devienne un.
+            </p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {groups.map((group) => (
@@ -173,10 +182,10 @@ function GroupesTab({
   );
 }
 
-// Aperçu d'un Groupe, comme un dossier qu'on entrouvre : ses premiers
-// enfants, et pour chacun un aperçu de SES propres enfants — deux niveaux
-// visibles sans avoir à cliquer. La carte elle-même ouvre la page du
-// Groupe, qui montre à son tour ses enfants en cascade.
+// Carte façon dossier coloré : fond pastel stable (dérivé de l'id), un
+// aperçu du contenu si l'Element en a écrit, ses premiers enfants en
+// pastilles, et un lien "Ouvrir" en pied de carte — la carte entière reste
+// cliquable. La page du Groupe montre ensuite ses enfants en cascade.
 function GroupCard({
   group,
   elements,
@@ -189,59 +198,66 @@ function GroupCard({
   onNavigate: () => void;
 }) {
   const allChildren = childrenOf(links, elements, group.id);
-  const preview = allChildren.slice(0, 3);
+  const preview = allChildren.slice(0, 6);
   const remaining = allChildren.length - preview.length;
+  const description = extractPlainText(group.content, 90);
+  const colors = pastelFor(group.id);
 
   return (
     <button
       onClick={onNavigate}
-      className="flex flex-col rounded-2xl border border-neutral-200 bg-neutral-50/60 p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-md"
+      style={{ backgroundColor: colors.bg }}
+      className="group flex cursor-pointer flex-col rounded-2xl p-5 text-left transition hover:-translate-y-0.5 hover:shadow-md"
     >
-      <div className="mb-3 flex items-center gap-2.5">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-yellow-100 text-sm font-medium text-yellow-700">
-          {(group.name || '?').charAt(0).toUpperCase()}
-        </span>
-        <span className="truncate text-base font-medium text-neutral-900">
+      <div className="mb-1 flex items-center gap-2">
+        <FolderClosed size={16} strokeWidth={1.75} style={{ color: colors.text }} />
+        <span
+          className="truncate text-base font-semibold"
+          style={{ color: colors.text }}
+        >
           {group.name || 'Sans titre'}
         </span>
       </div>
 
+      {description && (
+        <p
+          className="mb-3 line-clamp-2 text-sm opacity-80"
+          style={{ color: colors.text }}
+        >
+          {description}
+        </p>
+      )}
+
       {preview.length > 0 && (
-        <div className="space-y-2 border-l border-neutral-200 pl-3">
-          {preview.map((child) => {
-            const grandchildren = childrenOf(links, elements, child.id);
-            const gcPreview = grandchildren.slice(0, 2);
-            const gcRemaining = grandchildren.length - gcPreview.length;
-            return (
-              <div key={child.id}>
-                <div className="truncate text-sm text-neutral-600">
-                  {child.name || 'Sans titre'}
-                </div>
-                {gcPreview.length > 0 && (
-                  <div className="mt-1 space-y-0.5 border-l border-neutral-100 pl-3">
-                    {gcPreview.map((gc) => (
-                      <div
-                        key={gc.id}
-                        className="truncate text-xs text-neutral-400"
-                      >
-                        {gc.name || 'Sans titre'}
-                      </div>
-                    ))}
-                    {gcRemaining > 0 && (
-                      <div className="text-xs text-neutral-300">
-                        +{gcRemaining}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        <div className="mb-4 flex flex-wrap gap-1.5">
+          {preview.map((child) => (
+            <Pill
+              key={child.id}
+              className="border-0 bg-white/70"
+              style={{ color: colors.text }}
+            >
+              {child.name || 'Sans titre'}
+            </Pill>
+          ))}
           {remaining > 0 && (
-            <div className="text-sm text-neutral-300">+{remaining} autres</div>
+            <Pill className="border-0 bg-white/50" style={{ color: colors.text }}>
+              +{remaining}
+            </Pill>
           )}
         </div>
       )}
+
+      <div
+        className="mt-auto flex items-center gap-1 border-t pt-3 text-sm font-medium"
+        style={{ borderColor: colors.ring, color: colors.text }}
+      >
+        Ouvrir
+        <ArrowRight
+          size={14}
+          strokeWidth={2}
+          className="transition group-hover:translate-x-0.5"
+        />
+      </div>
     </button>
   );
 }

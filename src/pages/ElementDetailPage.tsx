@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Trash2 } from 'lucide-react';
 import { getElement, softDeleteElement, updateElement } from '../lib/elements';
 import { syncMentionRelations } from '../lib/relations';
 import { extractMentionIds, toEditorContent } from '../lib/content';
 import { FAMILY_COLOR } from '../lib/family';
+import { pastelFor } from '../lib/palette';
 import type { Element } from '../types';
 import { Layout } from '../components/Layout';
 import { Editor } from '../components/Editor';
@@ -110,18 +112,28 @@ function ElementEditor({
     },
   });
 
+  const avatarColors = pastelFor(element.id);
+
   return (
     <>
-      <input
-        ref={nameInputRef}
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Sans titre"
-        className="w-full bg-transparent text-4xl font-semibold tracking-tight text-neutral-900 outline-none placeholder:text-neutral-300"
-      />
+      <div className="flex items-center gap-3">
+        <span
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg font-semibold"
+          style={{ backgroundColor: avatarColors.bg, color: avatarColors.text }}
+        >
+          {(name || '?').charAt(0).toUpperCase()}
+        </span>
+        <input
+          ref={nameInputRef}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Sans titre"
+          className="w-full bg-transparent text-4xl font-semibold tracking-tight text-neutral-900 outline-none placeholder:text-neutral-300"
+        />
+      </div>
 
       <div
-        className="mb-8 mt-3 text-sm font-medium tracking-wide"
+        className="mb-8 ml-14 mt-2 text-sm font-medium tracking-wide"
         style={{ color: FAMILY_COLOR[element.family] }}
       >
         {element.family}
@@ -141,8 +153,9 @@ function ElementEditor({
         </button>
         <button
           onClick={onRequestDelete}
-          className="text-sm text-red-600 hover:text-red-500"
+          className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-500"
         >
+          <Trash2 size={14} strokeWidth={1.75} />
           Supprimer
         </button>
       </div>

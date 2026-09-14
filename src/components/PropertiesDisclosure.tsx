@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { X } from 'lucide-react';
 import { updateElement } from '../lib/elements';
 import {
   addTagToElement,
   listTagsForElement,
   removeTagFromElement,
 } from '../lib/tags';
+import { Pill } from './Pill';
 import { FAMILIES } from '../types';
 import type { Element, ElementFamily } from '../types';
 
@@ -83,19 +85,16 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
               Tags
             </span>
             {tags?.map((tag) => (
-              <span
-                key={tag.id}
-                className="flex items-center gap-1 text-xs text-neutral-600"
-              >
+              <Pill key={tag.id} className="pr-1.5 text-xs">
                 #{tag.name}
                 <button
                   onClick={() => removeTagMutation.mutate(tag.id)}
                   aria-label={`Retirer le tag ${tag.name}`}
-                  className="text-neutral-300 hover:text-red-600"
+                  className="cursor-pointer text-neutral-400 hover:text-red-600"
                 >
-                  ×
+                  <X size={11} strokeWidth={2} />
                 </button>
-              </span>
+              </Pill>
             ))}
             <input
               value={newTagName}

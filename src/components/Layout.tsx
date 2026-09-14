@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { LogOut, Search, Trash2 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useCommandPalette } from './CommandPalette';
 
@@ -21,16 +22,25 @@ export function Layout({ children }: { children: ReactNode }) {
           Mycelium
         </button>
         <div className="flex items-center gap-5 text-sm text-neutral-500">
-          <button onClick={open} className="hover:text-neutral-700">
+          <button
+            onClick={open}
+            className="flex items-center gap-1.5 hover:text-neutral-700"
+          >
+            <Search size={15} strokeWidth={1.75} />
             Rechercher <span className="text-neutral-300">⌘K</span>
           </button>
           <button
             onClick={() => navigate('/trash')}
-            className="hover:text-neutral-700"
+            className="flex items-center gap-1.5 hover:text-neutral-700"
           >
+            <Trash2 size={15} strokeWidth={1.75} />
             Corbeille
           </button>
-          <button onClick={() => signOut()} className="hover:text-neutral-700">
+          <button
+            onClick={() => signOut()}
+            className="flex items-center gap-1.5 hover:text-neutral-700"
+          >
+            <LogOut size={15} strokeWidth={1.75} />
             Se déconnecter
           </button>
         </div>
