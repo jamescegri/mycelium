@@ -5,9 +5,11 @@ import { ChevronLeft, ChevronRight, FileText, Plus, Search } from 'lucide-react'
 import { createElement, listElements } from '../lib/elements';
 import { childrenOf, hasChildren, listAllLinks, parentsOf } from '../lib/links';
 import { listAllElementTags, listAllTags } from '../lib/tags';
+import { listAllRelations } from '../lib/relations';
 import { listTemporalRelations } from '../lib/temporal';
 import { timelineRows } from '../lib/chronology';
-import { displayName } from '../lib/display';
+import { extractPlainText } from '../lib/content';
+import { displayName, isUntitled } from '../lib/display';
 import { pastelFor } from '../lib/palette';
 import { useCommandPalette } from './CommandPalette';
 import { CaptureBar } from './CaptureBar';
@@ -32,6 +34,31 @@ function showsCapture(pathname: string): boolean {
   return panelFor(pathname) === 'groupes';
 }
 
+// Les filtres répondent à des moments d'écriture, pas à la structure :
+// "qu'est-ce que j'ai laissé sans titre", "qu'est-ce qui reste à écrire",
+// "où j'en étais". D'où des critères d'état plutôt que de rangement.
+export interface Filters {
+  tagIds: string[];
+  untitled: boolean;
+  empty: boolean;
+  recent: boolean;
+  unlinked: boolean;
+}
+
+const NO_FILTERS: Filters = {
+  tagIds: [],
+  untitled: false,
+  empty: false,
+  recent: false,
+  unlinked: false,
+};
+
+function isFiltering(f: Filters): boolean {
+  return (
+    f.tagIds.length > 0 || f.untitled || f.empty || f.recent || f.unlinked
+  );
+}
+
 // `wide` : tant qu'aucun Element n'est ouvert, la colonne prend toute la
 // place — on est en train d'explorer, autant le faire au large. Elle se
 // resserre dès qu'il y a quelque chose à lire à côté. La largeur et le fond
@@ -42,6 +69,7 @@ export function NavColumn({ wide = false }: { wide?: boolean }) {
   const queryClient = useQueryClient();
   const { open: openPalette } = useCommandPalette();
   const [filter, setFilter] = useState('');
+  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
 
   const panel = panelFor(location.pathname);
 
@@ -87,9 +115,17 @@ export function NavColumn({ wide = false }: { wide?: boolean }) {
         />
       </div>
 
+      {panel === 'groupes' && (
+        <div className={`${inner} px-4 pb-3`}>
+          <FilterBar value={filters} onChange={setFilters} />
+        </div>
+      )}
+
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className={`${inner} px-3 pb-3`}>
-          {panel === 'groupes' && <GroupesPanel filter={filter} wide={wide} />}
+          {panel === 'groupes' && (
+            <GroupesPanel filter={filter} filters={filters} wide={wide} />
+          )}
           {panel === 'tags' && <TagsPanel filter={filter} />}
           {panel === 'chronologie' && <ChronologiePanel filter={filter} />}
         </div>
@@ -107,6 +143,100 @@ export function NavColumn({ wide = false }: { wide?: boolean }) {
             <Plus size={16} strokeWidth={2.5} />
             Créer
           </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Les critères d'état tiennent sur une ligne ; les tags sont repliés
+// derrière un bouton, parce qu'il peut y en avoir trente et qu'ils
+// mangeraient l'écran avant qu'on ait commencé à chercher.
+function FilterBar({
+  value,
+  onChange,
+}: {
+  value: Filters;
+  onChange: (f: Filters) => void;
+}) {
+  const [openTags, setOpenTags] = useState(false);
+  const { data: tags } = useQuery({ queryKey: ['tags'], queryFn: listAllTags });
+
+  const toggleTag = (id: string) =>
+    onChange({
+      ...value,
+      tagIds: value.tagIds.includes(id)
+        ? value.tagIds.filter((t) => t !== id)
+        : [...value.tagIds, id],
+    });
+
+  const flags = [
+    { key: 'untitled' as const, label: 'Sans titre' },
+    { key: 'empty' as const, label: 'Vide' },
+    { key: 'recent' as const, label: 'Récent' },
+    { key: 'unlinked' as const, label: 'Jamais relié' },
+  ];
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <button
+        onClick={() => setOpenTags((v) => !v)}
+        aria-expanded={openTags}
+        className={`rounded-full border px-2.5 py-1 text-[12.5px] transition ${
+          value.tagIds.length > 0
+            ? 'border-ink bg-ink text-white'
+            : 'border-line text-ink-2 hover:border-ink'
+        }`}
+      >
+        Tags{value.tagIds.length > 0 && ` · ${value.tagIds.length}`}
+      </button>
+
+      {flags.map((f) => (
+        <button
+          key={f.key}
+          onClick={() => onChange({ ...value, [f.key]: !value[f.key] })}
+          aria-pressed={value[f.key]}
+          className={`rounded-full border px-2.5 py-1 text-[12.5px] transition ${
+            value[f.key]
+              ? 'border-ink bg-ink text-white'
+              : 'border-line text-ink-2 hover:border-ink'
+          }`}
+        >
+          {f.label}
+        </button>
+      ))}
+
+      {isFiltering(value) && (
+        <button
+          onClick={() => onChange(NO_FILTERS)}
+          className="px-1.5 text-[12.5px] text-ink-4 transition hover:text-ink"
+        >
+          Effacer
+        </button>
+      )}
+
+      {openTags && (
+        <div className="mt-1 flex w-full flex-wrap gap-1.5">
+          {(tags ?? []).length === 0 && (
+            <span className="text-[13px] text-ink-4">Aucun tag créé.</span>
+          )}
+          {(tags ?? []).map((tag) => {
+            const tone = pastelFor(tag.id);
+            const on = value.tagIds.includes(tag.id);
+            return (
+              <button
+                key={tag.id}
+                onClick={() => toggleTag(tag.id)}
+                aria-pressed={on}
+                className={`rounded-full px-2.5 py-1 text-[12.5px] font-medium transition ${
+                  on ? 'shadow-[0_0_0_1.5px_var(--color-ink)]' : 'opacity-70 hover:opacity-100'
+                }`}
+                style={{ backgroundColor: tone.bg, color: tone.text }}
+              >
+                {tag.name}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -134,7 +264,15 @@ function EmptyPanel({ children }: { children: string }) {
 // Un Groupe n'est pas une entité : c'est un Element qui a des enfants.
 // Descendre dedans et l'ouvrir sont donc deux gestes distincts, d'où le
 // bouton "Ouvrir" du fil d'Ariane : il a un texte, comme tous les autres.
-function GroupesPanel({ filter, wide }: { filter: string; wide: boolean }) {
+function GroupesPanel({
+  filter,
+  filters,
+  wide,
+}: {
+  filter: string;
+  filters: Filters;
+  wide: boolean;
+}) {
   const navigate = useNavigate();
   const location = useLocation();
   const [path, setPath] = useState<Element[]>([]);
@@ -144,25 +282,75 @@ function GroupesPanel({ filter, wide }: { filter: string; wide: boolean }) {
     queryFn: listElements,
   });
   const { data: links } = useQuery({ queryKey: ['links'], queryFn: listAllLinks });
+  const { data: elementTags } = useQuery({
+    queryKey: ['element-tags'],
+    queryFn: listAllElementTags,
+  });
+  const { data: relations } = useQuery({
+    queryKey: ['relations'],
+    queryFn: listAllRelations,
+  });
 
   const here = path[path.length - 1] ?? null;
+  // Filtrer, c'est chercher dans tout l'univers : on quitte alors
+  // l'arborescence pour une liste de résultats. Garder l'imbrication
+  // ferait chercher les réponses dans des dossiers à ouvrir un par un.
+  const searching = isFiltering(filters);
+  // Figé à l'ouverture de l'écran : "récent" ne doit pas se déplacer sous
+  // les yeux pendant qu'on lit la liste.
+  const [mountedAt] = useState(() => Date.now());
 
   const items = useMemo(() => {
     const all = elements ?? [];
     const ls = links ?? [];
-    const list = here
-      ? childrenOf(ls, all, here.id)
-      : all.filter(
-          (e) => hasChildren(ls, e.id) && parentsOf(ls, all, e.id).length === 0
-        );
     const q = filter.trim().toLowerCase();
+
+    let list: Element[];
+    if (searching) {
+      const linked = new Set<string>();
+      for (const r of relations ?? []) {
+        linked.add(r.source_id);
+        linked.add(r.target_id);
+      }
+      const tagsOf = new Map<string, Set<string>>();
+      for (const et of elementTags ?? []) {
+        const set = tagsOf.get(et.element_id) ?? new Set<string>();
+        set.add(et.tag_id);
+        tagsOf.set(et.element_id, set);
+      }
+      const weekAgo = mountedAt - 7 * 24 * 3600 * 1000;
+
+      list = all.filter((e) => {
+        if (filters.untitled && !isUntitled(e)) return false;
+        if (filters.empty && extractPlainText(e.content, 1)) return false;
+        if (filters.recent && new Date(e.updated_at).getTime() < weekAgo)
+          return false;
+        if (filters.unlinked && linked.has(e.id)) return false;
+        if (filters.tagIds.length > 0) {
+          const own = tagsOf.get(e.id);
+          if (!own || !filters.tagIds.every((t) => own.has(t))) return false;
+        }
+        return true;
+      });
+    } else {
+      list = here
+        ? childrenOf(ls, all, here.id)
+        : all.filter(
+            (e) => hasChildren(ls, e.id) && parentsOf(ls, all, e.id).length === 0
+          );
+    }
+
     if (!q) return list;
     return list.filter((e) => displayName(e).toLowerCase().includes(q));
-  }, [elements, links, here, filter]);
+  }, [elements, links, here, filter, filters, searching, relations, elementTags, mountedAt]);
 
   return (
     <>
-      {here ? (
+      {searching ? (
+        <PanelTitle>
+          {`${items.length} résultat${items.length > 1 ? 's' : ''}`}
+        </PanelTitle>
+      ) : here ? (
         <div className="mb-3 flex items-center gap-1.5 px-1.5">
           <button
             onClick={() => setPath((p) => p.slice(0, -1))}
@@ -187,9 +375,11 @@ function GroupesPanel({ filter, wide }: { filter: string; wide: boolean }) {
 
       {items.length === 0 ? (
         <EmptyPanel>
-          {here
-            ? 'Ce Groupe est vide.'
-            : "Rattache un enfant à un Element pour qu'il devienne un Groupe."}
+          {searching
+            ? 'Aucun Element ne correspond.'
+            : here
+              ? 'Ce Groupe est vide.'
+              : "Rattache un enfant à un Element pour qu'il devienne un Groupe."}
         </EmptyPanel>
       ) : (
         <div
@@ -206,7 +396,11 @@ function GroupesPanel({ filter, wide }: { filter: string; wide: boolean }) {
               elements={elements ?? []}
               links={links ?? []}
               active={location.pathname === `/elements/${item.id}`}
-              onEnter={() => setPath((p) => [...p, item])}
+              // En résultats, descendre n'a pas de sens : on a demandé ces
+              // Elements-là, on veut les ouvrir.
+              onEnter={
+                searching ? undefined : () => setPath((p) => [...p, item])
+              }
               onOpen={() => navigate(`/elements/${item.id}`)}
             />
           ))}
@@ -228,18 +422,23 @@ function GroupNavCard({
   elements: Element[];
   links: ElementLink[];
   active: boolean;
-  onEnter: () => void;
+  onEnter?: () => void;
   onOpen: () => void;
 }) {
   const children = childrenOf(links, elements, group.id);
-  const isGroup = children.length > 0;
+  const isGroup = children.length > 0 && !!onEnter;
   const shown = children.slice(0, 4);
   const rest = children.length - shown.length;
   const tone = pastelFor(group.id);
 
   return (
     <button
+      // Comme dans un Finder : un clic entre dans le dossier, un double
+      // clic ouvre la chose elle-même. Un Groupe a un texte comme les
+      // autres, il faut donc pouvoir l'atteindre sans le traverser.
       onClick={isGroup ? onEnter : onOpen}
+      onDoubleClick={onOpen}
+      title={isGroup ? 'Double-clic pour ouvrir ce Groupe' : undefined}
       aria-current={active ? 'true' : undefined}
       className={`w-full rounded-xl border px-3 py-2.5 text-left transition ${
         active
