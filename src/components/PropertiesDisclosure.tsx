@@ -66,7 +66,7 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
           }
         }}
         placeholder="+ tag"
-        className="w-20 border-b border-line bg-transparent px-1 py-0.5 text-[14px] text-ink-2 outline-none transition focus:border-ink"
+        className="w-20 border-b border-line bg-transparent px-1 py-0.5 text-[14px] text-ink-2 outline-none transition focus:border-ink-4"
       />
     </PropertyRow>
   );

@@ -79,7 +79,7 @@ export function TagsPage() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Rechercher un Element…"
-        className="mb-7 w-full max-w-[26rem] border-b border-line bg-transparent pb-2.5 text-[16px] outline-none transition placeholder:text-ink-4 focus:border-ink"
+        className="mb-7 w-full max-w-[26rem] border-b border-line bg-transparent pb-2.5 text-[16px] outline-none transition placeholder:text-ink-4 focus:border-ink-4"
       />
 
       <div className="mb-7">

@@ -167,7 +167,7 @@ function ElementsTab({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Chercher un nom, une phrase…"
-        className="mb-6 w-full border-b border-line bg-transparent pb-2.5 text-[15px] text-ink outline-none transition placeholder:text-ink-4 focus:border-ink"
+        className="mb-6 w-full border-b border-line bg-transparent pb-2.5 text-[15px] text-ink outline-none transition placeholder:text-ink-4 focus:border-ink-4"
       />
 
       {elements.length > 0 && (
@@ -342,7 +342,7 @@ function ConnexionsTab({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Chercher parmi les Elements…"
-        className="mb-5 w-full border-b border-line bg-transparent pb-2.5 text-[17px] text-ink outline-none transition placeholder:text-ink-4 focus:border-ink"
+        className="mb-5 w-full border-b border-line bg-transparent pb-2.5 text-[17px] text-ink outline-none transition placeholder:text-ink-4 focus:border-ink-4"
       />
 
       <div className="mb-6 flex flex-wrap gap-x-6 gap-y-3">

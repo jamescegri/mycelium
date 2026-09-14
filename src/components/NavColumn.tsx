@@ -117,7 +117,7 @@ export function NavColumn({ wide = false }: { wide?: boolean }) {
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           placeholder="Chercher un nom, une phrase…"
-          className="w-full border-b border-line bg-transparent pb-2 text-[14px] text-ink outline-none transition placeholder:text-ink-4 focus:border-ink"
+          className="w-full border-b border-line bg-transparent pb-2 text-[14px] text-ink outline-none transition placeholder:text-ink-4 focus:border-ink-4"
         />
       </div>
 

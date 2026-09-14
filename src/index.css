@@ -102,14 +102,24 @@ button:not(:disabled),
   cursor: pointer;
 }
 
+/* Le contour de focus ne concerne que ce qu'on active : sur un bouton il
+   n'apparaît qu'à la navigation au clavier. Les champs de saisie en sont
+   exclus — eux déclenchent :focus-visible au simple clic, si bien que
+   chaque clic dans la barre de recherche l'encadrait de noir. Ils
+   signalent leur focus par leur propre trait, juste en dessous. */
 button:focus-visible,
 a:focus-visible,
-input:focus-visible,
 select:focus-visible,
 [role="button"]:focus-visible {
   outline: 2px solid var(--color-ink);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* Un champ signale son focus par son propre trait, qui passe du filet
+   clair au gris franc : le changement est net sans poser de cadre. */
+input:focus-visible {
+  outline: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
