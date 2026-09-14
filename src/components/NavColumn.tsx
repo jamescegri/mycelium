@@ -96,11 +96,11 @@ export function NavColumn({ wide = false }: { wide?: boolean }) {
         <div className={`${inner} px-4 pt-5 pb-3`}>
           <button
             onClick={openPalette}
-            className="flex w-full items-center gap-2.5 rounded-xl border border-line px-3.5 py-2.5 text-left text-[13.5px] text-ink-3 transition hover:border-ink-4"
+            className="flex w-full items-center gap-2.5 rounded-xl border border-line px-3.5 py-2.5 text-left text-[15px] text-ink-3 transition hover:border-ink-4"
           >
             <Search size={15} strokeWidth={2} className="shrink-0" />
             Rechercher
-            <span className="ml-auto text-[12px] text-ink-4">⌘K</span>
+            <span className="ml-auto text-[13px] text-ink-4">⌘K</span>
           </button>
         </div>
       )}
@@ -110,7 +110,7 @@ export function NavColumn({ wide = false }: { wide?: boolean }) {
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           placeholder="Chercher un nom, une phrase…"
-          className="w-full border-b border-line bg-transparent pb-2 text-[13px] text-ink outline-none transition placeholder:text-ink-4 focus:border-ink"
+          className="w-full border-b border-line bg-transparent pb-2 text-[14px] text-ink outline-none transition placeholder:text-ink-4 focus:border-ink"
         />
       </div>
 
@@ -137,7 +137,7 @@ export function NavColumn({ wide = false }: { wide?: boolean }) {
           <button
             onClick={() => createMutation.mutate()}
             disabled={createMutation.isPending}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-3.5 py-2.5 text-[13.5px] font-semibold text-white transition hover:bg-accent-hover disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-3.5 py-2.5 text-[15px] font-semibold text-white transition hover:bg-accent-hover disabled:opacity-50"
           >
             <Plus size={16} strokeWidth={2.5} />
             Créer
@@ -181,7 +181,7 @@ function FilterBar({
       <button
         onClick={() => setOpenTags((v) => !v)}
         aria-expanded={openTags}
-        className={`rounded-full border px-2.5 py-1 text-[12px] transition ${
+        className={`rounded-full border px-2.5 py-1 text-[13px] transition ${
           value.tagIds.length > 0
             ? 'border-ink bg-ink text-white'
             : 'border-line text-ink-2 hover:border-ink'
@@ -195,7 +195,7 @@ function FilterBar({
           key={f.key}
           onClick={() => onChange({ ...value, [f.key]: !value[f.key] })}
           aria-pressed={value[f.key]}
-          className={`rounded-full border px-2.5 py-1 text-[12px] transition ${
+          className={`rounded-full border px-2.5 py-1 text-[13px] transition ${
             value[f.key]
               ? 'border-ink bg-ink text-white'
               : 'border-line text-ink-2 hover:border-ink'
@@ -208,7 +208,7 @@ function FilterBar({
       {isFiltering(value) && (
         <button
           onClick={() => onChange(NO_FILTERS)}
-          className="px-1.5 text-[12px] text-ink-4 transition hover:text-ink"
+          className="px-1.5 text-[13px] text-ink-4 transition hover:text-ink"
         >
           Effacer
         </button>
@@ -217,7 +217,7 @@ function FilterBar({
       {openTags && (
         <div className="mt-1 flex w-full flex-wrap gap-1.5">
           {(tags ?? []).length === 0 && (
-            <span className="text-[13px] text-ink-4">Aucun tag créé.</span>
+            <span className="text-[14px] text-ink-4">Aucun tag créé.</span>
           )}
           {(tags ?? []).map((tag) => {
             const tone = pastelFor(tag.id);
@@ -227,7 +227,7 @@ function FilterBar({
                 key={tag.id}
                 onClick={() => toggleTag(tag.id)}
                 aria-pressed={on}
-                className={`rounded-full px-2.5 py-1 text-[12px] font-medium transition ${
+                className={`rounded-full px-2.5 py-1 text-[13px] font-medium transition ${
                   on ? 'shadow-[0_0_0_1.5px_var(--color-ink)]' : 'opacity-70 hover:opacity-100'
                 }`}
                 style={{ backgroundColor: tone.bg, color: tone.text }}
@@ -244,14 +244,14 @@ function FilterBar({
 
 function PanelTitle({ children }: { children: string }) {
   return (
-    <p className="mb-2.5 px-1.5 text-[12px] font-semibold tracking-[0.07em] text-ink-4 uppercase">
+    <p className="mb-2.5 px-1.5 text-[13px] font-semibold tracking-[0.07em] text-ink-4 uppercase">
       {children}
     </p>
   );
 }
 
 function EmptyPanel({ children }: { children: string }) {
-  return <p className="px-1.5 text-[13px] text-ink-4">{children}</p>;
+  return <p className="px-1.5 text-[14px] text-ink-4">{children}</p>;
 }
 
 // ── Groupes ──────────────────────────────────────────────────────────
@@ -430,22 +430,22 @@ function GroupesPanel({
   const count = rows.length || cards.length;
 
   const header = (
-    <div className="mb-4 flex items-end gap-2">
+    <div className="mb-5 flex items-end gap-2">
       {here && !searching ? (
         <div className="min-w-0">
           <button
             onClick={() => setPath((p) => p.slice(0, -1))}
-            className="mb-0.5 flex items-center gap-1 text-[12px] text-ink-4 transition hover:text-ink"
+            className="mb-1 flex items-center gap-1 text-[14px] text-ink-3 transition hover:text-ink"
           >
             <ChevronLeft size={13} strokeWidth={2.2} />
             {path.length > 1 ? displayName(path[path.length - 2]) : 'Groupes'}
           </button>
-          <h2 className="title-display truncate text-[26px]">
+          <h2 className="title-display truncate text-[32px]">
             {displayName(here)}
           </h2>
         </div>
       ) : (
-        <h2 className="title-display text-[26px]">
+        <h2 className="title-display text-[32px]">
           {searching
             ? `${count} résultat${count > 1 ? 's' : ''}`
             : 'Groupes'}
@@ -594,7 +594,7 @@ function ExplorerRow({
         />
         <span className="min-w-0 flex-1">
           <span
-            className={`block truncate text-[13.5px] ${
+            className={`block truncate text-[16px] ${
               active ? 'font-semibold' : isGroup ? 'font-medium' : ''
             } ${isUntitled(row.element) ? 'text-ink-3 italic' : ''}`}
           >
@@ -603,13 +603,13 @@ function ExplorerRow({
           {/* Le passage trouvé : sans lui, un résultat dont le titre ne
               contient pas le mot cherché paraît arriver là par erreur. */}
           {excerpt && (
-            <span className="mt-0.5 block truncate text-[12px] text-ink-3">
+            <span className="mt-0.5 block truncate text-[13.5px] text-ink-3">
               {excerpt}
             </span>
           )}
         </span>
         {isGroup && (
-          <span className="mt-0.5 shrink-0 text-[12px] tabular-nums text-ink-4">
+          <span className="mt-0.5 shrink-0 text-[13px] tabular-nums text-ink-4">
             {row.items.length}
           </span>
         )}
@@ -661,21 +661,21 @@ function GalleryCard({
           }
         />
         <span
-          className={`truncate text-[14.5px] font-semibold ${
+          className={`truncate text-[16px] font-semibold ${
             isUntitled(element) ? 'text-ink-3 italic' : ''
           }`}
         >
           {displayName(element)}
         </span>
         {items.length > 0 && (
-          <span className="ml-auto shrink-0 text-[12px] tabular-nums text-ink-4">
+          <span className="ml-auto shrink-0 text-[13px] tabular-nums text-ink-4">
             {items.length}
           </span>
         )}
       </span>
 
       {excerpt && (
-        <span className="line-clamp-2 text-[12.5px] leading-relaxed text-ink-3">
+        <span className="line-clamp-2 text-[13.5px] leading-relaxed text-ink-3">
           {excerpt}
         </span>
       )}
@@ -687,7 +687,7 @@ function GalleryCard({
             return (
               <span
                 key={child.id}
-                className="max-w-full truncate rounded-full px-2 py-0.5 text-[11px] font-medium"
+                className="max-w-full truncate rounded-full px-2 py-0.5 text-[12px] font-medium"
                 style={{ backgroundColor: t.bg, color: t.text }}
               >
                 {displayName(child)}
@@ -695,7 +695,7 @@ function GalleryCard({
             );
           })}
           {rest > 0 && (
-            <span className="rounded-full bg-surface-3 px-2 py-0.5 text-[11px] text-ink-3">
+            <span className="rounded-full bg-surface-3 px-2 py-0.5 text-[12px] text-ink-3">
               +{rest}
             </span>
           )}
@@ -753,7 +753,7 @@ function TagsPanel({ filter }: { filter: string }) {
               key={tag.id}
               onClick={() => navigate(`/tags?tag=${tag.id}`)}
               aria-current={active ? 'true' : undefined}
-              className={`inline-flex items-baseline gap-1.5 rounded-full px-2.5 py-1 text-[13px] font-medium transition ${
+              className={`inline-flex items-baseline gap-1.5 rounded-full px-2.5 py-1 text-[14px] font-medium transition ${
                 active
                   ? 'shadow-[0_0_0_1.5px_var(--color-ink)]'
                   : 'opacity-85 hover:opacity-100'
@@ -761,7 +761,7 @@ function TagsPanel({ filter }: { filter: string }) {
               style={{ backgroundColor: tone.bg, color: tone.text }}
             >
               {tag.name}
-              <span className="text-[11px] tabular-nums opacity-60">{count}</span>
+              <span className="text-[12px] tabular-nums opacity-60">{count}</span>
             </button>
           );
         })}
@@ -823,7 +823,7 @@ function ChronologiePanel({ filter }: { filter: string }) {
               style={{ paddingLeft: 10 + row.depth * 14 }}
               className={`flex items-center gap-2 rounded-lg py-1.5 pr-2.5 text-left transition ${
                 active ? 'bg-surface-3 font-semibold' : 'hover:bg-surface-2'
-              } ${row.depth === 0 ? 'text-[13.5px] font-medium' : 'text-[13.5px]'}`}
+              } ${row.depth === 0 ? 'text-[15px] font-medium' : 'text-[15px]'}`}
             >
               <span
                 className="size-2 shrink-0 rounded-[2px]"

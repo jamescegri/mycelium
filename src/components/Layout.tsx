@@ -158,16 +158,25 @@ function RailButton({
       // pour les lecteurs d'écran, `title` pour l'infobulle du navigateur.
       aria-label={label}
       title={label}
-      className={`flex w-full items-center justify-center rounded-xl py-2.5 transition ${
-        active ? 'bg-surface-3 text-ink' : 'text-ink-3'
-      }`}
+      // Une pastille carrée plutôt qu'un bandeau sur toute la largeur du
+      // rail : la surface colorée doit avoir la forme de l'icône qu'elle
+      // met en avant, pas celle de la colonne qui la contient.
+      className="mx-auto flex size-11 items-center justify-center rounded-xl transition"
       style={
-        hover && !active && tint
-          ? { backgroundColor: tint, color: 'var(--color-ink)' }
-          : undefined
+        // La couleur reste quand la destination est celle où l'on se
+        // trouve : un onglet actif qui redevient gris oblige à relire les
+        // six icônes pour savoir où l'on est.
+        // Corbeille et Sortir n'ont pas de teinte : ce ne sont pas des
+        // destinations de travail, elles se contentent du gris de fond.
+        active || hover
+          ? {
+              backgroundColor: tint ?? 'var(--color-surface-3)',
+              color: 'var(--color-ink)',
+            }
+          : { color: 'var(--color-ink-3)' }
       }
     >
-      <Icon size={19} strokeWidth={2} />
+      <Icon size={20} strokeWidth={active ? 2.4 : 2} />
     </button>
   );
 }
