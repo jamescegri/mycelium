@@ -52,6 +52,11 @@ export interface Filters {
   empty: boolean;
   recent: boolean;
   unlinked: boolean;
+  // Les Elements qu'aucun Groupe ne contient : les idées jetées en vitesse,
+  // qui se perdent sans un endroit où les retrouver. Une vue plutôt qu'un
+  // groupe "Idées" : rien n'est créé, et une note en sort d'elle-même au
+  // moment où on la range.
+  unfiled: boolean;
 }
 
 const NO_FILTERS: Filters = {
@@ -60,11 +65,17 @@ const NO_FILTERS: Filters = {
   empty: false,
   recent: false,
   unlinked: false,
+  unfiled: false,
 };
 
 function isFiltering(f: Filters): boolean {
   return (
-    f.tagIds.length > 0 || f.untitled || f.empty || f.recent || f.unlinked
+    f.tagIds.length > 0 ||
+    f.untitled ||
+    f.empty ||
+    f.recent ||
+    f.unlinked ||
+    f.unfiled
   );
 }
 
@@ -181,6 +192,7 @@ function FilterBar({
     { key: 'empty' as const, label: 'Vide' },
     { key: 'recent' as const, label: 'Récent' },
     { key: 'unlinked' as const, label: 'Jamais relié' },
+    { key: 'unfiled' as const, label: 'Pas rangé' },
   ];
 
   return (
@@ -412,6 +424,8 @@ function GroupesPanel({
       if (filters.recent && new Date(e.updated_at).getTime() < weekAgo)
         return false;
       if (filters.unlinked && linked.has(e.id)) return false;
+      if (filters.unfiled && parentsOf(allLinks, all, e.id).length > 0)
+        return false;
       if (filters.tagIds.length > 0) {
         const own = tagsOf.get(e.id);
         if (!own || !filters.tagIds.every((t) => own.has(t))) return false;
@@ -421,6 +435,7 @@ function GroupesPanel({
     return { list, byName, excerptOf };
   }, [
     all,
+    allLinks,
     filter,
     filters,
     searching,

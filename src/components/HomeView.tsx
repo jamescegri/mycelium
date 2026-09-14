@@ -51,9 +51,15 @@ export function HomeView() {
     [all, allLinks]
   );
 
-  // Les captures jamais nommées : c'est la dette d'écriture la plus
-  // fréquente, autant la montrer là où on revient tous les jours.
-  const unnamed = useMemo(() => all.filter(isUntitled).length, [all]);
+  // Les notes qu'aucun Groupe ne contient : elles se perdent, et c'est la
+  // dette d'écriture la plus fréquente. Autant la montrer là où l'on
+  // revient tous les jours — et pas sous forme de groupe "Idées", qui
+  // imposerait une catégorie et qu'il faudrait ensuite défaire.
+  const unfiled = useMemo(
+    () =>
+      all.filter((e) => parentsOf(allLinks, all, e.id).length === 0).length,
+    [all, allLinks]
+  );
 
   return (
     <div className="mx-auto max-w-[46rem] px-6 py-14 max-md:px-4 max-md:py-7 sm:px-10">
@@ -104,13 +110,13 @@ export function HomeView() {
         </section>
       )}
 
-      {unnamed > 0 && (
+      {unfiled > 0 && (
         <button
-          onClick={() => navigate('/liste')}
+          onClick={() => navigate('/groupes')}
           className="mt-10 flex items-center gap-2 text-[15px] text-ink-3 transition hover:text-ink"
         >
-          {unnamed} Element{unnamed > 1 ? 's' : ''} attend
-          {unnamed > 1 ? 'ent' : ''} encore un titre
+          {unfiled} Element{unfiled > 1 ? 's' : ''} n'
+          {unfiled > 1 ? 'ont' : 'a'} pas encore trouvé sa place
           <ArrowRight size={15} strokeWidth={2} />
         </button>
       )}
