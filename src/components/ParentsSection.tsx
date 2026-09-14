@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { X } from 'lucide-react';
+import { CornerLeftUp, X } from 'lucide-react';
 import { listElements } from '../lib/elements';
 import {
   getDescendantIds,
@@ -11,7 +11,7 @@ import {
   wouldCreateCycle,
 } from '../lib/links';
 import { ElementPicker } from './ElementPicker';
-import { Pill } from './Pill';
+import { PropertyEmpty, PropertyRow } from './PropertyRow';
 import type { Element } from '../types';
 import { displayName } from '../lib/display';
 
@@ -54,46 +54,40 @@ export function ParentsSection({ element }: { element: Element }) {
   ];
 
   return (
-    <div className="text-[17px]">
-      <div className="mb-3 text-[14px] font-semibold text-ink-3">Parents</div>
-      {parents.length === 0 ? (
-        <p className="mb-3 text-[16px] text-ink-4">
-          Aucun parent — cet Element est à la racine.
-        </p>
-      ) : (
-        /* Fond cyan : c'est la couleur du "@" dans l'éditeur. Un parent
-           se reconnaît à sa teinte, ici comme dans le texte. */
-        <div className="mb-3 flex flex-wrap gap-2">
-          {parents.map((parent) => (
-            <Pill
-              key={parent.id}
-              className="border-transparent bg-fluo-parent px-3 py-1.5 pr-2 text-[14.5px] font-medium text-ink"
-            >
-              <button
-                onClick={() => navigate(`/elements/${parent.id}`)}
-                className="cursor-pointer text-ink"
-              >
-                {displayName(parent)}
-              </button>
-              <button
-                onClick={() => removeParentMutation.mutate(parent.id)}
-                aria-label={`Retirer de ${parent.name}`}
-                className="cursor-pointer text-ink/45 transition hover:text-ink"
-              >
-                <X size={14} strokeWidth={2.5} />
-              </button>
-            </Pill>
-          ))}
-        </div>
-      )}
+    <PropertyRow icon={CornerLeftUp} label="Parents">
+      {parents.length === 0 && <PropertyEmpty>À la racine</PropertyEmpty>}
+
+      {/* Fond cyan : c'est la couleur du "@" dans l'éditeur. Un parent se
+          reconnaît à sa teinte, ici comme dans le texte. */}
+      {parents.map((parent) => (
+        <span
+          key={parent.id}
+          className="group inline-flex items-center gap-0.5 rounded-full bg-fluo-parent py-1 pr-1.5 pl-3 text-[14px] font-medium text-ink"
+        >
+          <button
+            onClick={() => navigate(`/elements/${parent.id}`)}
+            className="max-w-[14rem] cursor-pointer truncate"
+          >
+            {displayName(parent)}
+          </button>
+          <button
+            onClick={() => removeParentMutation.mutate(parent.id)}
+            aria-label={`Retirer de ${displayName(parent)}`}
+            className="hidden cursor-pointer px-0.5 text-ink/45 transition group-hover:inline hover:text-ink"
+          >
+            <X size={13} strokeWidth={2.5} />
+          </button>
+        </span>
+      ))}
+
       <ElementPicker
         excludeIds={excludeIds}
-        placeholder="+ Ajouter un parent…"
+        placeholder="+ parent…"
         onPick={(picked) => {
           if (links && wouldCreateCycle(links, picked.id, element.id)) return;
           addParentMutation.mutate(picked);
         }}
       />
-    </div>
+    </PropertyRow>
   );
 }

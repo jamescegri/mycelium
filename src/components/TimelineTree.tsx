@@ -14,7 +14,12 @@ import {
 import { displayName } from '../lib/display';
 import { pastelFor } from '../lib/palette';
 import { reportError } from '../lib/errors';
-import type { Element } from '../types';
+import type { Element, ElementLink } from '../types';
+
+// Constantes de repli stables : `?? []` fabrique un tableau neuf à chaque
+// rendu, ce qui invalide tous les useMemo qui en dépendent.
+const NO_ELEMENTS: Element[] = [];
+const NO_LINKS: ElementLink[] = [];
 
 // La chronologie telle qu'on la parcourt : le récit emboîté, lu dans
 // l'ordre. Rien ici ne demande "de quel type est cet Element ?" — un
@@ -100,8 +105,8 @@ export function TimelineTree() {
     queryFn: listAllRelations,
   });
 
-  const all = elements ?? [];
-  const allLinks = links ?? [];
+  const all = elements ?? NO_ELEMENTS;
+  const allLinks = links ?? NO_LINKS;
 
   const rows = useMemo(
     () => timelineRows(all, allLinks, temporal ?? [], collapsed),

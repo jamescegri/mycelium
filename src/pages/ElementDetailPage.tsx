@@ -282,14 +282,14 @@ function ElementEditor({
       {/* Le classement est au-dessus du texte : en ouvrant un Element, on
           veut d'abord savoir où il se situe et à quoi il tient. "@"/"+"
           tapés dans l'éditeur agissent ici, pas comme du texte inséré. */}
-      <div className="mt-7 space-y-5 border-b border-line pb-9">
+      <div className="mt-5 border-b border-line pb-5">
         <PropertiesDisclosure element={element} />
         <ParentsSection element={element} />
         <EnfantsSection element={element} />
         <ChronologySection element={element} />
       </div>
 
-      <div className="mt-9 mb-12">
+      <div className="mt-7 mb-12">
         <Editor elementId={element.id} content={content} onChange={setContent} />
       </div>
 

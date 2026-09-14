@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FileText, Plus, X } from 'lucide-react';
-import { createElement, listElements } from '../lib/elements';
+import { CornerDownRight, Plus, X } from 'lucide-react';
+import { createElement } from '../lib/elements';
+import { listElements } from '../lib/elements';
 import {
   childrenOf,
   getAncestorIds,
@@ -10,15 +11,15 @@ import {
   reorderChild,
   unlinkChild,
 } from '../lib/links';
-import { ElementPicker } from './ElementPicker';
-import type { Element } from '../types';
 import { displayName } from '../lib/display';
+import { ElementPicker } from './ElementPicker';
+import { PropertyEmpty, PropertyRow } from './PropertyRow';
+import type { Element } from '../types';
 
-// "Enfants" : ce que cet Element contient (il en devient un Groupe dès
-// qu'il en a au moins un). Un enfant peut aussi appartenir à d'autres
-// Groupes en parallèle — rien n'est figé. "+ Nouvelle sous-page" crée
-// l'enfant immédiatement, sans formulaire, et y amène pour écrire tout de
-// suite.
+// Les enfants en pastilles vertes — la couleur du "+" dans l'éditeur, pour
+// qu'un enfant se reconnaisse à sa teinte ici comme dans le texte. Ils sont
+// ordonnés, d'où les flèches qui n'apparaissent qu'au survol : l'ordre
+// compte, mais pas au point d'occuper la ligne en permanence.
 export function EnfantsSection({ element }: { element: Element }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -27,22 +28,19 @@ export function EnfantsSection({ element }: { element: Element }) {
     queryKey: ['elements'],
     queryFn: listElements,
   });
-  const { data: links } = useQuery({
-    queryKey: ['links'],
-    queryFn: listAllLinks,
-  });
+  const { data: links } = useQuery({ queryKey: ['links'], queryFn: listAllLinks });
 
-  const children = links && elements ? childrenOf(links, elements, element.id) : [];
+  const children =
+    elements && links ? childrenOf(links, elements, element.id) : [];
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['links'] });
+    queryClient.invalidateQueries({ queryKey: ['elements'] });
   };
 
   const createChildMutation = useMutation({
     mutationFn: async () => {
-      const created = await createElement({
-        name: '',
-      });
+      const created = await createElement({ name: '' });
       await linkChild(element.id, created.id);
       return created;
     },
@@ -51,7 +49,6 @@ export function EnfantsSection({ element }: { element: Element }) {
       navigate(`/elements/${created.id}`, { state: { isNew: true } });
     },
   });
-
   const addChildMutation = useMutation({
     mutationFn: (child: Element) => linkChild(element.id, child.id),
     onSuccess: invalidate,
@@ -81,81 +78,67 @@ export function EnfantsSection({ element }: { element: Element }) {
   ];
 
   return (
-    <div className="text-[17px]">
-      <div className="mb-3 text-[14px] font-semibold text-ink-3">Enfants</div>
-      {children.length === 0 ? (
-        <p className="mb-3 text-[16px] text-ink-4">Pas encore d'enfant.</p>
-      ) : (
-        <div className="mb-3">
-          {children.map((child, index) => (
-            <div
-              key={child.id}
-              className="group flex items-center justify-between rounded-lg px-1 py-2 hover:bg-surface-2"
-            >
-              <button
-                onClick={() => navigate(`/elements/${child.id}`)}
-                className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 text-left text-ink"
-              >
-                {/* Pastille verte : la couleur du "+". Les enfants sont
-                    listés et non en pastilles (ils sont ordonnés et
-                    réordonnables), le marqueur porte donc le signal. */}
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-fluo-child">
-                  <FileText size={13} strokeWidth={2} className="text-ink" />
-                </span>
-                <span className="truncate">{displayName(child)}</span>
-              </button>
-              <span className="ml-2 hidden shrink-0 items-center gap-1 group-hover:flex">
-                <button
-                  onClick={() =>
-                    reorderMutation.mutate({ childId: child.id, direction: 'up' })
-                  }
-                  disabled={index === 0}
-                  aria-label="Monter"
-                  className="cursor-pointer text-ink-4 hover:text-ink-2 disabled:cursor-default disabled:opacity-20"
-                >
-                  ↑
-                </button>
-                <button
-                  onClick={() =>
-                    reorderMutation.mutate({
-                      childId: child.id,
-                      direction: 'down',
-                    })
-                  }
-                  disabled={index === children.length - 1}
-                  aria-label="Descendre"
-                  className="cursor-pointer text-ink-4 hover:text-ink-2 disabled:cursor-default disabled:opacity-20"
-                >
-                  ↓
-                </button>
-                <button
-                  onClick={() => removeChildMutation.mutate(child.id)}
-                  aria-label={`Retirer ${child.name}`}
-                  className="cursor-pointer text-ink-4 hover:text-danger"
-                >
-                  <X size={13} strokeWidth={2} />
-                </button>
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-      <div className="flex flex-wrap items-center gap-4">
-        <button
-          onClick={() => createChildMutation.mutate()}
-          disabled={createChildMutation.isPending}
-          className="flex cursor-pointer items-center gap-1.5 text-ink-3 hover:text-ink disabled:cursor-default disabled:opacity-50"
+    <PropertyRow icon={CornerDownRight} label="Enfants">
+      {children.length === 0 && <PropertyEmpty>Aucun</PropertyEmpty>}
+
+      {children.map((child, index) => (
+        <span
+          key={child.id}
+          className="group inline-flex items-center gap-0.5 rounded-full bg-fluo-child py-1 pr-1.5 pl-3 text-[14px] font-medium text-ink"
         >
-          <Plus size={15} strokeWidth={1.75} />
-          Nouvelle sous-page
-        </button>
-        <ElementPicker
-          excludeIds={excludeIds}
-          allowCreate={false}
-          placeholder="+ Rattacher un Element existant…"
-          onPick={(picked) => addChildMutation.mutate(picked)}
-        />
-      </div>
-    </div>
+          <button
+            onClick={() => navigate(`/elements/${child.id}`)}
+            className="max-w-[14rem] cursor-pointer truncate"
+          >
+            {displayName(child)}
+          </button>
+          <span className="hidden items-center group-hover:inline-flex">
+            <button
+              onClick={() =>
+                reorderMutation.mutate({ childId: child.id, direction: 'up' })
+              }
+              disabled={index === 0}
+              aria-label={`Monter ${displayName(child)}`}
+              className="cursor-pointer px-0.5 text-ink/45 transition hover:text-ink disabled:opacity-20"
+            >
+              ↑
+            </button>
+            <button
+              onClick={() =>
+                reorderMutation.mutate({ childId: child.id, direction: 'down' })
+              }
+              disabled={index === children.length - 1}
+              aria-label={`Descendre ${displayName(child)}`}
+              className="cursor-pointer px-0.5 text-ink/45 transition hover:text-ink disabled:opacity-20"
+            >
+              ↓
+            </button>
+            <button
+              onClick={() => removeChildMutation.mutate(child.id)}
+              aria-label={`Retirer ${displayName(child)}`}
+              className="cursor-pointer px-0.5 text-ink/45 transition hover:text-ink"
+            >
+              <X size={13} strokeWidth={2.5} />
+            </button>
+          </span>
+        </span>
+      ))}
+
+      <button
+        onClick={() => createChildMutation.mutate()}
+        disabled={createChildMutation.isPending}
+        className="inline-flex items-center gap-1 rounded-full border border-dashed border-line px-2.5 py-1 text-[13px] text-ink-3 transition hover:border-ink hover:text-ink disabled:opacity-50"
+      >
+        <Plus size={12} strokeWidth={2.4} />
+        Sous-page
+      </button>
+
+      <ElementPicker
+        excludeIds={excludeIds}
+        allowCreate={false}
+        placeholder="+ rattacher…"
+        onPick={(picked) => addChildMutation.mutate(picked)}
+      />
+    </PropertyRow>
   );
 }

@@ -8,7 +8,12 @@ import { extractPlainText } from '../lib/content';
 import { displayName, isUntitled } from '../lib/display';
 import { pastelFor } from '../lib/palette';
 import { CaptureBar } from './CaptureBar';
-import type { Element } from '../types';
+import type { Element, ElementLink } from '../types';
+
+// Constantes de repli stables : `?? []` fabrique un tableau neuf à chaque
+// rendu, ce qui invalide tous les useMemo qui en dépendent.
+const NO_ELEMENTS: Element[] = [];
+const NO_LINKS: ElementLink[] = [];
 
 // L'accueil ne récapitule pas l'univers : il sert à s'y remettre. Deux
 // gestes seulement — jeter une idée qui vient d'arriver, ou reprendre ce
@@ -23,8 +28,8 @@ export function HomeView() {
   });
   const { data: links } = useQuery({ queryKey: ['links'], queryFn: listAllLinks });
 
-  const all = elements ?? [];
-  const allLinks = links ?? [];
+  const all = elements ?? NO_ELEMENTS;
+  const allLinks = links ?? NO_LINKS;
 
   const recent = useMemo(
     () =>

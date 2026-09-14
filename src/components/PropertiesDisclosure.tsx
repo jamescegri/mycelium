@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { X } from 'lucide-react';
+import { Tag as TagIcon, X } from 'lucide-react';
 import {
   addTagToElement,
   listTagsForElement,
   removeTagFromElement,
 } from '../lib/tags';
 import { Pill } from './Pill';
+import { PropertyEmpty, PropertyRow } from './PropertyRow';
 import type { Element } from '../types';
 
 // Les tags sont visibles d'emblée, au même rang que Parents et Enfants :
@@ -35,44 +36,38 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
   });
 
   return (
-    <div className="text-[17px]">
-      <div className="mb-3 text-[14px] font-semibold text-ink-3">Tags</div>
-      <div className="flex flex-wrap items-center gap-2">
-        {tags?.length === 0 && (
-          <span className="text-[16px] text-ink-4">
-            Aucun tag — ajoute-en un pour retrouver cet Element depuis
-            ailleurs.
-          </span>
-        )}
-        {tags?.map((tag) => (
-          <Pill
-            key={tag.id}
-            tone={tag.id}
-            className="px-3 py-1.5 pr-2 text-[14.5px] font-medium"
+    <PropertyRow icon={TagIcon} label="Tags">
+      {tags?.length === 0 && <PropertyEmpty>Aucun</PropertyEmpty>}
+
+      {tags?.map((tag) => (
+        <Pill
+          key={tag.id}
+          tone={tag.id}
+          className="group py-1 pr-1.5 pl-3 text-[14px] font-medium"
+        >
+          {tag.name}
+          <button
+            onClick={() => removeTagMutation.mutate(tag.id)}
+            aria-label={`Retirer le tag ${tag.name}`}
+            className="hidden cursor-pointer px-0.5 text-ink/45 transition group-hover:inline hover:text-ink"
           >
-            {tag.name}
-            <button
-              onClick={() => removeTagMutation.mutate(tag.id)}
-              aria-label={`Retirer le tag ${tag.name}`}
-              className="cursor-pointer text-ink/45 transition hover:text-ink"
-            >
-              <X size={14} strokeWidth={2.5} />
-            </button>
-          </Pill>
-        ))}
-        <input
-          value={newTagName}
-          onChange={(e) => setNewTagName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && newTagName.trim()) {
-              e.preventDefault();
-              addTagMutation.mutate(newTagName);
-            }
-          }}
-          placeholder="+ tag"
-          className="w-24 border-b border-line bg-transparent px-1 py-1 text-[14.5px] text-ink-2 outline-none transition focus:border-ink"
-        />
-      </div>
-    </div>
+            <X size={13} strokeWidth={2.5} />
+          </button>
+        </Pill>
+      ))}
+
+      <input
+        value={newTagName}
+        onChange={(e) => setNewTagName(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && newTagName.trim()) {
+            e.preventDefault();
+            addTagMutation.mutate(newTagName);
+          }
+        }}
+        placeholder="+ tag"
+        className="w-20 border-b border-line bg-transparent px-1 py-0.5 text-[14px] text-ink-2 outline-none transition focus:border-ink"
+      />
+    </PropertyRow>
   );
 }

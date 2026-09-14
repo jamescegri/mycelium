@@ -39,12 +39,16 @@ export function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { open: openPalette } = useCommandPalette();
 
-  // Deux fenêtres seulement quand quelque chose à gauche sert à choisir ce
-  // qu'on voit à droite : les Tags (on clique un tag, on lit ses Elements)
-  // et la lecture d'un Element (on continue de parcourir à côté). Partout
-  // ailleurs, la vue se suffit et prend toute la place.
   const path = location.pathname;
-  const twoPane = path.startsWith('/elements/') || path.startsWith('/tags');
+
+  // Les vues qui se servent de la colonne de navigation. Deux fenêtres
+  // quand elle sert à choisir ce qu'on lit à côté ; seule et au large
+  // quand on ne fait qu'explorer.
+  const usesNav =
+    path.startsWith('/groupes') ||
+    path.startsWith('/tags') ||
+    path.startsWith('/elements/');
+  const twoPane = path.startsWith('/tags') || path.startsWith('/elements/');
 
   return (
     <div className="flex h-screen gap-2.5 bg-surface-2 p-2.5 text-ink">
@@ -86,21 +90,30 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       </nav>
 
-      {twoPane ? (
-        <>
-          {/* La navigation se resserre mais reste là : on continue de
-              parcourir pendant qu'on lit, sans repasser par un écran. */}
-          <div className="flex min-h-0 w-[300px] shrink-0 overflow-hidden rounded-2xl bg-surface max-lg:hidden">
-            <NavColumn />
-          </div>
-          <main className="animate-panel-in min-w-0 flex-1 overflow-y-auto rounded-2xl bg-surface">
-            {children}
-          </main>
-        </>
-      ) : (
-        <div className="min-w-0 flex-1 overflow-y-auto rounded-2xl bg-surface">
+      {/* La colonne reste montée même quand la vue ne s'en sert pas : la
+          démonter perdrait l'endroit où l'on était dans l'arborescence, et
+          ouvrir une scène du chapitre 12 ramènerait à la racine. On la
+          masque, on ne la jette pas. */}
+      <div
+        className={
+          !usesNav
+            ? 'hidden'
+            : twoPane
+              ? 'flex min-h-0 w-[300px] shrink-0 overflow-hidden rounded-2xl bg-surface max-lg:hidden'
+              : 'flex min-h-0 flex-1 overflow-hidden rounded-2xl bg-surface'
+        }
+      >
+        <NavColumn wide={!twoPane} />
+      </div>
+
+      {children !== null && (
+        <main
+          className={`min-w-0 flex-1 overflow-y-auto rounded-2xl bg-surface ${
+            twoPane ? 'animate-panel-in' : ''
+          }`}
+        >
           {children}
-        </div>
+        </main>
       )}
     </div>
   );

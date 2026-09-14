@@ -1,7 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, FileText, Plus, Search } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  LayoutGrid,
+  List,
+  Plus,
+  Search,
+} from 'lucide-react';
 import { createElement, listElements } from '../lib/elements';
 import { childrenOf, hasChildren, listAllLinks, parentsOf } from '../lib/links';
 import { listAllElementTags, listAllTags } from '../lib/tags';
@@ -12,7 +19,6 @@ import { extractPlainText } from '../lib/content';
 import { displayName, isUntitled } from '../lib/display';
 import { pastelFor } from '../lib/palette';
 import { useCommandPalette } from './CommandPalette';
-import { CaptureBar } from './CaptureBar';
 import type { Element, ElementLink } from '../types';
 
 // La colonne du milieu sert à naviguer, la troisième à lire. Ce qu'elle
@@ -28,11 +34,6 @@ function panelFor(pathname: string): Panel {
   return 'groupes';
 }
 
-// La capture n'a de sens que dans l'explorateur de Groupes : sur les Tags,
-// la colonne sert à choisir un filtre, pas à écrire.
-function showsCapture(pathname: string): boolean {
-  return panelFor(pathname) === 'groupes';
-}
 
 // Les filtres répondent à des moments d'écriture, pas à la structure :
 // "qu'est-ce que j'ai laissé sans titre", "qu'est-ce qui reste à écrire",
@@ -87,26 +88,23 @@ export function NavColumn({ wide = false }: { wide?: boolean }) {
 
   return (
     <div className="flex min-h-0 w-full flex-col">
-      <div className={`${inner} px-4 pt-5 pb-3`}>
-        <button
-          onClick={openPalette}
-          className="flex w-full items-center gap-2.5 rounded-xl border border-line px-3.5 py-2.5 text-left text-[14.5px] text-ink-3 transition hover:border-ink-4"
-        >
-          <Search size={15} strokeWidth={2} className="shrink-0" />
-          Rechercher
-          <span className="ml-auto text-[12.5px] text-ink-4">⌘K</span>
-        </button>
-      </div>
-
-      {/* Au large, on a la place d'écrire une idée sans quitter
-          l'exploration — c'est le geste le plus fréquent de l'app. */}
-      {wide && showsCapture(location.pathname) && (
-        <div className={`${inner} px-4 pb-4`}>
-          <CaptureBar />
+      {/* L'explorateur au large se passe de ces deux-là : la recherche
+          globale reste sous ⌘K, et écrire une idée est le geste de
+          l'Accueil. Ici on vient parcourir ce qui existe déjà. */}
+      {!wide && (
+        <div className={`${inner} px-4 pt-5 pb-3`}>
+          <button
+            onClick={openPalette}
+            className="flex w-full items-center gap-2.5 rounded-xl border border-line px-3.5 py-2.5 text-left text-[14.5px] text-ink-3 transition hover:border-ink-4"
+          >
+            <Search size={15} strokeWidth={2} className="shrink-0" />
+            Rechercher
+            <span className="ml-auto text-[12.5px] text-ink-4">⌘K</span>
+          </button>
         </div>
       )}
 
-      <div className={`${inner} px-4 pb-3`}>
+      <div className={`${inner} px-4 ${wide ? 'pt-6' : ''} pb-3`}>
         <input
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -256,14 +254,47 @@ function EmptyPanel({ children }: { children: string }) {
 }
 
 // ── Groupes ──────────────────────────────────────────────────────────
-// Un explorateur, pas une liste de raccourcis : entrer dans un Groupe
-// descend d'un cran ici même, comme dans un Finder, au lieu d'ouvrir une
-// page. On ne change de colonne qu'une fois arrivé sur l'Element qu'on
-// cherchait — c'est lui qu'on voulait lire, pas les dossiers traversés.
+// Un explorateur, pas une liste de raccourcis. Un Groupe n'est pas une
+// entité : c'est un Element qui a des enfants. Il a donc un texte comme
+// les autres, et il faut pouvoir l'atteindre aussi bien que le traverser —
+// d'où deux gestes distincts, comme dans un Finder.
 //
-// Un Groupe n'est pas une entité : c'est un Element qui a des enfants.
-// Descendre dedans et l'ouvrir sont donc deux gestes distincts, d'où le
-// bouton "Ouvrir" du fil d'Ariane : il a un texte, comme tous les autres.
+// En liste, un clic déplie sur place : on garde sous les yeux d'où l'on
+// vient. En galerie, on entre dans le Groupe, parce que des cartes
+// imbriquées ne voudraient plus rien dire.
+
+type ExplorerView = 'liste' | 'galerie';
+
+interface TreeRow {
+  element: Element;
+  depth: number;
+  items: Element[];
+}
+
+// L'arbre aplati en lignes, en ne descendant que dans ce qui est déplié.
+// `trail` est le chemin en cours, pas l'ensemble des Elements déjà vus :
+// un Element rangé dans deux Groupes doit apparaître aux deux endroits,
+// seul un cycle doit arrêter la descente.
+function treeRows(
+  roots: Element[],
+  elements: Element[],
+  links: ElementLink[],
+  expanded: Set<string>
+): TreeRow[] {
+  const rows: TreeRow[] = [];
+
+  function walk(element: Element, depth: number, trail: Set<string>) {
+    const children = childrenOf(links, elements, element.id);
+    rows.push({ element, depth, items: children });
+    if (!expanded.has(element.id) || trail.has(element.id)) return;
+    const deeper = new Set(trail).add(element.id);
+    for (const child of children) walk(child, depth + 1, deeper);
+  }
+
+  for (const root of roots) walk(root, 0, new Set());
+  return rows;
+}
+
 function GroupesPanel({
   filter,
   filters,
@@ -275,6 +306,8 @@ function GroupesPanel({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [view, setView] = useState<ExplorerView>('liste');
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [path, setPath] = useState<Element[]>([]);
 
   const { data: elements } = useQuery({
@@ -291,67 +324,107 @@ function GroupesPanel({
     queryFn: listAllRelations,
   });
 
-  const here = path[path.length - 1] ?? null;
   // Filtrer, c'est chercher dans tout l'univers : on quitte alors
   // l'arborescence pour une liste de résultats. Garder l'imbrication
   // ferait chercher les réponses dans des dossiers à ouvrir un par un.
   const searching = isFiltering(filters);
-  // Figé à l'ouverture de l'écran : "récent" ne doit pas se déplacer sous
-  // les yeux pendant qu'on lit la liste.
+  // Figé à l'ouverture : "récent" ne doit pas se déplacer sous les yeux
+  // pendant qu'on lit la liste.
   const [mountedAt] = useState(() => Date.now());
 
-  const items = useMemo(() => {
-    const all = elements ?? [];
-    const ls = links ?? [];
+  const all = useMemo(() => elements ?? [], [elements]);
+  const allLinks = useMemo(() => links ?? [], [links]);
+  const here = path[path.length - 1] ?? null;
+
+  const toggle = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const roots = useMemo(
+    () =>
+      all.filter(
+        (e) =>
+          hasChildren(allLinks, e.id) &&
+          parentsOf(allLinks, all, e.id).length === 0
+      ),
+    [all, allLinks]
+  );
+
+  const matches = useMemo(() => {
     const q = filter.trim().toLowerCase();
+    const byName = (e: Element) =>
+      !q || displayName(e).toLowerCase().includes(q);
 
-    let list: Element[];
-    if (searching) {
-      const linked = new Set<string>();
-      for (const r of relations ?? []) {
-        linked.add(r.source_id);
-        linked.add(r.target_id);
-      }
-      const tagsOf = new Map<string, Set<string>>();
-      for (const et of elementTags ?? []) {
-        const set = tagsOf.get(et.element_id) ?? new Set<string>();
-        set.add(et.tag_id);
-        tagsOf.set(et.element_id, set);
-      }
-      const weekAgo = mountedAt - 7 * 24 * 3600 * 1000;
+    if (!searching) return { list: [] as Element[], byName };
 
-      list = all.filter((e) => {
-        if (filters.untitled && !isUntitled(e)) return false;
-        if (filters.empty && extractPlainText(e.content, 1)) return false;
-        if (filters.recent && new Date(e.updated_at).getTime() < weekAgo)
-          return false;
-        if (filters.unlinked && linked.has(e.id)) return false;
-        if (filters.tagIds.length > 0) {
-          const own = tagsOf.get(e.id);
-          if (!own || !filters.tagIds.every((t) => own.has(t))) return false;
-        }
-        return true;
-      });
-    } else {
-      list = here
-        ? childrenOf(ls, all, here.id)
-        : all.filter(
-            (e) => hasChildren(ls, e.id) && parentsOf(ls, all, e.id).length === 0
-          );
+    const linked = new Set<string>();
+    for (const r of relations ?? []) {
+      linked.add(r.source_id);
+      linked.add(r.target_id);
     }
+    const tagsOf = new Map<string, Set<string>>();
+    for (const et of elementTags ?? []) {
+      const set = tagsOf.get(et.element_id) ?? new Set<string>();
+      set.add(et.tag_id);
+      tagsOf.set(et.element_id, set);
+    }
+    const weekAgo = mountedAt - 7 * 24 * 3600 * 1000;
 
-    if (!q) return list;
-    return list.filter((e) => displayName(e).toLowerCase().includes(q));
-  }, [elements, links, here, filter, filters, searching, relations, elementTags, mountedAt]);
+    const list = all.filter((e) => {
+      if (!byName(e)) return false;
+      if (filters.untitled && !isUntitled(e)) return false;
+      if (filters.empty && extractPlainText(e.content, 1)) return false;
+      if (filters.recent && new Date(e.updated_at).getTime() < weekAgo)
+        return false;
+      if (filters.unlinked && linked.has(e.id)) return false;
+      if (filters.tagIds.length > 0) {
+        const own = tagsOf.get(e.id);
+        if (!own || !filters.tagIds.every((t) => own.has(t))) return false;
+      }
+      return true;
+    });
+    return { list, byName };
+  }, [
+    all,
+    filter,
+    filters,
+    searching,
+    relations,
+    elementTags,
+    mountedAt,
+  ]);
 
-  return (
-    <>
-      {searching ? (
-        <PanelTitle>
-          {`${items.length} résultat${items.length > 1 ? 's' : ''}`}
-        </PanelTitle>
-      ) : here ? (
-        <div className="mb-3 flex items-center gap-1.5 px-1.5">
+  // Vue liste : l'arbre déplié, ou les résultats à plat quand on filtre.
+  const rows = useMemo(() => {
+    if (searching) {
+      return matches.list.map((element) => ({
+        element,
+        depth: 0,
+        items: childrenOf(allLinks, all, element.id),
+      }));
+    }
+    return treeRows(roots.filter(matches.byName), all, allLinks, expanded);
+  }, [searching, matches, roots, all, allLinks, expanded]);
+
+  // Vue galerie : le contenu du Groupe où l'on se trouve.
+  const cards = useMemo(() => {
+    if (searching) return matches.list;
+    const list = here
+      ? childrenOf(allLinks, all, here.id)
+      : roots;
+    return list.filter(matches.byName);
+  }, [searching, matches, here, allLinks, all, roots]);
+
+  const open = (el: Element) => navigate(`/elements/${el.id}`);
+
+  const header = (
+    <div className="mb-3 flex items-center gap-2">
+      {here && !searching ? (
+        <>
           <button
             onClick={() => setPath((p) => p.slice(0, -1))}
             className="flex items-center gap-1 rounded-lg px-1.5 py-1 text-[13px] text-ink-3 transition hover:bg-surface-2 hover:text-ink"
@@ -359,21 +432,52 @@ function GroupesPanel({
             <ChevronLeft size={14} strokeWidth={2.2} />
             {path.length > 1 ? displayName(path[path.length - 2]) : 'Groupes'}
           </button>
-          <span className="truncate text-[13px] font-semibold">
+          <span className="truncate text-[15px] font-semibold">
             {displayName(here)}
           </span>
-          <button
-            onClick={() => navigate(`/elements/${here.id}`)}
-            className="ml-auto shrink-0 rounded-lg px-2 py-1 text-[12.5px] text-ink-3 transition hover:bg-surface-2 hover:text-ink"
-          >
-            Ouvrir
-          </button>
-        </div>
+        </>
       ) : (
-        <PanelTitle>Groupes</PanelTitle>
+        <span className="text-[15px] font-semibold">
+          {searching
+            ? `${rows.length || cards.length} résultat${(rows.length || cards.length) > 1 ? 's' : ''}`
+            : 'Groupes'}
+        </span>
       )}
 
-      {items.length === 0 ? (
+      <div className="ml-auto flex shrink-0 items-center gap-0.5 rounded-lg border border-line p-0.5">
+        {(
+          [
+            { id: 'liste' as const, icon: List, label: 'Liste' },
+            { id: 'galerie' as const, icon: LayoutGrid, label: 'Galerie' },
+          ]
+        ).map((v) => (
+          <button
+            key={v.id}
+            onClick={() => setView(v.id)}
+            aria-pressed={view === v.id}
+            aria-label={v.label}
+            title={v.label}
+            className={`rounded-md p-1.5 transition ${
+              view === v.id
+                ? 'bg-accent text-white'
+                : 'text-ink-4 hover:text-ink'
+            }`}
+          >
+            <v.icon size={14} strokeWidth={2} />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const empty =
+    view === 'liste' ? rows.length === 0 : cards.length === 0;
+
+  return (
+    <>
+      {header}
+
+      {empty ? (
         <EmptyPanel>
           {searching
             ? 'Aucun Element ne correspond.'
@@ -381,27 +485,37 @@ function GroupesPanel({
               ? 'Ce Groupe est vide.'
               : "Rattache un enfant à un Element pour qu'il devienne un Groupe."}
         </EmptyPanel>
+      ) : view === 'liste' ? (
+        <div className="flex flex-col">
+          {rows.map((row, i) => (
+            <ExplorerRow
+              key={`${row.element.id}-${i}`}
+              row={row}
+              expanded={expanded.has(row.element.id)}
+              active={location.pathname === `/elements/${row.element.id}`}
+              onToggle={() => toggle(row.element.id)}
+              onOpen={() => open(row.element)}
+            />
+          ))}
+        </div>
       ) : (
         <div
-          className={
+          className={`grid gap-2.5 ${
             wide
-              ? 'grid grid-cols-1 gap-1.5 sm:grid-cols-2'
-              : 'flex flex-col gap-1.5'
-          }
+              ? 'grid-cols-[repeat(auto-fill,minmax(15rem,1fr))]'
+              : 'grid-cols-1'
+          }`}
         >
-          {items.map((item) => (
-            <GroupNavCard
-              key={item.id}
-              group={item}
-              elements={elements ?? []}
-              links={links ?? []}
-              active={location.pathname === `/elements/${item.id}`}
-              // En résultats, descendre n'a pas de sens : on a demandé ces
-              // Elements-là, on veut les ouvrir.
+          {cards.map((el) => (
+            <GalleryCard
+              key={el.id}
+              element={el}
+              items={childrenOf(allLinks, all, el.id)}
+              active={location.pathname === `/elements/${el.id}`}
               onEnter={
-                searching ? undefined : () => setPath((p) => [...p, item])
+                searching ? undefined : () => setPath((p) => [...p, el])
               }
-              onOpen={() => navigate(`/elements/${item.id}`)}
+              onOpen={() => open(el)}
             />
           ))}
         </div>
@@ -410,37 +524,108 @@ function GroupesPanel({
   );
 }
 
-function GroupNavCard({
-  group,
-  elements,
-  links,
+// Une ligne d'explorateur. Un Element sans enfants s'ouvre au premier clic
+// — il n'y a rien à déplier, faire attendre un second clic n'apporterait
+// rien. Un Groupe se déplie au clic et s'ouvre au double clic.
+function ExplorerRow({
+  row,
+  expanded,
+  active,
+  onToggle,
+  onOpen,
+}: {
+  row: TreeRow;
+  expanded: boolean;
+  active: boolean;
+  onToggle: () => void;
+  onOpen: () => void;
+}) {
+  const isGroup = row.items.length > 0;
+  const tone = pastelFor(row.element.id);
+
+  return (
+    <div
+      style={{ paddingLeft: row.depth * 18 }}
+      className={`flex items-center gap-1 rounded-lg pr-2 transition ${
+        active ? 'bg-surface-3' : 'hover:bg-surface-2'
+      }`}
+    >
+      {isGroup ? (
+        <button
+          onClick={onToggle}
+          aria-expanded={expanded}
+          aria-label={expanded ? 'Replier' : 'Déplier'}
+          className="shrink-0 rounded p-1 text-ink-4 transition hover:text-ink"
+        >
+          <ChevronRight
+            size={13}
+            strokeWidth={2.4}
+            className={`transition-transform ${expanded ? 'rotate-90' : ''}`}
+          />
+        </button>
+      ) : (
+        <span className="w-[21px] shrink-0" aria-hidden />
+      )}
+
+      <button
+        onClick={isGroup ? onToggle : onOpen}
+        onDoubleClick={onOpen}
+        title={isGroup ? 'Double-clic pour ouvrir' : undefined}
+        className="flex min-w-0 flex-1 items-center gap-2 py-1.5 text-left"
+      >
+        <span
+          className="size-2.5 shrink-0 rounded-[3px]"
+          style={
+            isGroup
+              ? { backgroundColor: tone.bg }
+              : { boxShadow: `inset 0 0 0 2px ${tone.bg}` }
+          }
+        />
+        <span
+          className={`truncate text-[14.5px] ${
+            active ? 'font-semibold' : isGroup ? 'font-medium' : ''
+          } ${isUntitled(row.element) ? 'text-ink-3 italic' : ''}`}
+        >
+          {displayName(row.element)}
+        </span>
+        {isGroup && (
+          <span className="ml-auto shrink-0 text-[12px] tabular-nums text-ink-4">
+            {row.items.length}
+          </span>
+        )}
+      </button>
+    </div>
+  );
+}
+
+// Une carte de galerie montre de quoi reconnaître l'Element sans l'ouvrir :
+// ses premiers mots, et ce qu'il contient.
+function GalleryCard({
+  element,
+  items,
   active,
   onEnter,
   onOpen,
 }: {
-  group: Element;
-  elements: Element[];
-  links: ElementLink[];
+  element: Element;
+  items: Element[];
   active: boolean;
   onEnter?: () => void;
   onOpen: () => void;
 }) {
-  const children = childrenOf(links, elements, group.id);
-  const isGroup = children.length > 0 && !!onEnter;
-  const shown = children.slice(0, 4);
-  const rest = children.length - shown.length;
-  const tone = pastelFor(group.id);
+  const isGroup = items.length > 0 && !!onEnter;
+  const tone = pastelFor(element.id);
+  const excerpt = extractPlainText(element.content, 90);
+  const shown = items.slice(0, 4);
+  const rest = items.length - shown.length;
 
   return (
     <button
-      // Comme dans un Finder : un clic entre dans le dossier, un double
-      // clic ouvre la chose elle-même. Un Groupe a un texte comme les
-      // autres, il faut donc pouvoir l'atteindre sans le traverser.
       onClick={isGroup ? onEnter : onOpen}
       onDoubleClick={onOpen}
       title={isGroup ? 'Double-clic pour ouvrir ce Groupe' : undefined}
       aria-current={active ? 'true' : undefined}
-      className={`w-full rounded-xl border px-3 py-2.5 text-left transition ${
+      className={`flex flex-col gap-2.5 rounded-2xl border p-4 text-left transition ${
         active
           ? 'border-ink shadow-[0_0_0_1px_var(--color-ink)]'
           : 'border-line hover:border-ink-4'
@@ -448,36 +633,35 @@ function GroupNavCard({
     >
       <span className="flex items-center gap-2">
         <span
-          className="size-2.5 shrink-0 rounded-[3px]"
-          style={{ backgroundColor: tone.bg }}
+          className="size-3 shrink-0 rounded-[4px]"
+          style={
+            isGroup
+              ? { backgroundColor: tone.bg }
+              : { boxShadow: `inset 0 0 0 2px ${tone.bg}` }
+          }
         />
-        <span className="truncate text-[14.5px] font-semibold">
-          {displayName(group)}
+        <span
+          className={`truncate text-[16px] font-semibold ${
+            isUntitled(element) ? 'text-ink-3 italic' : ''
+          }`}
+        >
+          {displayName(element)}
         </span>
-        {isGroup ? (
-          <>
-            <span className="ml-auto shrink-0 text-[12px] tabular-nums text-ink-4">
-              {children.length}
-            </span>
-            <ChevronRight
-              size={14}
-              strokeWidth={2.2}
-              className="shrink-0 text-ink-4"
-            />
-          </>
-        ) : (
-          <FileText
-            size={13}
-            strokeWidth={2}
-            className="ml-auto shrink-0 text-ink-4"
-          />
+        {items.length > 0 && (
+          <span className="ml-auto shrink-0 text-[12px] tabular-nums text-ink-4">
+            {items.length}
+          </span>
         )}
       </span>
 
-      {/* Les pastilles passent à la ligne et le reste se replie dans un
-          +n : une rangée coupée cacherait des enfants sans le dire. */}
-      {isGroup && (
-        <span className="mt-2 flex flex-wrap gap-1">
+      {excerpt && (
+        <span className="line-clamp-2 text-[13.5px] leading-relaxed text-ink-3">
+          {excerpt}
+        </span>
+      )}
+
+      {shown.length > 0 && (
+        <span className="flex flex-wrap gap-1">
           {shown.map((child) => {
             const t = pastelFor(child.id);
             return (
@@ -500,7 +684,6 @@ function GroupNavCard({
     </button>
   );
 }
-
 // ── Tags ─────────────────────────────────────────────────────────────
 // Un Tag n'a pas de page : il sert à filtrer. Il vit donc ici, dans la
 // colonne de navigation, et jamais comme une destination qui aurait du

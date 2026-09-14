@@ -1,13 +1,14 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Clock } from 'lucide-react';
+import { ChevronRight, Clock, Plus } from 'lucide-react';
 import { listElements, updateElement } from '../lib/elements';
 import { listAllLinks, parentsOf } from '../lib/links';
 import { listTemporalRelations } from '../lib/temporal';
 import { removeFromChronology } from '../lib/chronology';
 import { displayName } from '../lib/display';
 import { reportError } from '../lib/errors';
+import { PropertyEmpty, PropertyRow } from './PropertyRow';
 import type { Element } from '../types';
 
 // Où cet Element se situe dans le récit. On y lit un chemin — "La Chute ›
@@ -68,62 +69,56 @@ export function ChronologySection({ element }: { element: Element }) {
   });
 
   return (
-    <div className="text-[17px]">
-      <div className="mb-3 text-[14px] font-semibold text-ink-3">
-        Chronologie
-      </div>
-
+    <PropertyRow icon={Clock} label="Chronologie">
       {!element.timeline ? (
         <button
           onClick={() => enterMutation.mutate()}
           disabled={enterMutation.isPending}
-          className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[16px] text-ink-3 transition hover:bg-surface-2 hover:text-ink disabled:opacity-50"
+          className="inline-flex items-center gap-1 rounded-full border border-dashed border-line px-2.5 py-1 text-[13px] text-ink-3 transition hover:border-ink hover:text-ink disabled:opacity-50"
         >
-          <Clock size={16} strokeWidth={2} />
+          <Plus size={12} strokeWidth={2.4} />
           Situer dans le temps
         </button>
       ) : (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <>
           {path.length > 0 ? (
-            <span className="flex flex-wrap items-center gap-1.5 text-ink-2">
+            <span className="flex flex-wrap items-center gap-1 text-[14px]">
               {path.map((ancestor) => (
-                <span key={ancestor.id} className="flex items-center gap-1.5">
+                <span key={ancestor.id} className="flex items-center gap-1">
                   <button
                     onClick={() => navigate(`/elements/${ancestor.id}`)}
-                    className="font-medium text-ink underline decoration-ink-4 underline-offset-4 transition hover:decoration-ink"
+                    className="max-w-[12rem] truncate font-medium transition hover:underline"
                   >
                     {displayName(ancestor)}
                   </button>
                   <ChevronRight
-                    size={13}
+                    size={12}
                     strokeWidth={2}
-                    className="text-ink-4"
+                    className="shrink-0 text-ink-4"
                   />
                 </span>
               ))}
-              <span className="text-ink-3">ici</span>
+              <span className="text-ink-4">ici</span>
             </span>
           ) : (
-            <span className="text-ink-2">
-              Dans le temps, sans être rangé dans un ensemble plus large.
-            </span>
+            <PropertyEmpty>Dans le temps, à la racine</PropertyEmpty>
           )}
 
           <button
             onClick={() => navigate('/temporel')}
-            className="rounded-lg px-2 py-1 text-[15px] text-ink-3 transition hover:bg-surface-2 hover:text-ink"
+            className="rounded-full px-2 py-0.5 text-[13px] text-ink-3 transition hover:bg-surface-2 hover:text-ink"
           >
-            Voir dans la chronologie
+            Voir
           </button>
           <button
             onClick={() => removeMutation.mutate()}
             disabled={removeMutation.isPending}
-            className="rounded-lg px-2 py-1 text-[15px] text-ink-4 transition hover:bg-surface-2 hover:text-ink disabled:opacity-50"
+            className="rounded-full px-2 py-0.5 text-[13px] text-ink-4 transition hover:bg-surface-2 hover:text-ink disabled:opacity-50"
           >
             Retirer
           </button>
-        </div>
+        </>
       )}
-    </div>
+    </PropertyRow>
   );
 }

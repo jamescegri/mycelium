@@ -10,7 +10,6 @@ import { usePeek } from '../components/PeekPanel';
 import { displayName, isUntitled } from '../lib/display';
 import { Layout } from '../components/Layout';
 import { HomeView } from '../components/HomeView';
-import { NavColumn } from '../components/NavColumn';
 import { TimelineTree } from '../components/TimelineTree';
 import type { Element, ElementLink } from '../types';
 
@@ -41,16 +40,10 @@ export function DashboardPage() {
     );
   }
 
-  // Les Groupes sont un explorateur : on y descend de dossier en dossier,
-  // et on n'ouvre la fenêtre de lecture qu'une fois arrivé sur un Element.
-  // Pas de titre ni de chapeau — on vient y chercher, pas lire.
-  if (path === '/groupes') {
-    return (
-      <Layout>
-        <NavColumn wide />
-      </Layout>
-    );
-  }
+  // L'explorateur EST la vue : il vit dans le Layout, qui le garde monté
+  // pour que la position dans l'arborescence survive à l'ouverture d'un
+  // Element. La page ne fournit donc rien à lire à droite.
+  if (path === '/groupes') return <Layout>{null}</Layout>;
 
   const title =
     path === '/liste' ? 'Tous les Elements'
