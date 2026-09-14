@@ -89,7 +89,6 @@ function CommandPaletteOverlay({ onClose }: { onClose: () => void }) {
     mutationFn: async (name: string) => {
       const created = await createElement({
         name,
-        family: currentElement?.family ?? 'ELEMENTS',
       });
       if (currentElement) {
         await linkChild(currentElement.id, created.id);
@@ -144,7 +143,7 @@ function CommandPaletteOverlay({ onClose }: { onClose: () => void }) {
                   {displayName(el)}
                 </div>
                 <div className="truncate text-[13.5px] text-ink-4">
-                  {pathOf(el) || el.family}
+                  {pathOf(el)}
                 </div>
               </button>
               <button

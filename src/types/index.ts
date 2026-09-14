@@ -2,11 +2,10 @@
 // Un seul type d'objet narratif : Element. Ne JAMAIS ajouter de types
 // comme Character/Chapter/Scene/Arc ici — voir le cahier des charges.
 //
-// v2 : hiérarchie multi-parent (element_links), plus de parent_id unique
-// ni de table collections séparée — un Groupe/une Collection est un
-// Element qui a au moins un enfant.
+// v3 : aucun type d'Element. Un Element devient un Groupe parce qu'il a des
+// enfants, et entre dans la chronologie parce qu'on l'y a placé. Ce sont
+// deux dimensions optionnelles du même objet, pas des catégories.
 
-export type ElementFamily = 'TIME' | 'ELEMENTS';
 export type TemporalRelationType = 'BEFORE' | 'AFTER';
 export type RelationOrigin = 'manual' | 'mention';
 
@@ -14,7 +13,7 @@ export interface Element {
   id: string;
   user_id: string;
   name: string;
-  family: ElementFamily;
+  timeline: boolean;
   content: unknown | null; // JSON Tiptap
   notion_url: string | null;
   absolute_date: string | null;
@@ -54,5 +53,3 @@ export interface TemporalRelation {
   element_b: string;
   created_at: string;
 }
-
-export const FAMILIES: ElementFamily[] = ['TIME', 'ELEMENTS'];

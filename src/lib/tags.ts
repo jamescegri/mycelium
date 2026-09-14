@@ -65,3 +65,23 @@ export async function removeTagFromElement(
     .eq('tag_id', tagId);
   if (error) throw error;
 }
+
+// Pour la vue Connexions : tous les tags, et la table de jointure entière.
+// Un Tag n'a ni page, ni contenu, ni enfants — c'est une étiquette de
+// filtrage transversal, rien de plus. On charge donc la jointure d'un bloc
+// et on filtre côté client, comme pour les liens et les relations.
+export async function listAllTags(): Promise<Tag[]> {
+  const { data, error } = await supabase.from('tags').select('*').order('name');
+  if (error) throw error;
+  return data as Tag[];
+}
+
+export async function listAllElementTags(): Promise<
+  { element_id: string; tag_id: string }[]
+> {
+  const { data, error } = await supabase
+    .from('element_tags')
+    .select('element_id, tag_id');
+  if (error) throw error;
+  return data as { element_id: string; tag_id: string }[];
+}

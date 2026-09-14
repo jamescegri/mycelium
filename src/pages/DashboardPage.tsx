@@ -7,20 +7,24 @@ import {
   Clock,
   FileText,
   FolderClosed,
+  GripVertical,
   PenLine,
   Plus,
 } from 'lucide-react';
 import { createElement, listElements } from '../lib/elements';
 import {
   childrenOf,
+  getDescendantIds,
   hasChildren,
   listAllLinks,
   parentsOf,
   rootElements,
 } from '../lib/links';
 import { listAllRelations } from '../lib/relations';
+import { listAllElementTags, listAllTags } from '../lib/tags';
+import { usePeek } from '../components/PeekPanel';
 import { listTemporalRelations } from '../lib/temporal';
-import { normalizeEdges, topologicalOrder } from '../lib/timeline';
+import { chronologyOrder, placeInChronology } from '../lib/chronology';
 import { extractPlainText } from '../lib/content';
 import { pastelFor } from '../lib/palette';
 import { displayName, isUntitled } from '../lib/display';
@@ -88,7 +92,9 @@ export function DashboardPage() {
         <ElementsTab elements={elements ?? []} links={links ?? []} />
       )}
       {path === '/temporel' && <TemporalTab />}
-      {path === '/connexions' && <ConnexionsTab elements={elements ?? []} />}
+      {path === '/connexions' && (
+        <ConnexionsTab elements={elements ?? []} links={links ?? []} />
+      )}
     </Layout>
   );
 }
@@ -109,11 +115,11 @@ function CaptureBar() {
   const [text, setText] = useState('');
 
   const createMutation = useMutation({
-    mutationFn: (input: { text: string; family: 'ELEMENTS' | 'TIME' }) =>
+    mutationFn: (input: { text: string; timeline: boolean }) =>
       createElement({
         name: '',
-        family: input.family,
         content: input.text ? paragraphDoc(input.text) : null,
+        timeline: input.timeline,
       }),
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['elements'] });
@@ -124,7 +130,7 @@ function CaptureBar() {
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (text.trim()) createMutation.mutate({ text: text.trim(), family: 'ELEMENTS' });
+    if (text.trim()) createMutation.mutate({ text: text.trim(), timeline: false });
   }
 
   return (
@@ -152,7 +158,7 @@ function CaptureBar() {
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           onClick={() =>
-            createMutation.mutate({ text: text.trim(), family: 'ELEMENTS' })
+            createMutation.mutate({ text: text.trim(), timeline: false })
           }
           disabled={createMutation.isPending}
           className="flex items-center gap-2 rounded-xl px-3 py-2 text-[15px] text-ink-2 transition hover:bg-surface-2 hover:text-ink disabled:opacity-50"
@@ -162,13 +168,13 @@ function CaptureBar() {
         </button>
         <button
           onClick={() =>
-            createMutation.mutate({ text: text.trim(), family: 'TIME' })
+            createMutation.mutate({ text: text.trim(), timeline: true })
           }
           disabled={createMutation.isPending}
           className="flex items-center gap-2 rounded-xl px-3 py-2 text-[15px] text-ink-2 transition hover:bg-surface-2 hover:text-ink disabled:opacity-50"
         >
           <Clock size={16} strokeWidth={2.25} />
-          Ajouter un Element temporel
+          Ajouter dans la chronologie
         </button>
       </div>
     </div>
@@ -259,7 +265,7 @@ function ElementRow({
       onClick={onNavigate}
       className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left text-[18px] transition hover:bg-surface-2"
     >
-      {element.family === 'TIME' ? (
+      {element.timeline ? (
         <Clock size={17} strokeWidth={2} className="shrink-0 text-ink-4" />
       ) : (
         <FileText size={17} strokeWidth={2} className="shrink-0 text-ink-4" />
@@ -416,8 +422,15 @@ function GroupCard({
   );
 }
 
+// La chronologie se manipule directement : on saisit une entrée et on la
+// dépose dans un intervalle. Aucune mention de "avant"/"après" — ces
+// relations restent la mécanique interne (lib/chronology.ts).
 function TemporalTab() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overSlot, setOverSlot] = useState<number | null>(null);
+
   const { data: elements } = useQuery({
     queryKey: ['elements'],
     queryFn: listElements,
@@ -427,110 +440,412 @@ function TemporalTab() {
     queryFn: listTemporalRelations,
   });
 
-  const ordered = useMemo(() => {
-    if (!elements || !relations || relations.length === 0) return [];
-    const edges = normalizeEdges(relations);
-    const nodeIds = [
-      ...new Set(relations.flatMap((r) => [r.element_a, r.element_b])),
-    ];
-    const byId = new Map(elements.map((e) => [e.id, e]));
-    return topologicalOrder(nodeIds, edges)
-      .map((id) => byId.get(id))
-      .filter((e): e is Element => !!e);
-  }, [elements, relations]);
+  const ordered = useMemo(
+    () => chronologyOrder(elements ?? [], relations ?? []),
+    [elements, relations]
+  );
+
+  const moveMutation = useMutation({
+    mutationFn: ({
+      id,
+      previousId,
+      nextId,
+    }: {
+      id: string;
+      previousId: string | null;
+      nextId: string | null;
+    }) => placeInChronology(relations ?? [], id, previousId, nextId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['temporal-relations'] });
+      queryClient.invalidateQueries({ queryKey: ['elements'] });
+    },
+  });
 
   if (ordered.length === 0) {
     return (
-      <Callout>
-        Aucune position temporelle définie pour l'instant. Depuis un
-        Element, section "Connexions", relie-le "avant" ou "après" un autre
-        pour le faire apparaître ici.
+      <Callout icon={Clock}>
+        La chronologie est vide. Ouvre n'importe quel Element et choisis
+        "Placer dans la chronologie" — aucun Element n'a besoin d'être d'un
+        type particulier pour y entrer.
       </Callout>
     );
   }
 
+  // Déposer dans l'intervalle i, c'est se placer entre ordered[i-1] et
+  // ordered[i]. L'Element déplacé est ignoré dans ce calcul : sinon on se
+  // positionnerait par rapport à soi-même.
+  function dropAt(slot: number) {
+    if (!dragId) return;
+    const without = ordered.filter((e) => e.id !== dragId);
+    const removedBefore = ordered.findIndex((e) => e.id === dragId) < slot;
+    const index = removedBefore ? slot - 1 : slot;
+    moveMutation.mutate({
+      id: dragId,
+      previousId: without[index - 1]?.id ?? null,
+      nextId: without[index]?.id ?? null,
+    });
+    setDragId(null);
+    setOverSlot(null);
+  }
+
   return (
-    <div className="space-y-1.5">
-      {ordered.map((el) => (
-        <button
-          key={el.id}
-          onClick={() => navigate(`/elements/${el.id}`)}
-          className="block py-1 text-left text-[19px] text-ink hover:opacity-60"
-        >
-          {displayName(el)}
-        </button>
-      ))}
+    <div>
+      <p className="mb-5 text-[14px] text-ink-4">
+        Glisse une entrée pour la déplacer.
+      </p>
+      <div>
+        {ordered.map((el, i) => (
+          <div key={el.id}>
+            <DropSlot
+              active={overSlot === i && dragId !== null}
+              armed={dragId !== null}
+              onOver={() => setOverSlot(i)}
+              onDrop={() => dropAt(i)}
+            />
+            <div
+              draggable
+              onDragStart={() => setDragId(el.id)}
+              onDragEnd={() => {
+                setDragId(null);
+                setOverSlot(null);
+              }}
+              className={`group flex cursor-grab items-center gap-3 rounded-lg px-2 py-2.5 transition active:cursor-grabbing ${
+                dragId === el.id ? 'opacity-40' : 'hover:bg-surface-2'
+              }`}
+            >
+              <GripVertical
+                size={16}
+                strokeWidth={2}
+                className="shrink-0 text-ink-4 opacity-0 transition group-hover:opacity-100"
+              />
+              <button
+                onClick={() => navigate(`/elements/${el.id}`)}
+                className="min-w-0 flex-1 truncate text-left text-[19px] text-ink"
+              >
+                {displayName(el)}
+              </button>
+            </div>
+          </div>
+        ))}
+        <DropSlot
+          active={overSlot === ordered.length && dragId !== null}
+          armed={dragId !== null}
+          onOver={() => setOverSlot(ordered.length)}
+          onDrop={() => dropAt(ordered.length)}
+        />
+      </div>
     </div>
   );
 }
 
-function ConnexionsTab({ elements }: { elements: Element[] }) {
+// L'intervalle garde toujours une cible réelle, même au repos : une zone de
+// dépôt qui n'apparaît qu'une fois le glisser commencé est difficile à
+// viser. Elle s'élargit pendant le glisser, et ne se VOIT que là — au repos
+// la chronologie reste une liste de titres, pas une grille de zones.
+function DropSlot({
+  active,
+  armed,
+  onOver,
+  onDrop,
+}: {
+  active: boolean;
+  armed: boolean;
+  onOver: () => void;
+  onDrop: () => void;
+}) {
+  return (
+    <div
+      onDragOver={(e) => {
+        e.preventDefault();
+        onOver();
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDrop();
+      }}
+      className={`flex items-center transition-all ${armed ? 'h-7' : 'h-2'}`}
+    >
+      <div
+        className={`h-[3px] w-full rounded-full transition ${
+          active ? 'bg-fluo-parent' : 'bg-transparent'
+        }`}
+      />
+    </div>
+  );
+}
+
+// Explorer les liens sans graphe : on combine des critères pour réduire
+// progressivement la liste. Chaque filtre répond à une question différente
+// — la hiérarchie dit l'organisation, les connexions disent les liens
+// libres, les tags découpent en travers. Ces trois systèmes restent
+// distincts, on ne fait que les croiser ici.
+function ConnexionsTab({
+  elements,
+  links,
+}: {
+  elements: Element[];
+  links: ElementLink[];
+}) {
   const navigate = useNavigate();
-  const [showOrphans, setShowOrphans] = useState(false);
+  const { openPeek } = usePeek();
+  const [query, setQuery] = useState('');
+  const [groupId, setGroupId] = useState<string | null>(null);
+  const [tagId, setTagId] = useState<string | null>(null);
+  const [lien, setLien] = useState<'tous' | 'relies' | 'orphelins'>('tous');
+  const [rang, setRang] = useState<'tous' | 'groupes' | 'racines'>('tous');
+  const [chrono, setChrono] = useState<'tous' | 'dedans' | 'dehors'>('tous');
+
   const { data: relations } = useQuery({
     queryKey: ['all-relations'],
     queryFn: listAllRelations,
   });
-  const { data: temporalRelations } = useQuery({
-    queryKey: ['temporal-relations'],
-    queryFn: listTemporalRelations,
+  const { data: tags } = useQuery({ queryKey: ['tags'], queryFn: listAllTags });
+  const { data: elementTags } = useQuery({
+    queryKey: ['element-tags'],
+    queryFn: listAllElementTags,
   });
 
-  const counts = useMemo(() => {
+  // Nombre de liens libres (relations + backlinks) par Element. La
+  // hiérarchie n'entre pas dans ce compte : un enfant n'est pas une
+  // connexion.
+  const linkCount = useMemo(() => {
     const map = new Map<string, number>();
     const bump = (id: string) => map.set(id, (map.get(id) ?? 0) + 1);
     relations?.forEach((r) => {
       bump(r.source_id);
       bump(r.target_id);
     });
-    temporalRelations?.forEach((r) => {
-      bump(r.element_a);
-      bump(r.element_b);
+    return map;
+  }, [relations]);
+
+  const tagsByElement = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    elementTags?.forEach((et) => {
+      const set = map.get(et.element_id) ?? new Set<string>();
+      set.add(et.tag_id);
+      map.set(et.element_id, set);
     });
     return map;
-  }, [relations, temporalRelations]);
+  }, [elementTags]);
 
-  const withCounts = elements
-    .map((e) => ({ el: e, count: counts.get(e.id) ?? 0 }))
-    .sort((a, b) => b.count - a.count);
-  const list = showOrphans
-    ? withCounts.filter((i) => i.count === 0)
-    : withCounts.filter((i) => i.count > 0).slice(0, 10);
+  const groups = useMemo(
+    () => elements.filter((e) => hasChildren(links, e.id)),
+    [elements, links]
+  );
+
+  const results = useMemo(() => {
+    const inGroup = groupId ? getDescendantIds(links, groupId) : null;
+    const q = query.trim().toLowerCase();
+
+    return elements
+      .filter((e) => {
+        if (q && !displayName(e).toLowerCase().includes(q)) return false;
+        if (inGroup && !inGroup.has(e.id)) return false;
+        if (tagId && !tagsByElement.get(e.id)?.has(tagId)) return false;
+        if (chrono === 'dedans' && !e.timeline) return false;
+        if (chrono === 'dehors' && e.timeline) return false;
+        const count = linkCount.get(e.id) ?? 0;
+        if (lien === 'relies' && count === 0) return false;
+        if (lien === 'orphelins' && count > 0) return false;
+        if (rang === 'groupes' && !hasChildren(links, e.id)) return false;
+        if (rang === 'racines' && parentsOf(links, elements, e.id).length > 0)
+          return false;
+        return true;
+      })
+      .sort(
+        (a, b) => (linkCount.get(b.id) ?? 0) - (linkCount.get(a.id) ?? 0)
+      );
+  }, [
+    elements, links, query, groupId, tagId, chrono, lien, rang,
+    linkCount, tagsByElement,
+  ]);
+
+  const active =
+    !!query || !!groupId || !!tagId || lien !== 'tous' || rang !== 'tous' ||
+    chrono !== 'tous';
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-[14px] text-ink-4">
-          Pas un graphe — un point de départ pour explorer.
-        </p>
-        <button
-          onClick={() => setShowOrphans((v) => !v)}
-          className="text-[14px] font-medium text-ink-3 hover:text-ink"
-        >
-          {showOrphans ? '← Les plus connectés' : 'Elements orphelins →'}
-        </button>
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Chercher parmi les Elements…"
+        className="mb-5 w-full border-b border-line bg-transparent pb-2.5 text-[17px] text-ink outline-none transition placeholder:text-ink-4 focus:border-ink"
+      />
+
+      <div className="mb-6 flex flex-wrap gap-x-6 gap-y-3">
+        <FilterRow
+          label="Liens"
+          value={lien}
+          onChange={setLien}
+          options={[
+            ['tous', 'Tous'],
+            ['relies', 'Reliés'],
+            ['orphelins', 'Sans lien'],
+          ]}
+        />
+        <FilterRow
+          label="Hiérarchie"
+          value={rang}
+          onChange={setRang}
+          options={[
+            ['tous', 'Tous'],
+            ['groupes', 'Groupes'],
+            ['racines', 'Racines'],
+          ]}
+        />
+        <FilterRow
+          label="Chronologie"
+          value={chrono}
+          onChange={setChrono}
+          options={[
+            ['tous', 'Tous'],
+            ['dedans', 'Dedans'],
+            ['dehors', 'Dehors'],
+          ]}
+        />
       </div>
-      {list.length === 0 && (
-        <p className="text-[16px] text-ink-4">
-          {showOrphans
-            ? 'Aucun Element orphelin — tout est relié à quelque chose.'
-            : "Aucune connexion pour l'instant."}
-        </p>
+
+      {(groups.length > 0 || (tags?.length ?? 0) > 0) && (
+        <div className="mb-6 flex flex-wrap gap-2">
+          {groups.slice(0, 8).map((g) => (
+            <Chip
+              key={g.id}
+              active={groupId === g.id}
+              onClick={() => setGroupId(groupId === g.id ? null : g.id)}
+            >
+              {displayName(g)}
+            </Chip>
+          ))}
+          {tags?.slice(0, 10).map((t) => (
+            <Chip
+              key={t.id}
+              active={tagId === t.id}
+              tone="var(--color-fluo-mention)"
+              onClick={() => setTagId(tagId === t.id ? null : t.id)}
+            >
+              #{t.name}
+            </Chip>
+          ))}
+        </div>
       )}
-      <div className="space-y-1.5">
-        {list.map(({ el, count }) => (
+
+      <div className="mb-3 flex items-center justify-between text-[14px] text-ink-4">
+        <span>
+          {results.length} Element{results.length > 1 ? 's' : ''}
+        </span>
+        {active && (
           <button
-            key={el.id}
-            onClick={() => navigate(`/elements/${el.id}`)}
-            className="flex w-full items-center justify-between py-1 text-left text-[19px] text-ink hover:opacity-60"
+            onClick={() => {
+              setQuery('');
+              setGroupId(null);
+              setTagId(null);
+              setLien('tous');
+              setRang('tous');
+              setChrono('tous');
+            }}
+            className="font-medium text-ink-3 transition hover:text-ink"
           >
-            <span className="truncate">{displayName(el)}</span>
-            <span className="ml-2 shrink-0 text-[14px] text-ink-4">
-              {count}
-            </span>
+            Tout réafficher
+          </button>
+        )}
+      </div>
+
+      {results.length === 0 ? (
+        <p className="text-[16px] text-ink-4">
+          Aucun Element ne réunit ces critères.
+        </p>
+      ) : (
+        <div className="space-y-0.5">
+          {results.map((el) => (
+            <div
+              key={el.id}
+              className="group flex items-center gap-2 rounded-lg px-2 py-2 transition hover:bg-surface-2"
+            >
+              <button
+                onClick={() => navigate(`/elements/${el.id}`)}
+                className="min-w-0 flex-1 truncate text-left text-[18px] text-ink"
+              >
+                {displayName(el)}
+              </button>
+              {el.timeline && (
+                <Clock size={14} strokeWidth={2} className="shrink-0 text-ink-4" />
+              )}
+              {/* Regarder sans quitter la liste : on garde sa recherche. */}
+              <button
+                onClick={() => openPeek(el.id)}
+                className="shrink-0 text-[13.5px] font-medium text-ink-4 opacity-0 transition group-hover:opacity-100 focus:opacity-100"
+              >
+                Aperçu
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FilterRow<T extends string>({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: T;
+  onChange: (v: T) => void;
+  options: [T, string][];
+}) {
+  // role/aria-label : plusieurs filtres partagent un libellé avec les
+  // onglets ("Groupes"), le groupe nommé lève l'ambiguïté — pour un lecteur
+  // d'écran comme pour un test.
+  return (
+    <div role="group" aria-label={label} className="flex items-center gap-2.5">
+      <span className="text-[13px] font-semibold text-ink-3">{label}</span>
+      <div className="flex gap-1.5">
+        {options.map(([v, l]) => (
+          <button
+            key={v}
+            onClick={() => onChange(v)}
+            className={`rounded-full px-2.5 py-1 text-[13.5px] transition ${
+              value === v
+                ? 'bg-ink font-medium text-white'
+                : 'text-ink-3 hover:bg-surface-2 hover:text-ink'
+            }`}
+          >
+            {l}
           </button>
         ))}
       </div>
     </div>
+  );
+}
+
+function Chip({
+  children,
+  active,
+  tone,
+  onClick,
+}: {
+  children: React.ReactNode;
+  active: boolean;
+  tone?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={active && tone ? { backgroundColor: tone } : undefined}
+      className={`rounded-full px-3 py-1.5 text-[14px] transition ${
+        active
+          ? tone
+            ? 'font-medium text-ink'
+            : 'bg-ink font-medium text-white'
+          : 'bg-surface-2 text-ink-2 hover:bg-surface-3 hover:text-ink'
+      }`}
+    >
+      {children}
+    </button>
   );
 }

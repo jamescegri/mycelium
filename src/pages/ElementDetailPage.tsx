@@ -6,7 +6,6 @@ import { getElement, listElements, softDeleteElement, updateElement } from '../l
 import { hasChildren, listAllLinks, parentsOf } from '../lib/links';
 import { syncMentionRelations } from '../lib/relations';
 import { extractMentionIds, toEditorContent } from '../lib/content';
-import { FAMILY_COLOR, FAMILY_LABEL } from '../lib/family';
 import { pastelFor } from '../lib/palette';
 import { displayName } from '../lib/display';
 import type { Element } from '../types';
@@ -16,6 +15,7 @@ import { ConnectionsDisclosure } from '../components/ConnectionsDisclosure';
 import { PropertiesDisclosure } from '../components/PropertiesDisclosure';
 import { ParentsSection } from '../components/ParentsSection';
 import { EnfantsSection } from '../components/EnfantsSection';
+import { ChronologySection } from '../components/ChronologySection';
 import { usePeek } from '../components/PeekPanel';
 
 export function ElementDetailPage() {
@@ -257,14 +257,7 @@ function ElementEditor({
         className="title-display w-full bg-transparent text-[62px] text-ink outline-none placeholder:text-ink-4"
       />
 
-      <div
-        className="mb-14 mt-4 text-[15px] font-medium"
-        style={{ color: FAMILY_COLOR[element.family] }}
-      >
-        {FAMILY_LABEL[element.family]}
-      </div>
-
-      <div className="mb-14">
+      <div className="mb-14 mt-4">
         <Editor elementId={element.id} content={content} onChange={setContent} />
       </div>
 
@@ -274,6 +267,7 @@ function ElementEditor({
       <div className="space-y-10 border-t border-line pt-12">
         <ParentsSection element={element} />
         <EnfantsSection element={element} />
+        <ChronologySection element={element} />
       </div>
 
       <div className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-line pt-7">

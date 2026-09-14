@@ -42,7 +42,6 @@ export function EnfantsSection({ element }: { element: Element }) {
     mutationFn: async () => {
       const created = await createElement({
         name: '',
-        family: element.family,
       });
       await linkChild(element.id, created.id);
       return created;

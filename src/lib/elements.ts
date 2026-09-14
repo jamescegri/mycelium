@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Element, ElementFamily } from '../types';
+import type { Element } from '../types';
 
 // Toutes les requêtes excluent les Elements soft-deleted (deleted_at non nul)
 // sauf listTrashed(), dédiée à la corbeille.
@@ -30,8 +30,8 @@ export async function getElement(id: string): Promise<Element | null> {
 
 export async function createElement(input: {
   name: string;
-  family: ElementFamily;
   content?: object | string | null;
+  timeline?: boolean;
 }): Promise<Element> {
   const {
     data: { user },
@@ -42,8 +42,8 @@ export async function createElement(input: {
     .from('elements')
     .insert({
       name: input.name,
-      family: input.family,
       content: input.content ?? null,
+      timeline: input.timeline ?? false,
       user_id: user.id,
     })
     .select('*')
@@ -89,7 +89,7 @@ export async function getElementsByIds(ids: string[]): Promise<Element[]> {
 export async function updateElement(
   id: string,
   patch: Partial<
-    Pick<Element, 'name' | 'family' | 'content' | 'notion_url' | 'absolute_date'>
+    Pick<Element, 'name' | 'timeline' | 'content' | 'notion_url' | 'absolute_date'>
   >
 ): Promise<Element> {
   const { data, error } = await supabase

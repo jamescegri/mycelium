@@ -3,10 +3,11 @@ import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getElement, listElements } from '../lib/elements';
-import { listAllLinks, parentsOf } from '../lib/links';
+import { childrenOf, listAllLinks, parentsOf } from '../lib/links';
 import { extractPlainText } from '../lib/content';
 import { ConnectionsDisclosure } from './ConnectionsDisclosure';
 import { displayName } from '../lib/display';
+import type { Element } from '../types';
 
 interface PeekContextValue {
   openPeek: (id: string) => void;
@@ -102,9 +103,16 @@ function PeekOverlay({
     allElements && links && element
       ? parentsOf(links, allElements, element.id)
       : [];
+  // Le panneau sert à explorer sans quitter sa page : parents ET enfants y
+  // sont donc cliquables, et chaque clic reste dans le panneau (onSelect
+  // empile, la flèche ← dépile) plutôt que de naviguer.
+  const children =
+    allElements && links && element
+      ? childrenOf(links, allElements, element.id)
+      : [];
 
   return (
-    <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose}>
+    <div className="fixed inset-0 z-40 bg-ink/20" onClick={onClose}>
       <div
         className="fixed right-0 top-0 h-full w-full max-w-md overflow-y-auto border-l border-line bg-white p-8"
         onClick={(e) => e.stopPropagation()}
@@ -120,7 +128,7 @@ function PeekOverlay({
                     ←
                   </button>
                 )}
-                <span>{element.family}</span>
+                <span>{element.timeline ? 'Chronologie' : ''}</span>
               </div>
               <div className="flex items-center gap-3">
                 <button
@@ -139,25 +147,68 @@ function PeekOverlay({
               </div>
             </div>
 
-            {parents.length > 0 && (
-              <div className="mb-1 truncate text-[13.5px] text-ink-4">
-                {parents.map((p) => p.name).join(' · ')}
-              </div>
-            )}
-
-            <h2 className="mb-3 text-2xl font-semibold text-ink">
+            <h2 className="mb-3 text-[28px] font-semibold text-ink">
               {displayName(element)}
             </h2>
 
             {!!element.content && (
-              <p className="mb-5 text-base leading-relaxed text-ink-2">
+              <p className="mb-6 text-[16px] leading-relaxed text-ink-2">
                 {extractPlainText(element.content)}
               </p>
             )}
 
-            <ConnectionsDisclosure elementId={element.id} onSelect={onSelect} />
+            <NavGroup
+              label="Parents"
+              items={parents}
+              tone="var(--color-fluo-parent)"
+              onSelect={onSelect}
+            />
+            <NavGroup
+              label="Enfants"
+              items={children}
+              tone="var(--color-fluo-child)"
+              onSelect={onSelect}
+            />
+
+            <div className="mt-6 border-t border-line pt-5">
+              <ConnectionsDisclosure elementId={element.id} onSelect={onSelect} />
+            </div>
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Parents et enfants du panneau : chaque nom rouvre le panneau sur cet
+// Element, d'où la pile et la flèche retour. La pastille reprend la couleur
+// du déclencheur correspondant ("@" pour un parent, "+" pour un enfant).
+function NavGroup({
+  label,
+  items,
+  tone,
+  onSelect,
+}: {
+  label: string;
+  items: Element[];
+  tone: string;
+  onSelect: (id: string) => void;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div className="mb-5">
+      <div className="mb-2 text-[13px] font-semibold text-ink-3">{label}</div>
+      <div className="flex flex-wrap gap-2">
+        {items.map((el) => (
+          <button
+            key={el.id}
+            onClick={() => onSelect(el.id)}
+            style={{ backgroundColor: tone }}
+            className="max-w-full truncate rounded-full px-3 py-1.5 text-[14.5px] font-medium text-ink transition hover:brightness-95"
+          >
+            {displayName(el)}
+          </button>
+        ))}
       </div>
     </div>
   );

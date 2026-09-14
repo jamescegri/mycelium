@@ -1,15 +1,14 @@
 -- Mycelium — schéma de base de données (v2)
 -- À coller dans l'éditeur SQL de ton projet Supabase (SQL Editor > New query)
 --
--- v2 : la hiérarchie n'est plus un arbre à parent unique (elements.parent_id)
--- mais un graphe multi-parent (table element_links). Un Element qui a au
--- moins un enfant EST un Groupe/une Collection — il n'y a plus de table
--- collections séparée. Family ne garde que TIME (pour la future timeline)
--- et ELEMENTS (tout le reste, y compris ce qui était "Lieu" avant).
+-- v3 : il n'existe plus aucun type d'Element. La colonne `family` a disparu.
+-- "Être un Groupe" = avoir au moins un enfant dans element_links.
+-- "Être dans la chronologie" = avoir timeline = true.
+-- Ce sont deux dimensions optionnelles d'un même objet générique, jamais
+-- des catégories : un Element peut être les deux, l'une, ou aucune.
 
 create extension if not exists "pgcrypto";
 
-create type element_family as enum ('TIME', 'ELEMENTS');
 create type temporal_relation_type as enum ('BEFORE', 'AFTER');
 create type relation_origin as enum ('manual', 'mention');
 
@@ -17,7 +16,11 @@ create table elements (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) default auth.uid(),
   name text not null,
-  family element_family not null,
+  -- Dimension optionnelle : l'Element participe-t-il à la chronologie ?
+  -- Sa POSITION dans cette chronologie vit dans temporal_relations, pas
+  -- ici — ce drapeau dit seulement qu'il en fait partie, ce qu'aucune
+  -- relation ne peut exprimer pour le tout premier Element placé.
+  timeline boolean not null default false,
   content jsonb,
   notion_url text,
   absolute_date text,
@@ -74,7 +77,7 @@ create table temporal_relations (
 );
 
 -- Index utiles
-create index elements_family_idx on elements (family);
+create index elements_timeline_idx on elements (timeline) where timeline;
 create index elements_user_idx on elements (user_id);
 create index element_links_parent_idx on element_links (parent_id);
 create index element_links_child_idx on element_links (child_id);

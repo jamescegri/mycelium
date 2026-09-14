@@ -11,8 +11,11 @@ types narratifs prédéfinis (pas de Character, Chapter, Scene, Arc…).
 L'utilisateur donne du sens à ses Elements par leur contenu, leurs relations,
 leurs tags et leur position temporelle — et par leur rangement, qui n'est
 **jamais figé** : un Element peut appartenir à plusieurs Groupes à la fois.
-Les familles TIME / ELEMENTS ne servent qu'à étiqueter (Temps prépare la
-future timeline) — elles n'imposent aucune structure.
+Il n'existe **aucun type d'Element**, pas même technique : la colonne
+`family` a disparu (v3). Deux dimensions optionnelles s'ajoutent à un
+Element sans le catégoriser — il *est un Groupe* parce qu'il a des enfants,
+il *est dans la chronologie* parce qu'on l'y a placé. Un Element peut être
+les deux, l'une, ou aucune.
 
 La boucle centrale est : **créer → écrire → relier → organiser → explorer**,
 et chaque étape doit rester quasi-instantanée. Voir le cahier des charges
@@ -43,7 +46,8 @@ rien d'autre qu'un Element qui a au moins un enfant ; "Collections" et
   plonger d'un niveau), en plus des onglets Temporel et Connexions déjà
   existants (inchangés, indépendants de la hiérarchie).
 - Familles réduites à **TIME** et **ELEMENTS** — "Lieu" (SPACE) n'est plus
-  une famille séparée, c'est redevenu un Element ordinaire.
+  une famille séparée, c'est redevenu un Element ordinaire. *(v3 : les
+  familles ont disparu entièrement, voir plus bas.)*
 - Refonte visuelle (thème blanc, typographie) volontairement **différée** :
   cette version ne change que le modèle de données et les interactions, pas
   encore l'habillage.
@@ -257,3 +261,58 @@ Le tri par glisser-déposer (mentionné comme piste dans le cahier des
 charges) n'est pas fait : la réorganisation reste au clic (↑↓). Le reste
 de la refonte demandée (Dashboard multi-vues, navigation par niveaux,
 panneau latéral, recherche globale, connexions discrètes) est implémenté.
+
+---
+
+## v3 — la Timeline devient une option, plus une famille
+
+### Le modèle
+
+`elements.family` est supprimée. À la place, `elements.timeline` (booléen) :
+n'importe quel Element peut entrer dans la chronologie, sans changer de
+nature. C'est ce qui permet d'avoir une "Guerre" placée dans le temps, un
+"Personnage" qui lui est relié sans y être, et un "Arc 1" qui regroupe les
+deux — sans jamais déclarer à l'application ce que chacun *est*.
+
+Pourquoi un booléen plutôt que de déduire l'appartenance des relations : le
+tout premier Element placé n'a aucun voisin, donc aucune relation ne peut
+exprimer qu'il fait partie de la chronologie.
+
+### BEFORE/AFTER reste, mais devient invisible
+
+Les relations temporelles restent la source de vérité, et `lib/chronology.ts`
+est la seule frontière où elles apparaissent. L'interface ne parle jamais
+que d'emplacement :
+
+- sur la page d'un Element : « Entre *Mafia* et *Jack* », avec Déplacer /
+  Retirer ;
+- pour placer : un panneau montre la chronologie telle qu'elle est, et on
+  clique **dans un intervalle** ;
+- dans la vue Temporel : on glisse une entrée et on la dépose entre deux
+  autres.
+
+Placer et déplacer sont la même opération : l'Element est détaché de ses
+anciens voisins — qu'on relie entre eux pour ne pas trouer la chaîne — puis
+rattaché aux nouveaux. En s'insérant entre deux voisins, l'arête directe qui
+les reliait est supprimée, sinon la chaîne garderait un raccourci par-dessus
+le nouvel arrivant.
+
+Le panneau de placement offre trois façons de viser : parcourir la
+chronologie, la filtrer par nom, ou la restreindre à un Groupe. Si aucun
+repère n'existe encore, chaque intervalle propose de créer un Element sur
+place.
+
+### Les trois systèmes restent séparés
+
+| Système | Répond à | Stockage |
+| --- | --- | --- |
+| Hiérarchie | l'organisation | `element_links` (multi-parent) |
+| Connexions | les liens libres | `relations` (+ backlinks) |
+| Tags | le filtrage transversal | `tags` / `element_tags` |
+| Chronologie | la position dans le temps | `elements.timeline` + `temporal_relations` |
+
+La vue **Connexions** les croise sans jamais les fusionner : filtres
+combinables (liens, hiérarchie, chronologie, Groupe, Tag, recherche
+texte), aucun graphe. Depuis un résultat, « Aperçu » ouvre le panneau
+latéral — qui liste parents et enfants cliquables — sans quitter la liste
+ni perdre ses filtres.

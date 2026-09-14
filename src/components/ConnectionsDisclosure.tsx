@@ -6,14 +6,9 @@ import {
   listBacklinks,
   listManualRelations,
 } from '../lib/relations';
-import {
-  createTemporalRelation,
-  deleteTemporalRelation,
-  listTemporalRelationsForElement,
-} from '../lib/temporal';
 import { getElementsByIds } from '../lib/elements';
 import { ElementPicker } from './ElementPicker';
-import type { Element, TemporalRelationType } from '../types';
+import type { Element } from '../types';
 
 interface BacklinkItem {
   id: string;
@@ -87,38 +82,6 @@ export function ConnectionsDisclosure({
     },
   });
 
-  const { data: temporalItems } = useQuery({
-    queryKey: ['temporal-relations', elementId],
-    queryFn: async (): Promise<
-      { id: string; other: Element; label: 'Avant' | 'Après' }[]
-    > => {
-      const rels = await listTemporalRelationsForElement(elementId);
-      const otherIds = [
-        ...new Set(
-          rels.map((r) => (r.element_a === elementId ? r.element_b : r.element_a))
-        ),
-      ];
-      const others = await getElementsByIds(otherIds);
-      const byId = new Map(others.map((e) => [e.id, e]));
-      return rels
-        .map((r) => {
-          const isA = r.element_a === elementId;
-          const otherId = isA ? r.element_b : r.element_a;
-          const other = byId.get(otherId);
-          if (!other) return null;
-          const currentIsBefore = isA
-            ? r.type === 'BEFORE'
-            : r.type === 'AFTER';
-          const label: 'Avant' | 'Après' = currentIsBefore ? 'Avant' : 'Après';
-          return { id: r.id, other, label };
-        })
-        .filter(
-          (x): x is { id: string; other: Element; label: 'Avant' | 'Après' } =>
-            !!x
-        );
-    },
-  });
-
   const addRelationMutation = useMutation({
     mutationFn: ({ target, label }: { target: Element; label: string }) =>
       createManualRelation(elementId, target.id, label),
@@ -130,22 +93,7 @@ export function ConnectionsDisclosure({
   });
   const [relationLabel, setRelationLabel] = useState('');
 
-  const [temporalDirection, setTemporalDirection] =
-    useState<TemporalRelationType>('BEFORE');
-  const addTemporalMutation = useMutation({
-    mutationFn: (target: Element) =>
-      createTemporalRelation(elementId, temporalDirection, target.id),
-    onSuccess: invalidateAll,
-  });
-  const deleteTemporalMutation = useMutation({
-    mutationFn: (relationId: string) => deleteTemporalRelation(relationId),
-    onSuccess: invalidateAll,
-  });
-
-  const total =
-    (backlinks?.length ?? 0) +
-    (relations?.length ?? 0) +
-    (temporalItems?.length ?? 0);
+  const total = (backlinks?.length ?? 0) + (relations?.length ?? 0);
 
   return (
     <div className="text-[16px]">
@@ -177,17 +125,6 @@ export function ConnectionsDisclosure({
             items={backlinks ?? []}
             onSelect={onSelect}
           />
-          <ConnGroup
-            title="Position temporelle"
-            items={(temporalItems ?? []).map((t) => ({
-              id: t.id,
-              otherId: t.other.id,
-              otherName: `${t.label} · ${t.other.name}`,
-              onRemove: () => deleteTemporalMutation.mutate(t.id),
-            }))}
-            onSelect={onSelect}
-          />
-
           <div className="flex flex-wrap gap-2">
             <ElementPicker
               excludeIds={[elementId]}
@@ -201,23 +138,6 @@ export function ConnectionsDisclosure({
               onChange={(e) => setRelationLabel(e.target.value)}
               placeholder="Label (optionnel)"
               className="w-32 border-b border-line bg-transparent px-1 py-1 text-[13.5px] text-ink-2 outline-none focus:border-ink-4"
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <select
-              value={temporalDirection}
-              onChange={(e) =>
-                setTemporalDirection(e.target.value as TemporalRelationType)
-              }
-              className="border-b border-line bg-transparent py-1 text-[13.5px] text-ink-2 outline-none focus:border-ink-4"
-            >
-              <option value="BEFORE">Avant…</option>
-              <option value="AFTER">Après…</option>
-            </select>
-            <ElementPicker
-              excludeIds={[elementId]}
-              placeholder="Position temporelle…"
-              onPick={(target) => addTemporalMutation.mutate(target)}
             />
           </div>
         </div>

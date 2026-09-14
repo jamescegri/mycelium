@@ -1,19 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { createElement, searchElements } from '../lib/elements';
-import type { Element, ElementFamily } from '../types';
+import type { Element } from '../types';
 
 export function ElementPicker({
   excludeIds,
   placeholder,
   onPick,
   allowCreate = true,
-  createFamily = 'ELEMENTS',
 }: {
   excludeIds: string[];
   placeholder: string;
   onPick: (element: Element) => void;
   allowCreate?: boolean;
-  createFamily?: ElementFamily;
 }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Element[]>([]);
@@ -41,10 +39,7 @@ export function ElementPicker({
   async function handleCreate() {
     setCreating(true);
     try {
-      const created = await createElement({
-        name: trimmed,
-        family: createFamily,
-      });
+      const created = await createElement({ name: trimmed });
       onPick(created);
       setQuery('');
       setOpen(false);
@@ -80,9 +75,11 @@ export function ElementPicker({
               className="flex w-full items-center justify-between px-3.5 py-2.5 text-left text-[15px] text-ink-2 transition hover:bg-surface-2 hover:text-ink"
             >
               <span className="truncate">{el.name}</span>
-              <span className="ml-2 shrink-0 text-[12px] text-ink-4">
-                {el.family === 'TIME' ? 'Temps' : 'Element'}
-              </span>
+              {el.timeline && (
+                <span className="ml-2 shrink-0 text-[12px] text-ink-4">
+                  Chronologie
+                </span>
+              )}
             </button>
           ))}
           {showCreate && (

@@ -1,13 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { listTrashed, restoreElement } from '../lib/elements';
-import type { ElementFamily } from '../types';
 import { Layout } from '../components/Layout';
-
-const FAMILY_LABEL: Record<ElementFamily, string> = {
-  TIME: 'Temps',
-  ELEMENTS: 'Element',
-};
 
 export function TrashPage() {
   const navigate = useNavigate();
@@ -45,12 +39,7 @@ export function TrashPage() {
             key={el.id}
             className="flex items-center justify-between px-4 py-3"
           >
-            <div className="flex items-center gap-2">
-              <span>{el.name}</span>
-              <span className="rounded bg-surface-3 px-2 py-0.5 text-[13.5px] text-ink-2">
-                {FAMILY_LABEL[el.family]}
-              </span>
-            </div>
+            <span>{el.name}</span>
             <button
               onClick={() => restoreMutation.mutate(el.id)}
               disabled={restoreMutation.isPending}

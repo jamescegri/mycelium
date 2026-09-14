@@ -1,36 +1,20 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
-import { updateElement } from '../lib/elements';
 import {
   addTagToElement,
   listTagsForElement,
   removeTagFromElement,
 } from '../lib/tags';
 import { Pill } from './Pill';
-import { FAMILIES } from '../types';
-import type { Element, ElementFamily } from '../types';
+import type { Element } from '../types';
 
-const FAMILY_LABEL: Record<ElementFamily, string> = {
-  TIME: 'Temps',
-  ELEMENTS: 'Element',
-};
-
-// Famille et tags : des métadonnées d'organisation, pas le sujet de la
+// Les tags : une métadonnée de filtrage, pas le sujet de la
 // page. Le rangement (parents/enfants) a ses propres sections, toujours
 // visibles, juste en dessous — pas ici.
 export function PropertiesDisclosure({ element }: { element: Element }) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
-
-  const setFamilyMutation = useMutation({
-    mutationFn: (family: ElementFamily) =>
-      updateElement(element.id, { family }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['elements'] });
-      queryClient.invalidateQueries({ queryKey: ['elements', element.id] });
-    },
-  });
 
   const { data: tags } = useQuery({
     queryKey: ['tags', element.id],
@@ -61,25 +45,6 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
 
       {open && (
         <div className="mt-3 space-y-3">
-          <div className="flex items-center gap-3">
-            <span className="w-20 shrink-0 text-[13.5px] text-ink-3">
-              Famille
-            </span>
-            <select
-              value={element.family}
-              onChange={(e) =>
-                setFamilyMutation.mutate(e.target.value as ElementFamily)
-              }
-              className="border-b border-line bg-transparent py-1 text-[16px] text-ink-2 outline-none focus:border-ink-4"
-            >
-              {FAMILIES.map((f) => (
-                <option key={f} value={f}>
-                  {FAMILY_LABEL[f]}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div className="flex flex-wrap items-center gap-2">
             <span className="w-20 shrink-0 text-[13.5px] text-ink-3">
               Tags

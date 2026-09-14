@@ -127,10 +127,7 @@ function createStructuralTrigger(
             async function run() {
               let id = item.id;
               if (item.isCreate) {
-                const created = await createElement({
-                  name: item.name,
-                  family: 'ELEMENTS',
-                });
+                const created = await createElement({ name: item.name });
                 id = created.id;
               }
               tiptapEditor.chain().focus().deleteRange(range).run();
@@ -227,10 +224,7 @@ export function Editor({ elementId, content, onChange }: EditorProps) {
               let id = item.id;
               let label = item.name;
               if (item.isCreate) {
-                const created = await createElement({
-                  name: item.name,
-                  family: 'ELEMENTS',
-                });
+                const created = await createElement({ name: item.name });
                 id = created.id;
                 label = created.name;
               }
