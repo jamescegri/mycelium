@@ -3,7 +3,8 @@ import {
   deleteTemporalRelation,
 } from './temporal';
 import { updateElement } from './elements';
-import type { Element, TemporalRelation } from '../types';
+import { childrenOf, parentsOf } from './links';
+import type { Element, ElementLink, TemporalRelation } from '../types';
 
 // La chronologie est une chaîne : chaque Element placé est relié à ses
 // voisins immédiats. C'est ce qui permet à l'utilisateur de raisonner en
@@ -155,6 +156,84 @@ export async function removeFromChronology(
   if (prev && next) await createTemporalRelation(prev, 'BEFORE', next);
 
   await updateElement(elementId, { timeline: false });
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// La chronologie comme lecture de la hiérarchie
+//
+// Un récit s'emboîte : une scène dans un chapitre, dans un tome, dans un
+// arc. Ce sont déjà des Elements et des enfants — rien à inventer. La
+// seule chose qui change d'un Groupe ordinaire, c'est que l'ordre des
+// enfants porte du sens : dans "Personnages" il est arbitraire, dans un
+// chapitre c'est la suite des événements.
+//
+// La chronologie est donc cette hiérarchie, lue dans l'ordre, et non une
+// seconde structure à tenir en parallèle. L'ordre vient de `sort_order`
+// (element_links) à chaque niveau ; `temporal_relations` ne sert plus qu'à
+// ranger les racines entre elles, seul endroit où il n'existe pas de
+// parent pour porter l'ordre.
+// ─────────────────────────────────────────────────────────────────────
+
+export interface TimelineRow {
+  element: Element;
+  depth: number;
+  // Le parent DANS la chronologie — null pour une racine. Un Element peut
+  // avoir par ailleurs des parents non temporels : ils ne comptent pas ici.
+  parentId: string | null;
+  // Position parmi ses frères temporels, pour savoir où insérer un voisin.
+  index: number;
+  // Nombre d'enfants temporels : sert à viser la fin d'un groupe quand on
+  // y ajoute quelque chose.
+  childCount: number;
+}
+
+// Les Elements temporels qui n'ont aucun parent temporel : les grandes
+// entrées du récit (les arcs). Une scène rangée dans un Groupe non temporel
+// ("Brouillons") compte aussi comme racine — c'est bien ce qu'on veut, elle
+// flotte en attendant d'être rangée dans un chapitre.
+function timelineRoots(elements: Element[], links: ElementLink[]): Element[] {
+  const inTimeline = elements.filter((e) => e.timeline);
+  const temporal = new Set(inTimeline.map((e) => e.id));
+  return inTimeline.filter(
+    (e) => !parentsOf(links, elements, e.id).some((p) => temporal.has(p.id))
+  );
+}
+
+// L'arbre chronologique aplati en lignes prêtes à afficher : chaque ligne
+// sait sa profondeur, son parent et son rang, ce qui suffit à dessiner
+// l'imbrication et à viser un emplacement d'insertion.
+export function timelineRows(
+  elements: Element[],
+  links: ElementLink[],
+  relations: TemporalRelation[]
+): TimelineRow[] {
+  const roots = chronologyOrder(timelineRoots(elements, links), relations);
+  const rows: TimelineRow[] = [];
+
+  // `trail` est le chemin en cours de descente, pas l'ensemble des Elements
+  // déjà vus : un même Element rangé dans deux chapitres doit apparaître aux
+  // deux endroits. Seul un cycle — qui se reconnaît à un Element présent
+  // dans son propre chemin — doit arrêter la descente.
+  function walk(
+    element: Element,
+    depth: number,
+    parentId: string | null,
+    index: number,
+    trail: Set<string>
+  ) {
+    const children = childrenOf(links, elements, element.id).filter(
+      (c) => c.timeline
+    );
+    rows.push({ element, depth, parentId, index, childCount: children.length });
+    if (trail.has(element.id)) return;
+    const deeper = new Set(trail).add(element.id);
+    children.forEach((child, i) =>
+      walk(child, depth + 1, element.id, i, deeper)
+    );
+  }
+
+  roots.forEach((root, i) => walk(root, 0, null, i, new Set()));
+  return rows;
 }
 
 // Les voisins immédiats d'un Element dans la chronologie, pour les nommer

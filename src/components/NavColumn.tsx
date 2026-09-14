@@ -6,7 +6,7 @@ import { createElement, listElements } from '../lib/elements';
 import { childrenOf, hasChildren, listAllLinks, parentsOf } from '../lib/links';
 import { listAllElementTags, listAllTags } from '../lib/tags';
 import { listTemporalRelations } from '../lib/temporal';
-import { chronologyOrder } from '../lib/chronology';
+import { timelineRows } from '../lib/chronology';
 import { displayName } from '../lib/display';
 import { pastelFor } from '../lib/palette';
 import { useCommandPalette } from './CommandPalette';
@@ -360,6 +360,9 @@ function TagsPanel({ filter }: { filter: string }) {
 }
 
 // ── Chronologie ──────────────────────────────────────────────────────
+// Le récit emboîté, lu dans l'ordre : l'indentation dit ce qui contient
+// quoi. Filtrer aplatit volontairement l'arbre — quand on cherche un nom,
+// on veut le trouver, pas reconstituer son chemin.
 function ChronologiePanel({ filter }: { filter: string }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -368,19 +371,22 @@ function ChronologiePanel({ filter }: { filter: string }) {
     queryKey: ['elements'],
     queryFn: listElements,
   });
+  const { data: links } = useQuery({ queryKey: ['links'], queryFn: listAllLinks });
   const { data: relations } = useQuery({
-    queryKey: ['temporal'],
+    queryKey: ['temporal-relations'],
     queryFn: listTemporalRelations,
   });
 
-  const ordered = useMemo(() => {
-    const all = chronologyOrder(elements ?? [], relations ?? []);
+  const rows = useMemo(() => {
+    const all = timelineRows(elements ?? [], links ?? [], relations ?? []);
     const q = filter.trim().toLowerCase();
     if (!q) return all;
-    return all.filter((e) => displayName(e).toLowerCase().includes(q));
-  }, [elements, relations, filter]);
+    return all.filter((r) =>
+      displayName(r.element).toLowerCase().includes(q)
+    );
+  }, [elements, links, relations, filter]);
 
-  if (ordered.length === 0) {
+  if (rows.length === 0) {
     return (
       <>
         <PanelTitle>Chronologie</PanelTitle>
@@ -395,26 +401,28 @@ function ChronologiePanel({ filter }: { filter: string }) {
     <>
       <PanelTitle>Chronologie</PanelTitle>
       <div className="flex flex-col">
-        {ordered.map((el, i) => {
-          const tone = pastelFor(el.id);
-          const active = location.pathname === `/elements/${el.id}`;
+        {rows.map((row, i) => {
+          const tone = pastelFor(row.element.id);
+          const active = location.pathname === `/elements/${row.element.id}`;
           return (
             <button
-              key={el.id}
-              onClick={() => navigate(`/elements/${el.id}`)}
+              key={`${row.element.id}-${i}`}
+              onClick={() => navigate(`/elements/${row.element.id}`)}
               aria-current={active ? 'true' : undefined}
-              className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[14px] transition ${
+              style={{ paddingLeft: 10 + row.depth * 14 }}
+              className={`flex items-center gap-2 rounded-lg py-1.5 pr-2.5 text-left transition ${
                 active ? 'bg-surface-3 font-semibold' : 'hover:bg-surface-2'
-              }`}
+              } ${row.depth === 0 ? 'text-[14.5px] font-medium' : 'text-[13.5px]'}`}
             >
-              <span className="w-4 shrink-0 text-[11.5px] tabular-nums text-ink-4">
-                {i + 1}
-              </span>
               <span
                 className="size-2 shrink-0 rounded-[2px]"
-                style={{ backgroundColor: tone.bg }}
+                style={
+                  row.childCount > 0
+                    ? { backgroundColor: tone.bg }
+                    : { boxShadow: `inset 0 0 0 1.5px ${tone.bg}` }
+                }
               />
-              <span className="truncate">{displayName(el)}</span>
+              <span className="truncate">{displayName(row.element)}</span>
             </button>
           );
         })}

@@ -1,17 +1,15 @@
 import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Clock, FileText, GripVertical } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Clock, FileText } from 'lucide-react';
 import { listElements } from '../lib/elements';
 import { getDescendantIds, hasChildren, listAllLinks, parentsOf } from '../lib/links';
 import { listAllRelations } from '../lib/relations';
 import { listAllElementTags, listAllTags } from '../lib/tags';
 import { usePeek } from '../components/PeekPanel';
-import { listTemporalRelations } from '../lib/temporal';
-import { chronologyOrder, placeInChronology } from '../lib/chronology';
 import { displayName, isUntitled } from '../lib/display';
 import { Layout } from '../components/Layout';
-import { Callout } from '../components/Callout';
+import { TimelineTree } from '../components/TimelineTree';
 import type { Element, ElementLink } from '../types';
 
 // Les angles sont de vraies routes, pas un état local : le bouton Retour
@@ -58,7 +56,7 @@ export function DashboardPage() {
       {path === '/liste' && (
         <ElementsTab elements={elements ?? []} links={links ?? []} />
       )}
-      {path === '/temporel' && <TemporalTab />}
+      {path === '/temporel' && <TimelineTree />}
       {path === '/connexions' && (
         <ConnexionsTab elements={elements ?? []} links={links ?? []} />
       )}
@@ -151,158 +149,6 @@ function ElementsTab({
           })}
         </div>
       )}
-    </div>
-  );
-}
-
-// La chronologie se manipule directement : on saisit une entrée et on la
-// dépose dans un intervalle. Aucune mention de "avant"/"après" — ces
-// relations restent la mécanique interne (lib/chronology.ts).
-function TemporalTab() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [dragId, setDragId] = useState<string | null>(null);
-  const [overSlot, setOverSlot] = useState<number | null>(null);
-
-  const { data: elements } = useQuery({
-    queryKey: ['elements'],
-    queryFn: listElements,
-  });
-  const { data: relations } = useQuery({
-    queryKey: ['temporal-relations'],
-    queryFn: listTemporalRelations,
-  });
-
-  const ordered = useMemo(
-    () => chronologyOrder(elements ?? [], relations ?? []),
-    [elements, relations]
-  );
-
-  const moveMutation = useMutation({
-    mutationFn: ({
-      id,
-      previousId,
-      nextId,
-    }: {
-      id: string;
-      previousId: string | null;
-      nextId: string | null;
-    }) => placeInChronology(relations ?? [], id, previousId, nextId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['temporal-relations'] });
-      queryClient.invalidateQueries({ queryKey: ['elements'] });
-    },
-  });
-
-  if (ordered.length === 0) {
-    return (
-      <Callout icon={Clock}>
-        La chronologie est vide. Ouvre n'importe quel Element et choisis
-        "Placer dans la chronologie" — aucun Element n'a besoin d'être d'un
-        type particulier pour y entrer.
-      </Callout>
-    );
-  }
-
-  // Déposer dans l'intervalle i, c'est se placer entre ordered[i-1] et
-  // ordered[i]. L'Element déplacé est ignoré dans ce calcul : sinon on se
-  // positionnerait par rapport à soi-même.
-  function dropAt(slot: number) {
-    if (!dragId) return;
-    const without = ordered.filter((e) => e.id !== dragId);
-    const removedBefore = ordered.findIndex((e) => e.id === dragId) < slot;
-    const index = removedBefore ? slot - 1 : slot;
-    moveMutation.mutate({
-      id: dragId,
-      previousId: without[index - 1]?.id ?? null,
-      nextId: without[index]?.id ?? null,
-    });
-    setDragId(null);
-    setOverSlot(null);
-  }
-
-  return (
-    <div>
-      <p className="mb-5 text-[14px] text-ink-4">
-        Glisse une entrée pour la déplacer.
-      </p>
-      <div>
-        {ordered.map((el, i) => (
-          <div key={el.id}>
-            <DropSlot
-              active={overSlot === i && dragId !== null}
-              armed={dragId !== null}
-              onOver={() => setOverSlot(i)}
-              onDrop={() => dropAt(i)}
-            />
-            <div
-              draggable
-              onDragStart={() => setDragId(el.id)}
-              onDragEnd={() => {
-                setDragId(null);
-                setOverSlot(null);
-              }}
-              className={`group flex cursor-grab items-center gap-3 rounded-lg px-2 py-2.5 transition active:cursor-grabbing ${
-                dragId === el.id ? 'opacity-40' : 'hover:bg-surface-2'
-              }`}
-            >
-              <GripVertical
-                size={16}
-                strokeWidth={2}
-                className="shrink-0 text-ink-4 opacity-0 transition group-hover:opacity-100"
-              />
-              <button
-                onClick={() => navigate(`/elements/${el.id}`)}
-                className="min-w-0 flex-1 truncate text-left text-[19px] text-ink"
-              >
-                {displayName(el)}
-              </button>
-            </div>
-          </div>
-        ))}
-        <DropSlot
-          active={overSlot === ordered.length && dragId !== null}
-          armed={dragId !== null}
-          onOver={() => setOverSlot(ordered.length)}
-          onDrop={() => dropAt(ordered.length)}
-        />
-      </div>
-    </div>
-  );
-}
-
-// L'intervalle garde toujours une cible réelle, même au repos : une zone de
-// dépôt qui n'apparaît qu'une fois le glisser commencé est difficile à
-// viser. Elle s'élargit pendant le glisser, et ne se VOIT que là — au repos
-// la chronologie reste une liste de titres, pas une grille de zones.
-function DropSlot({
-  active,
-  armed,
-  onOver,
-  onDrop,
-}: {
-  active: boolean;
-  armed: boolean;
-  onOver: () => void;
-  onDrop: () => void;
-}) {
-  return (
-    <div
-      onDragOver={(e) => {
-        e.preventDefault();
-        onOver();
-      }}
-      onDrop={(e) => {
-        e.preventDefault();
-        onDrop();
-      }}
-      className={`flex items-center transition-all ${armed ? 'h-7' : 'h-2'}`}
-    >
-      <div
-        className={`h-[3px] w-full rounded-full transition ${
-          active ? 'bg-fluo-parent' : 'bg-transparent'
-        }`}
-      />
     </div>
   );
 }

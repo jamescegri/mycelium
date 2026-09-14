@@ -182,3 +182,61 @@ export async function reorderChild(
     })
   );
 }
+
+// Poser un enfant dans un parent, à une position précise — en le sortant au
+// passage du parent d'où il vient.
+//
+// C'est l'unique opération dont la vue chronologique a besoin : y ranger une
+// scène qu'on vient de créer, la remonter d'un cran, ou la faire passer dans
+// un autre chapitre sont le même geste. Un seul chemin de code, donc un seul
+// endroit où l'ordre peut se tromper.
+//
+// `fromParentId` est demandé explicitement plutôt que deviné : un Element
+// peut appartenir à plusieurs Groupes à la fois, et le retirer d'une branche
+// ne doit pas le décrocher des autres.
+export async function moveChild(
+  links: ElementLink[],
+  elements: Element[],
+  childId: string,
+  fromParentId: string | null,
+  toParentId: string | null,
+  index: number
+): Promise<void> {
+  if (toParentId && wouldCreateCycle(links, toParentId, childId)) {
+    throw new Error(
+      "Impossible : cet Element contient déjà celui dans lequel tu essaies de le ranger."
+    );
+  }
+
+  if (fromParentId && fromParentId !== toParentId) {
+    await unlinkChild(fromParentId, childId);
+  }
+
+  // Sans nouveau parent, l'Element redevient une racine : il n'y a plus de
+  // lien à écrire, le détachement ci-dessus suffit.
+  if (!toParentId) return;
+
+  // Tout le niveau est renuméroté d'un coup, positions 0..n sans trou. Se
+  // contenter d'écrire le sort_order du seul Element déplacé laisserait des
+  // ex æquo, que `childrenOf` départagerait par date de création — l'ordre
+  // sauterait sans raison visible.
+  const siblings = childrenOf(links, elements, toParentId).filter(
+    (e) => e.id !== childId
+  );
+  const at = Math.max(0, Math.min(index, siblings.length));
+  const ordered = [
+    ...siblings.slice(0, at).map((e) => e.id),
+    childId,
+    ...siblings.slice(at).map((e) => e.id),
+  ];
+
+  const { error } = await supabase.from('element_links').upsert(
+    ordered.map((id, i) => ({
+      parent_id: toParentId,
+      child_id: id,
+      sort_order: i,
+    })),
+    { onConflict: 'parent_id,child_id' }
+  );
+  if (error) throw error;
+}
