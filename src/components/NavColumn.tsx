@@ -28,7 +28,8 @@ function panelFor(pathname: string): Panel {
 
 // `wide` : tant qu'aucun Element n'est ouvert, la colonne prend toute la
 // place — on est en train d'explorer, autant le faire au large. Elle se
-// resserre dès qu'il y a quelque chose à lire à côté.
+// resserre dès qu'il y a quelque chose à lire à côté. La largeur et le fond
+// sont portés par le panneau qui l'accueille (voir Layout).
 export function NavColumn({ wide = false }: { wide?: boolean }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -46,13 +47,13 @@ export function NavColumn({ wide = false }: { wide?: boolean }) {
     },
   });
 
+  // Au large, le contenu garde une largeur de lecture et se centre : une
+  // liste étirée sur 1400 px se parcourt mal, l'œil perd la colonne.
+  const inner = wide ? 'mx-auto w-full max-w-[48rem]' : 'w-full';
+
   return (
-    <div
-      className={`flex min-h-0 flex-col border-r border-line-soft ${
-        wide ? 'w-full max-w-[52rem]' : 'w-[300px] shrink-0'
-      }`}
-    >
-      <div className="px-4 pt-5 pb-3">
+    <div className="flex min-h-0 w-full flex-col">
+      <div className={`${inner} px-4 pt-5 pb-3`}>
         <button
           onClick={openPalette}
           className="flex w-full items-center gap-2.5 rounded-xl border border-line px-3.5 py-2.5 text-left text-[14.5px] text-ink-3 transition hover:border-ink-4"
@@ -66,12 +67,12 @@ export function NavColumn({ wide = false }: { wide?: boolean }) {
       {/* Au large, on a la place d'écrire une idée sans quitter
           l'exploration — c'est le geste le plus fréquent de l'app. */}
       {wide && (
-        <div className="px-4 pb-4">
+        <div className={`${inner} px-4 pb-4`}>
           <CaptureBar />
         </div>
       )}
 
-      <div className="px-4 pb-3">
+      <div className={`${inner} px-4 pb-3`}>
         <input
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -80,10 +81,12 @@ export function NavColumn({ wide = false }: { wide?: boolean }) {
         />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
-        {panel === 'groupes' && <GroupesPanel filter={filter} wide={wide} />}
-        {panel === 'tags' && <TagsPanel filter={filter} />}
-        {panel === 'chronologie' && <ChronologiePanel filter={filter} />}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className={`${inner} px-3 pb-3`}>
+          {panel === 'groupes' && <GroupesPanel filter={filter} wide={wide} />}
+          {panel === 'tags' && <TagsPanel filter={filter} />}
+          {panel === 'chronologie' && <ChronologiePanel filter={filter} />}
+        </div>
       </div>
 
       {/* Au large, la barre de capture couvre déjà la création : deux

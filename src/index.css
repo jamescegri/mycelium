@@ -114,6 +114,26 @@ select:focus-visible,
   }
 }
 
+/* Le panneau de lecture entre par la droite, d'où il vient : on comprend
+   qu'il s'est ajouté à l'explorateur plutôt que de l'avoir remplacé, donc
+   qu'on peut y revenir. Court — 200 ms suffisent à montrer le mouvement
+   sans faire attendre. Neutralisé par la règle prefers-reduced-motion
+   plus haut. */
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-panel-in {
+  animation: panel-in 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+
 /* Un titre de page est composé, pas juste grossi : en géométrique, plus
    le corps est grand, plus l'interlettrage par défaut paraît lâche. */
 .title-display {

@@ -1,41 +1,22 @@
-// Le mark : un fil qui se divise puis se REJOINT. C'est le plus petit graphe
-// orienté possible, et c'est littéralement le modèle de l'app — un Element
-// peut avoir plusieurs parents, donc les chemins convergent.
+// Le mark de Mycelium. En aplat noir, comme le reste de l'interface : la
+// couleur est réservée aux liens entre Elements, et une marque qui s'en
+// servirait affaiblirait ce signal partout ailleurs.
 //
-// Volontairement pas un champignon : le mycélium est le réseau souterrain,
-// le champignon n'en est que la partie visible. C'est le réseau que cette
-// app manipule.
-//
-// Les deux arcs ne sont pas symétriques et les nœuds latéraux sont
-// légèrement décalés en hauteur : une symétrie parfaite donnerait un
-// pictogramme géométrique, pas quelque chose qui a poussé.
+// `currentColor` plutôt qu'un noir écrit en dur, pour qu'il suive la
+// couleur du texte là où il est posé — sur fond sombre comme sur fond clair.
 export function Logo({ size = 22 }: { size?: number }) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 32 32"
+      viewBox="0 0 715 701"
       fill="none"
       aria-hidden="true"
     >
-      <rect width="32" height="32" rx="8" fill="#000000" />
-      <g
-        stroke="#fff"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        opacity="0.65"
-      >
-        <path d="M14.3 8 C 11.2 9.7 8.2 11.7 7.2 13.5" />
-        <path d="M17.7 8.1 C 20.7 10 23.7 12.1 24.7 14.4" />
-        <path d="M7 17.8 C 8.2 20.6 11.4 22.8 14.2 24" />
-        <path d="M25 18.5 C 23.8 21.2 20.7 23.3 17.8 24.1" />
-      </g>
-      {/* Les trois fluo des déclencheurs "/", "@" et "+" : la marque énonce
-          la règle de couleur de l'app. */}
-      <circle cx="16" cy="5.8" r="2.6" fill="#c9a0ff" />
-      <circle cx="6.2" cy="15.6" r="2.1" fill="#5ce1ff" />
-      <circle cx="25.8" cy="16.4" r="2.1" fill="#5bffa5" />
-      <circle cx="16" cy="26.2" r="2.6" fill="#ffffff" />
+      <path
+        fill="currentColor"
+        d="M581.721 462.628C604.515 355.638 632.071 108.601 463.764 116.247C433.232 118.396 403.706 126.8 382.939 150.933C345.488 194.457 347.911 267.749 352.21 321.49C352.436 324.309 352.85 328.617 353.364 333.959C356.391 365.403 362.869 432.697 354.55 443.356C353.232 445.044 351.731 445.571 349.679 445.757C344.722 443.815 342.223 430.333 341.215 425.311C335.636 397.515 329.37 369.917 323.313 342.232L294.31 211.426C287.729 181.861 280.412 149.994 274.772 120.265C223.128 120.64 171.482 120.638 119.839 120.262L119.867 416.772C119.86 433.844 119.789 450.995 119.718 468.173C119.563 505.512 119.408 542.977 119.906 580.021L229.245 580.096L225.176 250.692L233.406 250.601L254.505 355.144L278.059 470.887C282.864 494.597 285.869 521.07 295.313 543.439C297.997 549.798 302.77 555.731 308.503 559.58C321.769 568.487 353.207 569.491 368.682 566.204C384.877 562.764 397.989 553.538 406.902 539.61C426.841 508.452 429.479 442.395 429.544 405.428C429.56 396.15 429.144 384.778 428.687 372.291C427.054 327.658 424.899 268.794 440.11 240.505C445.293 230.866 453.148 224.251 463.91 221.821C473.549 219.645 485.453 220.645 493.859 226.189C506.4 234.461 512.389 247.88 515.125 262.196C528.876 334.152 481.625 455.263 452.345 522.861C444.017 542.086 434.562 560.814 426.181 580.013L552.596 580.102C562.945 540.33 573.135 502.927 581.721 462.628Z"
+      />
     </svg>
   );
 }

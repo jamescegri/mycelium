@@ -15,14 +15,14 @@ import { useCommandPalette } from './CommandPalette';
 import { NavColumn } from './NavColumn';
 import { Logo } from './Logo';
 
-// Trois colonnes : le rail dit où l'on est, la colonne du milieu sert à
-// naviguer, la troisième à lire et à écrire. C'est la disposition d'un
-// outil qu'on garde ouvert toute la journée — on change de sujet sans
-// jamais repasser par un écran d'accueil.
+// Des panneaux posés sur un fond, plutôt que des zones séparées par des
+// filets : la marge autour de chacun fait le travail qu'un trait ferait
+// moins bien, et l'interface respire au lieu de buter contre l'écran.
 //
-// Sous 1024px la colonne de navigation disparaît : à cette largeur elle
-// mangerait la moitié de la zone de lecture. Le rail et la palette ⌘K
-// suffisent alors à atteindre n'importe quoi.
+// Explorer et lire sont deux moments. Tant qu'aucun Element n'est ouvert,
+// l'explorateur occupe toute la place ; le panneau de lecture n'apparaît
+// qu'une fois qu'on a choisi quelque chose, en glissant depuis la droite —
+// on voit d'où il vient, donc on comprend qu'on peut y revenir.
 const RAIL = [
   { to: '/dashboard', label: 'Accueil', icon: Home },
   { to: '/liste', label: 'Éléments', icon: LayoutGrid },
@@ -37,65 +37,62 @@ export function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { open: openPalette } = useCommandPalette();
 
+  const reading = children !== null;
+
   return (
-    <div className="flex h-screen bg-surface text-ink">
+    <div className="flex h-screen gap-2.5 bg-surface-2 p-2.5 text-ink">
       <nav
         aria-label="Navigation principale"
-        className="flex w-[74px] shrink-0 flex-col items-center gap-0.5 border-r border-line-soft bg-surface-2 px-2 py-4"
+        className="flex w-[76px] shrink-0 flex-col items-center rounded-2xl bg-surface px-2 py-4"
       >
         <button
           onClick={() => navigate('/dashboard')}
           aria-label="Mycelium — accueil"
-          className="mb-6 flex size-9 items-center justify-center"
+          className="flex size-9 items-center justify-center text-ink"
         >
-          <Logo size={26} />
+          <Logo size={24} />
         </button>
 
-        {RAIL.map((item) => {
-          const active = location.pathname.startsWith(item.to);
-          return (
+        {/* Les destinations sont groupées au centre : au repos l'œil s'y
+            pose sans avoir à remonter en haut de l'écran. */}
+        <div className="flex w-full flex-1 flex-col justify-center gap-0.5">
+          {RAIL.map((item) => (
             <RailButton
               key={item.to}
               icon={item.icon}
               label={item.label}
-              active={active}
+              active={location.pathname.startsWith(item.to)}
               onClick={() => navigate(item.to)}
             />
-          );
-        })}
+          ))}
+          <RailButton icon={Search} label="Chercher" onClick={openPalette} />
+        </div>
 
-        <RailButton icon={Search} label="Chercher" onClick={openPalette} />
-
-        <div className="flex-1" />
-
-        <RailButton
-          icon={Trash2}
-          label="Corbeille"
-          active={location.pathname.startsWith('/trash')}
-          onClick={() => navigate('/trash')}
-        />
-        <RailButton icon={LogOut} label="Sortir" onClick={() => signOut()} />
+        <div className="flex w-full flex-col gap-0.5">
+          <RailButton
+            icon={Trash2}
+            label="Corbeille"
+            active={location.pathname.startsWith('/trash')}
+            onClick={() => navigate('/trash')}
+          />
+          <RailButton icon={LogOut} label="Sortir" onClick={() => signOut()} />
+        </div>
       </nav>
 
-      {/* Pas de troisième colonne tant qu'il n'y a rien à lire : explorer
-          et lire sont deux moments, et un panneau vide à droite ferait
-          croire qu'on a raté quelque chose. La colonne de navigation
-          occupe alors toute la largeur. */}
-      {children === null ? (
-        <div className="flex min-h-0 flex-1 justify-center">
-          <NavColumn wide />
-        </div>
-      ) : (
-        <>
-          <div className="hidden min-h-0 lg:flex">
-            <NavColumn />
+      <div
+        className={`flex min-h-0 overflow-hidden rounded-2xl bg-surface ${
+          reading ? 'w-[300px] shrink-0 max-lg:hidden' : 'flex-1'
+        }`}
+      >
+        <NavColumn wide={!reading} />
+      </div>
+
+      {reading && (
+        <main className="animate-panel-in min-w-0 flex-1 overflow-y-auto rounded-2xl bg-surface">
+          <div className="mx-auto max-w-[52rem] px-6 py-12 sm:px-12">
+            {children}
           </div>
-          <main className="min-w-0 flex-1 overflow-y-auto">
-            <div className="mx-auto max-w-[56rem] px-6 py-12 sm:px-12">
-              {children}
-            </div>
-          </main>
-        </>
+        </main>
       )}
     </div>
   );
@@ -119,7 +116,7 @@ function RailButton({
       className={`flex w-full flex-col items-center gap-1 rounded-xl px-1 py-2 transition ${
         active
           ? 'bg-surface-3 text-ink'
-          : 'text-ink-3 hover:bg-surface-3 hover:text-ink'
+          : 'text-ink-3 hover:bg-surface-2 hover:text-ink'
       }`}
     >
       <Icon size={19} strokeWidth={2} />
