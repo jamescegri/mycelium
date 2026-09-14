@@ -10,7 +10,13 @@ import {
   Search,
 } from 'lucide-react';
 import { createElement, listElements } from '../lib/elements';
-import { childrenOf, hasChildren, listAllLinks, parentsOf } from '../lib/links';
+import {
+  childrenOf,
+  hasChildren,
+  listAllLinks,
+  moveChild,
+  parentsOf,
+} from '../lib/links';
 import { listAllElementTags, listAllTags } from '../lib/tags';
 import { listAllRelations } from '../lib/relations';
 import { listTemporalRelations } from '../lib/temporal';
@@ -18,6 +24,7 @@ import { timelineRows } from '../lib/chronology';
 import { extractPlainText } from '../lib/content';
 import { displayName, isUntitled } from '../lib/display';
 import { searchFullText } from '../lib/search';
+import { reportError } from '../lib/errors';
 import { pastelFor } from '../lib/palette';
 import { useCommandPalette } from './CommandPalette';
 import type { Element, ElementLink } from '../types';
@@ -270,6 +277,10 @@ interface TreeRow {
   element: Element;
   depth: number;
   items: Element[];
+  // D'où vient cette ligne et à quel rang : un déplacement doit savoir de
+  // quel parent détacher, et un Element peut appartenir à plusieurs.
+  parentId: string | null;
+  index: number;
 }
 
 // L'arbre aplati en lignes, en ne descendant que dans ce qui est déplié.
@@ -284,15 +295,23 @@ function treeRows(
 ): TreeRow[] {
   const rows: TreeRow[] = [];
 
-  function walk(element: Element, depth: number, trail: Set<string>) {
+  function walk(
+    element: Element,
+    depth: number,
+    parentId: string | null,
+    index: number,
+    trail: Set<string>
+  ) {
     const children = childrenOf(links, elements, element.id);
-    rows.push({ element, depth, items: children });
+    rows.push({ element, depth, items: children, parentId, index });
     if (!expanded.has(element.id) || trail.has(element.id)) return;
     const deeper = new Set(trail).add(element.id);
-    for (const child of children) walk(child, depth + 1, deeper);
+    children.forEach((child, i) =>
+      walk(child, depth + 1, element.id, i, deeper)
+    );
   }
 
-  for (const root of roots) walk(root, 0, new Set());
+  roots.forEach((root, i) => walk(root, 0, null, i, new Set()));
   return rows;
 }
 
@@ -307,9 +326,11 @@ function GroupesPanel({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const [view, setView] = useState<ExplorerView>('liste');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [path, setPath] = useState<Element[]>([]);
+  const [dragged, setDragged] = useState<TreeRow | null>(null);
 
   const { data: elements } = useQuery({
     queryKey: ['elements'],
@@ -407,10 +428,12 @@ function GroupesPanel({
   // Vue liste : l'arbre déplié, ou les résultats à plat quand on filtre.
   const rows = useMemo(() => {
     if (searching) {
-      return matches.list.map((element) => ({
+      return matches.list.map((element, i) => ({
         element,
         depth: 0,
         items: childrenOf(allLinks, all, element.id),
+        parentId: null,
+        index: i,
       }));
     }
     return treeRows(roots.filter(matches.byName), all, allLinks, expanded);
@@ -426,6 +449,33 @@ function GroupesPanel({
   }, [searching, matches, here, allLinks, all, roots]);
 
   const open = (el: Element) => navigate(`/elements/${el.id}`);
+
+  // Déposer un Element sur un Groupe le range dedans, comme dans un
+  // Finder. `moveChild` refuse les boucles et ne détache que du parent
+  // d'où l'on vient — un Element rangé ailleurs y reste.
+  const dropMutation = useMutation({
+    mutationFn: ({ row, onto }: { row: TreeRow; onto: TreeRow }) => {
+      const ontoIsGroup = onto.items.length > 0;
+      // Sur une feuille, on se range à côté d'elle plutôt que dedans :
+      // faire d'une scène le parent d'une autre serait presque toujours
+      // une fausse manœuvre.
+      const target = ontoIsGroup ? onto.element.id : onto.parentId;
+      const index = ontoIsGroup ? onto.items.length : onto.index + 1;
+      return moveChild(
+        allLinks,
+        all,
+        row.element.id,
+        row.parentId,
+        target,
+        index
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['links'] });
+      queryClient.invalidateQueries({ queryKey: ['elements'] });
+    },
+    onError: reportError,
+  });
 
   const count = rows.length || cards.length;
 
@@ -502,8 +552,22 @@ function GroupesPanel({
               excerpt={matches.excerptOf.get(row.element.id) ?? null}
               expanded={expanded.has(row.element.id)}
               active={location.pathname === `/elements/${row.element.id}`}
+              dragged={dragged?.element.id === row.element.id}
+              // Se déposer dans sa propre descendance n'a pas de sens :
+              // `moveChild` le refuse, autant ne pas le proposer.
+              droppable={
+                dragged !== null &&
+                dragged.element.id !== row.element.id &&
+                !searching
+              }
               onToggle={() => toggle(row.element.id)}
               onOpen={() => open(row.element)}
+              onDragStart={() => setDragged(row)}
+              onDragEnd={() => setDragged(null)}
+              onDrop={() => {
+                if (dragged) dropMutation.mutate({ row: dragged, onto: row });
+                setDragged(null);
+              }}
             />
           ))}
         </div>
@@ -541,24 +605,62 @@ function ExplorerRow({
   excerpt,
   expanded,
   active,
+  dragged,
+  droppable,
   onToggle,
   onOpen,
+  onDragStart,
+  onDragEnd,
+  onDrop,
 }: {
   row: TreeRow;
   excerpt: string | null;
   expanded: boolean;
   active: boolean;
+  dragged: boolean;
+  droppable: boolean;
   onToggle: () => void;
   onOpen: () => void;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  onDrop: () => void;
 }) {
+  const [over, setOver] = useState(false);
   const isGroup = row.items.length > 0;
   const tone = pastelFor(row.element.id);
 
   return (
     <div
+      draggable
+      onDragStart={onDragStart}
+      onDragEnd={() => {
+        setOver(false);
+        onDragEnd();
+      }}
+      onDragOver={(e) => {
+        if (!droppable) return;
+        e.preventDefault();
+        setOver(true);
+      }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(e) => {
+        if (!droppable) return;
+        e.preventDefault();
+        setOver(false);
+        onDrop();
+      }}
       style={{ paddingLeft: row.depth * 18 }}
-      className={`flex items-start gap-1 rounded-lg pr-2 transition ${
-        active ? 'bg-surface-3' : 'hover:bg-surface-2'
+      className={`flex cursor-grab items-start gap-1 rounded-lg pr-2 transition active:cursor-grabbing ${
+        dragged
+          ? 'opacity-35'
+          : over
+            ? // La cible se signale par un cadre plein plutôt qu'un simple
+              // fond : pendant un glisser, plusieurs lignes se survolent
+              // en une seconde et un aplat discret se remarque mal.
+              'shadow-[inset_0_0_0_2px_var(--color-ink)] bg-surface-2'
+            : active
+              ? 'bg-surface-3'
+              : 'hover:bg-surface-2'
       }`}
     >
       {isGroup ? (

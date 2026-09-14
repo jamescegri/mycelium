@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Clock, FileText } from 'lucide-react';
+import { Clock, Columns3, Download, FileText, Rows3 } from 'lucide-react';
 import { listElements } from '../lib/elements';
 import { getDescendantIds, hasChildren, listAllLinks, parentsOf } from '../lib/links';
 import { listAllRelations } from '../lib/relations';
@@ -9,7 +9,9 @@ import { listAllElementTags, listAllTags } from '../lib/tags';
 import { usePeek } from '../components/PeekPanel';
 import { displayName, isUntitled } from '../lib/display';
 import { searchFullText } from '../lib/search';
+import { downloadMarkdown, universeToMarkdown } from '../lib/export';
 import { TimelineTree } from '../components/TimelineTree';
+import { TimelineRibbon } from '../components/TimelineRibbon';
 import type { Element, ElementLink } from '../types';
 
 // Les angles sont de vraies routes, pas un état local : le bouton Retour
@@ -51,10 +53,45 @@ export function DashboardPage() {
       {path === '/liste' && (
         <ElementsTab elements={elements ?? []} links={links ?? []} />
       )}
-      {path === '/temporel' && <TimelineTree />}
+      {path === '/temporel' && <TemporalViews />}
       {path === '/connexions' && (
         <ConnexionsTab elements={elements ?? []} links={links ?? []} />
       )}
+    </div>
+  );
+}
+
+// Deux façons de regarder la même chronologie. En hauteur pour écrire et
+// réorganiser — c'est là qu'on ajoute et qu'on déplace. En largeur pour
+// prendre du recul : on y lit le rythme du récit, quel arc s'étire et quel
+// chapitre est expédié, ce qu'une liste verticale ne montre jamais.
+function TemporalViews() {
+  const [horizontal, setHorizontal] = useState(false);
+
+  return (
+    <div>
+      <div className="mb-6 flex w-fit items-center gap-0.5 rounded-xl border border-line p-1">
+        {[
+          { id: false, label: 'En hauteur', icon: Rows3 },
+          { id: true, label: 'En largeur', icon: Columns3 },
+        ].map((v) => (
+          <button
+            key={String(v.id)}
+            onClick={() => setHorizontal(v.id)}
+            aria-pressed={horizontal === v.id}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13.5px] transition ${
+              horizontal === v.id
+                ? 'bg-accent font-semibold text-white'
+                : 'text-ink-3 hover:text-ink'
+            }`}
+          >
+            <v.icon size={14} strokeWidth={2} />
+            {v.label}
+          </button>
+        ))}
+      </div>
+
+      {horizontal ? <TimelineRibbon /> : <TimelineTree />}
     </div>
   );
 }
@@ -133,6 +170,12 @@ function ElementsTab({
         className="mb-6 w-full border-b border-line bg-transparent pb-2.5 text-[15px] text-ink outline-none transition placeholder:text-ink-4 focus:border-ink"
       />
 
+      {elements.length > 0 && (
+        <div className="mb-6">
+          <ExportButton elements={elements} links={links} />
+        </div>
+      )}
+
       {hits.length === 0 ? (
         <p className="text-[15px] text-ink-3">
           {elements.length === 0
@@ -164,6 +207,42 @@ function ElementsTab({
         </div>
       )}
     </div>
+  );
+}
+
+// Sortir tout l'univers en un fichier. Un auteur ne devrait jamais avoir à
+// se demander ce qu'il advient de ses notes si l'app disparaît — et relire
+// son récit d'une traite, ailleurs, est un usage en soi.
+function ExportButton({
+  elements,
+  links,
+}: {
+  elements: Element[];
+  links: ElementLink[];
+}) {
+  const { data: tags } = useQuery({ queryKey: ['tags'], queryFn: listAllTags });
+  const { data: elementTags } = useQuery({
+    queryKey: ['element-tags'],
+    queryFn: listAllElementTags,
+  });
+
+  return (
+    <button
+      onClick={() => {
+        const markdown = universeToMarkdown(
+          elements,
+          links,
+          tags ?? [],
+          elementTags ?? []
+        );
+        const day = new Date().toISOString().slice(0, 10);
+        downloadMarkdown(markdown, `mycelium-${day}.md`);
+      }}
+      className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-[13.5px] text-ink-2 transition hover:border-ink hover:text-ink"
+    >
+      <Download size={14} strokeWidth={2} />
+      Exporter en Markdown
+    </button>
   );
 }
 

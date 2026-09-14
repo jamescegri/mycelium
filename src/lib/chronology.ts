@@ -244,6 +244,62 @@ export function timelineRows(
   return rows;
 }
 
+// ── La chronologie en bandes ─────────────────────────────────────────
+// Le même arbre, vu à plat dans le temps : le récit file de gauche à
+// droite, et chaque niveau s'empile sous le précédent. Un chapitre couvre
+// exactement la largeur de ses scènes, un tome celle de ses chapitres —
+// on voit donc du premier coup d'œil quelle partie du récit pèse le plus,
+// ce qu'une liste verticale ne montre jamais.
+
+export interface TimelineBlock {
+  element: Element;
+  // Position et largeur exprimées en scènes : l'unité du récit, c'est la
+  // feuille. Un tome de vingt scènes est deux fois plus large qu'un tome
+  // de dix, quel que soit le nombre de chapitres entre les deux.
+  start: number;
+  span: number;
+  isLeaf: boolean;
+}
+
+export function timelineBands(
+  elements: Element[],
+  links: ElementLink[],
+  relations: TemporalRelation[]
+): { bands: TimelineBlock[][]; width: number } {
+  const roots = chronologyOrder(timelineRoots(elements, links), relations);
+  const bands: TimelineBlock[][] = [];
+  let cursor = 0;
+
+  // Retourne la largeur occupée, pour que le parent additionne celles de
+  // ses enfants au lieu de les recompter.
+  function walk(element: Element, depth: number, trail: Set<string>): number {
+    const start = cursor;
+    const children = trail.has(element.id)
+      ? []
+      : childrenOf(links, elements, element.id);
+
+    let span = 0;
+    if (children.length === 0) {
+      cursor += 1;
+      span = 1;
+    } else {
+      const deeper = new Set(trail).add(element.id);
+      for (const child of children) span += walk(child, depth + 1, deeper);
+    }
+
+    (bands[depth] ??= []).push({
+      element,
+      start,
+      span,
+      isLeaf: children.length === 0,
+    });
+    return span;
+  }
+
+  for (const root of roots) walk(root, 0, new Set());
+  return { bands, width: cursor };
+}
+
 // Les voisins immédiats d'un Element dans la chronologie, pour les nommer
 // en clair sur sa page ("après X, avant Y").
 export function neighbours(
