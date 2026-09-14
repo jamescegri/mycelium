@@ -57,6 +57,22 @@ function humanize(error: unknown): { message: string; hint?: string } {
           : JSON.stringify(error);
   const code = typeof obj.code === 'string' ? obj.code : '';
 
+  // PGRST205 : PostgREST ne trouve pas la table dans SON cache de schéma.
+  // Deux causes très différentes derrière le même message — la table
+  // manque vraiment, ou elle vient d'être créée et le cache n'a pas encore
+  // été rafraîchi. Le message doit donc couvrir les deux, sinon on relance
+  // un script déjà passé sans comprendre pourquoi rien ne change.
+  const cacheMiss = /Could not find the table '?(?:public\.)?(\w+)'? in the schema cache/i.exec(raw);
+  if (cacheMiss || code === 'PGRST205') {
+    const table = cacheMiss?.[1];
+    return {
+      message: table
+        ? `Supabase ne trouve pas la table "${table}".`
+        : "Supabase ne trouve pas une table attendue.",
+      hint: "Soit le schéma n'a pas encore été appliqué (colle supabase/schema.sql dans le SQL Editor), soit il vient de l'être et le cache doit être rafraîchi : exécute NOTIFY pgrst, 'reload schema'; puis recharge la page.",
+    };
+  }
+
   // 42P01 : la table n'existe pas. C'est le symptôme d'un schéma jamais
   // appliqué — le cas le plus probable après un changement de modèle.
   const missingTable = /relation "?(?:public\.)?(\w+)"? does not exist/i.exec(raw);
