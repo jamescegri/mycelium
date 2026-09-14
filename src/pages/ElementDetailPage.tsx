@@ -9,7 +9,6 @@ import { extractMentionIds, toEditorContent } from '../lib/content';
 import { pastelFor } from '../lib/palette';
 import { displayName } from '../lib/display';
 import type { Element } from '../types';
-import { Layout } from '../components/Layout';
 import { Editor } from '../components/Editor';
 import { ConnectionsDisclosure } from '../components/ConnectionsDisclosure';
 import { PropertiesDisclosure } from '../components/PropertiesDisclosure';
@@ -39,22 +38,17 @@ export function ElementDetailPage() {
 
   if (isLoading) {
     return (
-      <Layout>
-        <p className="text-[17px] text-ink-3">Chargement…</p>
-      </Layout>
-    );
+          <p className="text-[17px] text-ink-3">Chargement…</p>
+      );
   }
 
   if (!element) {
     return (
-      <Layout>
-        <p className="text-[17px] text-ink-3">Element introuvable.</p>
-      </Layout>
-    );
+          <p className="text-[17px] text-ink-3">Element introuvable.</p>
+      );
   }
 
   return (
-    <Layout>
       <div className="mx-auto max-w-[52rem] px-6 py-12 sm:px-12">
       {/* key={element.id} : une instance fraîche par Element, avec son
           propre état local initialisé directement depuis les données déjà
@@ -71,7 +65,6 @@ export function ElementDetailPage() {
         }}
       />
       </div>
-    </Layout>
   );
 }
 

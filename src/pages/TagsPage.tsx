@@ -7,7 +7,6 @@ import { listAllElementTags, listAllTags } from '../lib/tags';
 import { extractPlainText } from '../lib/content';
 import { displayName } from '../lib/display';
 import { pastelFor } from '../lib/palette';
-import { Layout } from '../components/Layout';
 import { ViewSwitch, type ViewMode } from '../components/ViewSwitch';
 import type { Element } from '../types';
 
@@ -47,22 +46,19 @@ export function TagsPage() {
 
   if (!tagId) {
     return (
-      <Layout>
-        <div className="mx-auto max-w-[56rem] px-6 py-10 sm:px-10">
+          <div className="mx-auto max-w-[56rem] px-6 py-10 sm:px-10">
           <h1 className="title-display mb-2 text-[40px]">Tags</h1>
           <p className="max-w-[62ch] text-[16.5px] text-ink-3">
             Un Tag ne range rien : il traverse. Choisis-en un à gauche pour voir
             les Elements qui le portent, où qu'ils soient rangés.
           </p>
         </div>
-      </Layout>
-    );
+      );
   }
 
   const tone = tag ? pastelFor(tag.id) : null;
 
   return (
-    <Layout>
       <div className="mx-auto max-w-[56rem] px-6 py-10 sm:px-10">
       <div className="mb-2 flex items-center gap-3">
         {tone && (
@@ -97,7 +93,6 @@ export function TagsPage() {
           links={links ?? []}
         />
       </div>
-    </Layout>
   );
 }
 

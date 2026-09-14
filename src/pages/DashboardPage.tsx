@@ -8,8 +8,6 @@ import { listAllRelations } from '../lib/relations';
 import { listAllElementTags, listAllTags } from '../lib/tags';
 import { usePeek } from '../components/PeekPanel';
 import { displayName, isUntitled } from '../lib/display';
-import { Layout } from '../components/Layout';
-import { HomeView } from '../components/HomeView';
 import { TimelineTree } from '../components/TimelineTree';
 import type { Element, ElementLink } from '../types';
 
@@ -32,19 +30,6 @@ export function DashboardPage() {
     queryFn: listAllLinks,
   });
 
-  if (path === '/dashboard') {
-    return (
-      <Layout>
-        <HomeView />
-      </Layout>
-    );
-  }
-
-  // L'explorateur EST la vue : il vit dans le Layout, qui le garde monté
-  // pour que la position dans l'arborescence survive à l'ouverture d'un
-  // Element. La page ne fournit donc rien à lire à droite.
-  if (path === '/groupes') return <Layout>{null}</Layout>;
-
   const title =
     path === '/liste' ? 'Tous les Elements'
     : path === '/temporel' ? 'Chronologie'
@@ -58,20 +43,18 @@ export function DashboardPage() {
         : 'Ce qui relie tes Elements, cherchable et filtrable.';
 
   return (
-    <Layout>
-      <div className="mx-auto max-w-[56rem] px-6 py-10 sm:px-10">
-        <h1 className="title-display mb-2 text-[40px] text-ink">{title}</h1>
-        <p className="mb-8 max-w-[62ch] text-[16.5px] text-ink-3">{sub}</p>
+    <div className="mx-auto max-w-[56rem] px-6 py-9 sm:px-10">
+      <h1 className="title-display mb-1.5 text-[32px] text-ink">{title}</h1>
+      <p className="mb-7 max-w-[62ch] text-[15px] text-ink-3">{sub}</p>
 
-        {path === '/liste' && (
-          <ElementsTab elements={elements ?? []} links={links ?? []} />
-        )}
-        {path === '/temporel' && <TimelineTree />}
-        {path === '/connexions' && (
-          <ConnexionsTab elements={elements ?? []} links={links ?? []} />
-        )}
-      </div>
-    </Layout>
+      {path === '/liste' && (
+        <ElementsTab elements={elements ?? []} links={links ?? []} />
+      )}
+      {path === '/temporel' && <TimelineTree />}
+      {path === '/connexions' && (
+        <ConnexionsTab elements={elements ?? []} links={links ?? []} />
+      )}
+    </div>
   );
 }
 

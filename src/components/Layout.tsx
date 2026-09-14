@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Clock,
   FolderTree,
@@ -24,16 +24,20 @@ import { Logo } from './Logo';
 // l'explorateur occupe toute la place ; le panneau de lecture n'apparaît
 // qu'une fois qu'on a choisi quelque chose, en glissant depuis la droite —
 // on voit d'où il vient, donc on comprend qu'on peut y revenir.
+// Une teinte par destination, qui n'apparaît qu'au survol. La règle de
+// couleur de l'app tient toujours — ce qui reste affiché à l'écran est
+// achromatique, seul un lien porte une couleur durable. Ici la teinte est
+// fugace : elle accompagne le geste, puis disparaît.
 const RAIL = [
-  { to: '/dashboard', label: 'Accueil', icon: Home },
-  { to: '/groupes', label: 'Groupes', icon: FolderTree },
-  { to: '/liste', label: 'Éléments', icon: LayoutGrid },
-  { to: '/temporel', label: 'Temps', icon: Clock },
-  { to: '/tags', label: 'Tags', icon: Tag },
-  { to: '/connexions', label: 'Liens', icon: Link2 },
+  { to: '/dashboard', label: 'Accueil', icon: Home, tint: '#5ce1ff' },
+  { to: '/groupes', label: 'Groupes', icon: FolderTree, tint: '#5bffa5' },
+  { to: '/liste', label: 'Éléments', icon: LayoutGrid, tint: '#c9a0ff' },
+  { to: '/temporel', label: 'Temps', icon: Clock, tint: '#ff9d6b' },
+  { to: '/tags', label: 'Tags', icon: Tag, tint: '#ff6fd8' },
+  { to: '/connexions', label: 'Liens', icon: Link2, tint: '#7d9bff' },
 ];
 
-export function Layout({ children }: { children: ReactNode }) {
+export function Layout() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -49,6 +53,8 @@ export function Layout({ children }: { children: ReactNode }) {
     path.startsWith('/tags') ||
     path.startsWith('/elements/');
   const twoPane = path.startsWith('/tags') || path.startsWith('/elements/');
+  // Sur Groupes, l'explorateur EST la vue : il n'y a rien à lire à côté.
+  const showsMain = !path.startsWith('/groupes');
 
   return (
     <div className="flex h-screen gap-2.5 bg-surface-2 p-2.5 text-ink">
@@ -72,11 +78,17 @@ export function Layout({ children }: { children: ReactNode }) {
               key={item.to}
               icon={item.icon}
               label={item.label}
+              tint={item.tint}
               active={location.pathname.startsWith(item.to)}
               onClick={() => navigate(item.to)}
             />
           ))}
-          <RailButton icon={Search} label="Chercher" onClick={openPalette} />
+          <RailButton
+            icon={Search}
+            label="Chercher"
+            tint="#5ce1ff"
+            onClick={openPalette}
+          />
         </div>
 
         <div className="flex w-full flex-col gap-0.5">
@@ -106,13 +118,13 @@ export function Layout({ children }: { children: ReactNode }) {
         <NavColumn wide={!twoPane} />
       </div>
 
-      {children !== null && (
+      {showsMain && (
         <main
           className={`min-w-0 flex-1 overflow-y-auto rounded-2xl bg-surface ${
             twoPane ? 'animate-panel-in' : ''
           }`}
         >
-          {children}
+          <Outlet />
         </main>
       )}
     </div>
@@ -122,34 +134,40 @@ export function Layout({ children }: { children: ReactNode }) {
 function RailButton({
   icon: Icon,
   label,
+  tint,
   active = false,
   onClick,
 }: {
   icon: typeof Home;
   label: string;
+  tint?: string;
   active?: boolean;
   onClick: () => void;
 }) {
+  const [hover, setHover] = useState(false);
+
   return (
     <button
       onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onFocus={() => setHover(true)}
+      onBlur={() => setHover(false)}
       aria-current={active ? 'page' : undefined}
-      className={`flex w-full flex-col items-center gap-1 rounded-xl px-1 py-2 transition ${
-        active
-          ? 'bg-surface-3 text-ink'
-          : 'text-ink-3 hover:bg-surface-2 hover:text-ink'
+      // Sans libellé écrit, le nom doit rester atteignable : `aria-label`
+      // pour les lecteurs d'écran, `title` pour l'infobulle du navigateur.
+      aria-label={label}
+      title={label}
+      className={`flex w-full items-center justify-center rounded-xl py-2.5 transition ${
+        active ? 'bg-surface-3 text-ink' : 'text-ink-3'
       }`}
+      style={
+        hover && !active && tint
+          ? { backgroundColor: tint, color: 'var(--color-ink)' }
+          : undefined
+      }
     >
       <Icon size={19} strokeWidth={2} />
-      {/* Le libellé reste écrit : une icône seule oblige à deviner, et
-          "Temps" ou "Liens" ne se devinent pas. */}
-      <span
-        className={`text-[9.5px] tracking-[0.04em] uppercase ${
-          active ? 'font-semibold' : 'font-medium'
-        }`}
-      >
-        {label}
-      </span>
     </button>
   );
 }
