@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, Trash2 } from 'lucide-react';
@@ -180,6 +180,23 @@ function ElementEditor({
   const parents =
     allElements && allLinks ? parentsOf(allLinks, allElements, element.id) : [];
 
+  // Le fil d'Ariane remonte toute la chaîne, pas seulement le parent
+  // direct : à trois niveaux de profondeur, "Bloopers" seul ne dit pas
+  // d'où l'on vient. On suit le premier parent à chaque étage — un
+  // Element peut en avoir plusieurs, le "+n" le signale.
+  const ancestors = useMemo(() => {
+    if (!allElements || !allLinks) return [];
+    const chain: Element[] = [];
+    const seen = new Set<string>([element.id]);
+    let current = parentsOf(allLinks, allElements, element.id)[0];
+    while (current && !seen.has(current.id)) {
+      chain.unshift(current);
+      seen.add(current.id);
+      current = parentsOf(allLinks, allElements, current.id)[0];
+    }
+    return chain;
+  }, [allElements, allLinks, element.id]);
+
   // La pastille n'est fluo que si l'Element est un Groupe (il a au moins un
   // enfant) — et c'est alors exactement la teinte de sa carte sur le
   // Dashboard. Un Element sans enfant reste en gris : voir de la couleur
@@ -192,31 +209,34 @@ function ElementEditor({
   return (
     <>
       <div className="mb-8 flex items-center justify-between gap-4">
-        <nav className="flex min-w-0 items-center gap-2 text-[15px] text-ink-4">
+        <nav
+          aria-label="Fil d'Ariane"
+          className="flex min-w-0 flex-wrap items-center gap-1.5 text-[12.5px] tracking-[0.06em] text-ink-4 uppercase"
+        >
           <button
             onClick={() => navigate('/dashboard')}
-            className="shrink-0 transition hover:text-ink-2"
+            className="shrink-0 transition hover:text-ink"
           >
-            Dashboard
+            Mon réseau
           </button>
-          {parents[0] && (
-            <>
-              <ChevronRight size={15} strokeWidth={2} className="shrink-0 opacity-60" />
+          {ancestors.map((ancestor) => (
+            <span key={ancestor.id} className="flex min-w-0 items-center gap-1.5">
+              <ChevronRight size={12} strokeWidth={2.2} className="shrink-0 opacity-60" />
               <button
-                onClick={() => navigate(`/elements/${parents[0].id}`)}
-                className="max-w-[180px] truncate transition hover:text-ink-2"
+                onClick={() => navigate(`/elements/${ancestor.id}`)}
+                className="max-w-[150px] truncate transition hover:text-ink"
               >
-                {displayName(parents[0])}
+                {displayName(ancestor)}
               </button>
-            </>
-          )}
-          {parents.length > 1 && (
-            <span className="shrink-0 text-[13px] text-ink-4">
-              +{parents.length - 1}
             </span>
+          ))}
+          {parents.length > 1 && (
+            <span className="shrink-0 normal-case">+{parents.length - 1}</span>
           )}
-          <ChevronRight size={15} strokeWidth={2} className="shrink-0 opacity-60" />
-          <span className="truncate text-ink-2">{name || 'Sans titre'}</span>
+          <ChevronRight size={12} strokeWidth={2.2} className="shrink-0 opacity-60" />
+          <span className="truncate font-semibold text-ink-2">
+            {name || 'Sans titre'}
+          </span>
         </nav>
 
         {/* Plus de bouton "Enregistrer" : l'enregistrement est automatique,
@@ -257,22 +277,22 @@ function ElementEditor({
         className="title-display w-full bg-transparent text-[62px] text-ink outline-none placeholder:text-ink-4"
       />
 
-      <div className="mb-14 mt-4">
-        <Editor elementId={element.id} content={content} onChange={setContent} />
-      </div>
-
-      {/* Le classement (Parents/Enfants) vit sous la zone de texte, jamais
-          dedans : "@"/"+" tapés dans l'éditeur agissent ici, pas comme du
-          texte inséré. */}
-      <div className="space-y-10 border-t border-line pt-12">
+      {/* Le classement est au-dessus du texte : en ouvrant un Element, on
+          veut d'abord savoir où il se situe et à quoi il tient. "@"/"+"
+          tapés dans l'éditeur agissent ici, pas comme du texte inséré. */}
+      <div className="mt-7 space-y-5 border-b border-line pb-9">
+        <PropertiesDisclosure element={element} />
         <ParentsSection element={element} />
         <EnfantsSection element={element} />
         <ChronologySection element={element} />
       </div>
 
-      <div className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-line pt-7">
+      <div className="mt-9 mb-12">
+        <Editor elementId={element.id} content={content} onChange={setContent} />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-line pt-7">
         <ConnectionsDisclosure elementId={element.id} onSelect={openPeek} />
-        <PropertiesDisclosure element={element} />
       </div>
     </>
   );

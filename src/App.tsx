@@ -3,6 +3,7 @@ import { useAuth } from './lib/auth';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ElementDetailPage } from './pages/ElementDetailPage';
+import { TagsPage } from './pages/TagsPage';
 import { TrashPage } from './pages/TrashPage';
 import { PeekProvider } from './components/PeekPanel';
 import { CommandPaletteProvider } from './components/CommandPalette';
@@ -40,6 +41,17 @@ export default function App() {
           }
         />
       ))}
+      {/* Les Tags ont une route à eux, mais pas de page par Tag : un Tag
+          n'a ni contenu ni enfants. "?tag=" est un filtre sur la liste,
+          pas l'adresse d'un objet. */}
+      <Route
+        path="/tags"
+        element={
+          <RequireAuth>
+            <TagsPage />
+          </RequireAuth>
+        }
+      />
       <Route
         path="/elements/:id"
         element={

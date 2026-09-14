@@ -1,7 +1,12 @@
-// Les Groupes sont, avec les variables "/" "@" "+", le seul endroit de
-// l'app où la couleur est autorisée. Sur une grille de cartes, la teinte
-// fait le travail qu'un titre seul ne fait pas : on retrouve "Personnages"
-// à sa couleur avant même d'avoir lu son nom.
+// Les Groupes et les Tags sont, avec les variables "/" "@" "+", le seul
+// endroit de l'app où la couleur est autorisée. Sur une grille de cartes,
+// la teinte fait le travail qu'un titre seul ne fait pas : on retrouve
+// "Personnages" à sa couleur avant même d'avoir lu son nom.
+//
+// Un Tag y a droit pour la même raison qu'un Groupe : c'est un lien entre
+// Elements, pas un ornement. La règle reste donc intacte — voir une
+// couleur veut toujours dire "ceci relie". Les boutons, onglets et états
+// actifs restent noirs.
 //
 // Fluo saturés, texte noir par-dessus : chaque fond dépasse 7:1 avec
 // l'encre, donc le fluo reste parfaitement lisible. Aucun jaune.
