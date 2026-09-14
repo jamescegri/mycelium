@@ -85,18 +85,18 @@ export const MentionList = forwardRef<MentionListHandle, MentionListProps>(
     }));
 
     return (
-      <div className="max-h-72 w-72 overflow-y-auto rounded-lg border border-neutral-200 bg-neutral-50 py-1 shadow-xl">
+      <div className="max-h-72 w-72 overflow-y-auto rounded-lg border border-line bg-surface-2 py-1 shadow-xl">
         {isBrowsing && browseStack.length > 0 && (
           <button
             type="button"
             onClick={goBack}
-            className="flex w-full items-center gap-1.5 border-b border-neutral-200 px-3 py-1.5 text-left text-xs text-neutral-500 hover:bg-neutral-100/60"
+            className="flex w-full items-center gap-1.5 border-b border-line px-3 py-1.5 text-left text-xs text-ink-3 hover:bg-surface-3/60"
           >
             ← Retour
           </button>
         )}
         {displayItems.length === 0 ? (
-          <div className="px-3 py-2 text-sm text-neutral-500">
+          <div className="px-3 py-2 text-sm text-ink-3">
             {isBrowsing ? 'Aucun Element ici.' : 'Tape pour chercher un Element…'}
           </div>
         ) : (
@@ -108,8 +108,8 @@ export const MentionList = forwardRef<MentionListHandle, MentionListProps>(
                 key={item.id}
                 className={`flex w-full items-center gap-1.5 px-1 ${
                   index === selectedIndex
-                    ? 'bg-neutral-100 text-neutral-900'
-                    : 'text-neutral-700 hover:bg-neutral-100/60'
+                    ? 'bg-surface-3 text-ink'
+                    : 'text-ink-2 hover:bg-surface-3/60'
                 }`}
               >
                 <button
@@ -118,7 +118,7 @@ export const MentionList = forwardRef<MentionListHandle, MentionListProps>(
                   className="flex flex-1 items-center gap-1.5 px-2 py-2 text-left text-sm"
                 >
                   {item.isCreate && (
-                    <span className="text-yellow-500">+ Créer</span>
+                    <span className="text-accent">+ Créer</span>
                   )}
                   <span className="truncate">{item.name}</span>
                 </button>
@@ -127,7 +127,7 @@ export const MentionList = forwardRef<MentionListHandle, MentionListProps>(
                     type="button"
                     onClick={() => drillInto(item.id)}
                     aria-label={`Voir les enfants de ${item.name}`}
-                    className="shrink-0 px-2 py-2 text-neutral-400 hover:text-neutral-700"
+                    className="shrink-0 px-2 py-2 text-ink-4 hover:text-ink"
                   >
                     ›
                   </button>

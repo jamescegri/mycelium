@@ -82,26 +82,26 @@ export function EnfantsSection({ element }: { element: Element }) {
 
   return (
     <div className="text-base">
-      <div className="mb-2 text-xs text-neutral-500">
+      <div className="mb-3 text-[12px] font-medium tracking-wide text-ink-4">
         Enfants
       </div>
       {children.length === 0 ? (
-        <p className="mb-2 text-neutral-400">Pas encore d'enfant.</p>
+        <p className="mb-2 text-ink-4">Pas encore d'enfant.</p>
       ) : (
         <div className="mb-2">
           {children.map((child, index) => (
             <div
               key={child.id}
-              className="group flex items-center justify-between rounded-lg py-1.5 hover:bg-neutral-50"
+              className="group flex items-center justify-between rounded-lg py-1.5 hover:bg-surface-2"
             >
               <button
                 onClick={() => navigate(`/elements/${child.id}`)}
-                className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left text-neutral-700 hover:text-yellow-600"
+                className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left text-ink-2 hover:text-accent"
               >
                 <FileText
                   size={15}
                   strokeWidth={1.75}
-                  className="shrink-0 text-neutral-300"
+                  className="shrink-0 text-ink-4"
                 />
                 <span className="truncate">{child.name || 'Sans titre'}</span>
               </button>
@@ -112,7 +112,7 @@ export function EnfantsSection({ element }: { element: Element }) {
                   }
                   disabled={index === 0}
                   aria-label="Monter"
-                  className="cursor-pointer text-neutral-300 hover:text-neutral-600 disabled:cursor-default disabled:opacity-20"
+                  className="cursor-pointer text-ink-4 hover:text-ink-2 disabled:cursor-default disabled:opacity-20"
                 >
                   ↑
                 </button>
@@ -125,14 +125,14 @@ export function EnfantsSection({ element }: { element: Element }) {
                   }
                   disabled={index === children.length - 1}
                   aria-label="Descendre"
-                  className="cursor-pointer text-neutral-300 hover:text-neutral-600 disabled:cursor-default disabled:opacity-20"
+                  className="cursor-pointer text-ink-4 hover:text-ink-2 disabled:cursor-default disabled:opacity-20"
                 >
                   ↓
                 </button>
                 <button
                   onClick={() => removeChildMutation.mutate(child.id)}
                   aria-label={`Retirer ${child.name}`}
-                  className="cursor-pointer text-neutral-300 hover:text-red-600"
+                  className="cursor-pointer text-ink-4 hover:text-danger"
                 >
                   <X size={13} strokeWidth={2} />
                 </button>
@@ -145,7 +145,7 @@ export function EnfantsSection({ element }: { element: Element }) {
         <button
           onClick={() => createChildMutation.mutate()}
           disabled={createChildMutation.isPending}
-          className="flex cursor-pointer items-center gap-1.5 text-neutral-500 hover:text-neutral-700 disabled:cursor-default disabled:opacity-50"
+          className="flex cursor-pointer items-center gap-1.5 text-ink-3 hover:text-ink disabled:cursor-default disabled:opacity-50"
         >
           <Plus size={15} strokeWidth={1.75} />
           Nouvelle sous-page

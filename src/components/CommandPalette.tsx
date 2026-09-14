@@ -116,7 +116,7 @@ function CommandPaletteOverlay({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-xl border border-neutral-200 bg-neutral-50 shadow-2xl"
+        className="w-full max-w-md rounded-xl border border-line bg-surface-2 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <input
@@ -124,13 +124,13 @@ function CommandPaletteOverlay({ onClose }: { onClose: () => void }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Chercher ou créer un Element…"
-          className="w-full border-b border-neutral-200 bg-transparent px-4 py-3 text-[15px] text-neutral-900 outline-none"
+          className="w-full border-b border-line bg-transparent px-4 py-3 text-[15px] text-ink outline-none"
         />
         <div className="max-h-80 overflow-y-auto p-1.5">
           {matches.map((el) => (
             <div
               key={el.id}
-              className="flex items-center justify-between rounded px-2.5 py-2 hover:bg-neutral-100"
+              className="flex items-center justify-between rounded px-2.5 py-2 hover:bg-surface-3"
             >
               <button
                 onClick={() => {
@@ -139,10 +139,10 @@ function CommandPaletteOverlay({ onClose }: { onClose: () => void }) {
                 }}
                 className="min-w-0 flex-1 text-left"
               >
-                <div className="truncate text-sm text-neutral-900">
+                <div className="truncate text-sm text-ink">
                   {el.name || 'Sans titre'}
                 </div>
-                <div className="truncate text-xs text-neutral-400">
+                <div className="truncate text-xs text-ink-4">
                   {pathOf(el) || el.family}
                 </div>
               </button>
@@ -152,7 +152,7 @@ function CommandPaletteOverlay({ onClose }: { onClose: () => void }) {
                   openPeek(el.id);
                 }}
                 aria-label={`Aperçu de ${el.name}`}
-                className="ml-2 shrink-0 text-neutral-400 hover:text-neutral-700"
+                className="ml-2 shrink-0 text-ink-4 hover:text-ink"
               >
                 ⇢
               </button>
@@ -162,14 +162,14 @@ function CommandPaletteOverlay({ onClose }: { onClose: () => void }) {
             <button
               onClick={() => createMutation.mutate(query.trim())}
               disabled={createMutation.isPending}
-              className="flex w-full items-center gap-2 rounded px-2.5 py-2 text-left text-sm hover:bg-neutral-100 disabled:opacity-50"
+              className="flex w-full items-center gap-2 rounded px-2.5 py-2 text-left text-sm hover:bg-surface-3 disabled:opacity-50"
             >
-              <span className="text-yellow-500">+ Créer</span>
-              <span className="truncate text-neutral-700">{query.trim()}</span>
+              <span className="text-accent">+ Créer</span>
+              <span className="truncate text-ink-2">{query.trim()}</span>
             </button>
           )}
           {!trimmed && matches.length === 0 && (
-            <p className="px-2.5 py-4 text-center text-xs text-neutral-400">
+            <p className="px-2.5 py-4 text-center text-xs text-ink-4">
               Tape pour chercher…
             </p>
           )}

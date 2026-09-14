@@ -151,7 +151,7 @@ export function ConnectionsDisclosure({
     <div className="text-sm">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="text-neutral-500 hover:text-neutral-700"
+        className="text-ink-3 hover:text-ink"
       >
         {open
           ? '— Connexions'
@@ -200,7 +200,7 @@ export function ConnectionsDisclosure({
               value={relationLabel}
               onChange={(e) => setRelationLabel(e.target.value)}
               placeholder="Label (optionnel)"
-              className="w-32 border-b border-neutral-200 bg-transparent px-1 py-1 text-xs text-neutral-700 outline-none focus:border-neutral-400"
+              className="w-32 border-b border-line bg-transparent px-1 py-1 text-xs text-ink-2 outline-none focus:border-ink-4"
             />
           </div>
           <div className="flex flex-wrap gap-2">
@@ -209,7 +209,7 @@ export function ConnectionsDisclosure({
               onChange={(e) =>
                 setTemporalDirection(e.target.value as TemporalRelationType)
               }
-              className="border-b border-neutral-200 bg-transparent py-1 text-xs text-neutral-700 outline-none focus:border-neutral-400"
+              className="border-b border-line bg-transparent py-1 text-xs text-ink-2 outline-none focus:border-ink-4"
             >
               <option value="BEFORE">Avant…</option>
               <option value="AFTER">Après…</option>
@@ -238,12 +238,12 @@ function ConnGroup({
   if (items.length === 0) return null;
   return (
     <div>
-      <div className="mb-1 text-xs text-neutral-400">{title}</div>
+      <div className="mb-1 text-xs text-ink-4">{title}</div>
       {items.map((item) => (
         <div key={item.id} className="flex items-center justify-between py-0.5">
           <button
             onClick={() => onSelect(item.otherId)}
-            className="text-left text-neutral-700 hover:text-yellow-500"
+            className="text-left text-ink-2 hover:text-accent"
           >
             {item.otherName}
           </button>
@@ -251,7 +251,7 @@ function ConnGroup({
             <button
               onClick={item.onRemove}
               aria-label="Retirer"
-              className="text-neutral-300 hover:text-red-600"
+              className="text-ink-4 hover:text-danger"
             >
               ×
             </button>

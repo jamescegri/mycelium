@@ -54,7 +54,7 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
     <div className="text-sm">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="text-neutral-500 hover:text-neutral-700"
+        className="text-ink-3 hover:text-ink"
       >
         {open ? '— Propriétés' : 'Propriétés'}
       </button>
@@ -62,7 +62,7 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
       {open && (
         <div className="mt-3 space-y-3">
           <div className="flex items-center gap-3">
-            <span className="w-20 shrink-0 text-xs text-neutral-500">
+            <span className="w-20 shrink-0 text-xs text-ink-3">
               Famille
             </span>
             <select
@@ -70,7 +70,7 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
               onChange={(e) =>
                 setFamilyMutation.mutate(e.target.value as ElementFamily)
               }
-              className="border-b border-neutral-200 bg-transparent py-1 text-sm text-neutral-700 outline-none focus:border-neutral-400"
+              className="border-b border-line bg-transparent py-1 text-sm text-ink-2 outline-none focus:border-ink-4"
             >
               {FAMILIES.map((f) => (
                 <option key={f} value={f}>
@@ -81,7 +81,7 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className="w-20 shrink-0 text-xs text-neutral-500">
+            <span className="w-20 shrink-0 text-xs text-ink-3">
               Tags
             </span>
             {tags?.map((tag) => (
@@ -90,7 +90,7 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
                 <button
                   onClick={() => removeTagMutation.mutate(tag.id)}
                   aria-label={`Retirer le tag ${tag.name}`}
-                  className="cursor-pointer text-neutral-400 hover:text-red-600"
+                  className="cursor-pointer text-ink-4 hover:text-danger"
                 >
                   <X size={11} strokeWidth={2} />
                 </button>
@@ -106,7 +106,7 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
                 }
               }}
               placeholder="+ tag"
-              className="w-20 border-b border-neutral-200 bg-transparent px-1 py-1 text-xs text-neutral-600 outline-none focus:border-neutral-400"
+              className="w-20 border-b border-line bg-transparent px-1 py-1 text-xs text-ink-2 outline-none focus:border-ink-4"
             />
           </div>
         </div>

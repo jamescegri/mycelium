@@ -39,7 +39,7 @@ export function ElementDetailPage() {
   if (isLoading) {
     return (
       <Layout>
-        <p className="text-sm text-neutral-500">Chargement…</p>
+        <p className="text-sm text-ink-3">Chargement…</p>
       </Layout>
     );
   }
@@ -47,7 +47,7 @@ export function ElementDetailPage() {
   if (!element) {
     return (
       <Layout>
-        <p className="text-sm text-neutral-500">Element introuvable.</p>
+        <p className="text-sm text-ink-3">Element introuvable.</p>
       </Layout>
     );
   }
@@ -129,35 +129,56 @@ function ElementEditor({
 
   return (
     <>
-      <nav className="mb-6 flex items-center gap-1 text-sm text-neutral-400">
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="hover:text-neutral-600"
-        >
-          Dashboard
-        </button>
-        {parents[0] && (
-          <>
-            <ChevronRight size={14} strokeWidth={1.75} />
-            <button
-              onClick={() => navigate(`/elements/${parents[0].id}`)}
-              className="max-w-[200px] truncate hover:text-neutral-600"
-            >
-              {parents[0].name || 'Sans titre'}
-            </button>
-          </>
-        )}
-        {parents.length > 1 && (
-          <span className="text-xs text-neutral-300">+{parents.length - 1}</span>
-        )}
-        <ChevronRight size={14} strokeWidth={1.75} />
-        <span className="max-w-[200px] truncate text-neutral-600">
-          {name || 'Sans titre'}
-        </span>
-      </nav>
+      <div className="mb-8 flex items-center justify-between gap-4">
+        <nav className="flex min-w-0 items-center gap-1.5 text-[13px] text-ink-4">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="shrink-0 transition hover:text-ink-2"
+          >
+            Dashboard
+          </button>
+          {parents[0] && (
+            <>
+              <ChevronRight size={13} strokeWidth={1.75} className="shrink-0 opacity-60" />
+              <button
+                onClick={() => navigate(`/elements/${parents[0].id}`)}
+                className="max-w-[180px] truncate transition hover:text-ink-2"
+              >
+                {parents[0].name || 'Sans titre'}
+              </button>
+            </>
+          )}
+          {parents.length > 1 && (
+            <span className="shrink-0 text-[11px] text-ink-4">
+              +{parents.length - 1}
+            </span>
+          )}
+          <ChevronRight size={13} strokeWidth={1.75} className="shrink-0 opacity-60" />
+          <span className="truncate text-ink-2">{name || 'Sans titre'}</span>
+        </nav>
+
+        {/* Les actions vivent en haut à droite, comme dans Notion — elles ne
+            coupent plus la zone d'écriture en deux. */}
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+            className="rounded-lg px-3 py-1.5 text-[13px] font-medium text-accent transition hover:bg-accent-soft disabled:opacity-50"
+          >
+            {saveMutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
+          </button>
+          <button
+            onClick={onRequestDelete}
+            aria-label="Supprimer cet Element"
+            className="rounded-lg p-1.5 text-ink-4 transition hover:bg-surface-2 hover:text-danger"
+          >
+            <Trash2 size={15} strokeWidth={1.75} />
+          </button>
+        </div>
+      </div>
 
       <span
-        className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl text-2xl font-semibold"
+        className="title-display mb-5 flex h-[60px] w-[60px] items-center justify-center rounded-2xl text-[26px]"
         style={{ backgroundColor: avatarColors.bg, color: avatarColors.text }}
       >
         {(name || '?').charAt(0).toUpperCase()}
@@ -168,51 +189,31 @@ function ElementEditor({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Sans titre"
-        className="w-full bg-transparent text-5xl font-semibold tracking-tight text-neutral-900 outline-none placeholder:text-neutral-300"
+        className="title-display w-full bg-transparent text-[46px] text-ink outline-none placeholder:text-ink-4"
       />
 
       <div
-        className="mb-8 mt-2 text-sm font-medium tracking-wide"
+        className="mb-12 mt-3 text-[13px] font-medium tracking-wide opacity-90"
         style={{ color: FAMILY_COLOR[element.family] }}
       >
-        {element.family}
+        {element.family === 'TIME' ? 'Temps' : 'Element'}
       </div>
 
-      <div className="mb-8">
+      <div className="mb-12">
         <Editor elementId={element.id} content={content} onChange={setContent} />
-      </div>
-
-      <div className="mb-6 flex items-center justify-between">
-        <button
-          onClick={() => saveMutation.mutate()}
-          disabled={saveMutation.isPending}
-          className="rounded bg-yellow-500 px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-yellow-400 disabled:opacity-50"
-        >
-          {saveMutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
-        </button>
-        <button
-          onClick={onRequestDelete}
-          className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-500"
-        >
-          <Trash2 size={14} strokeWidth={1.75} />
-          Supprimer
-        </button>
       </div>
 
       {/* Le classement (Parents/Enfants) vit sous la zone de texte, jamais
           dedans : "@"/"+" tapés dans l'éditeur agissent ici, pas comme du
           texte inséré. */}
-      <div className="mb-6 space-y-4 border-t border-neutral-100 pt-6">
+      <div className="space-y-8 border-t border-line-soft pt-10">
         <ParentsSection element={element} />
         <EnfantsSection element={element} />
       </div>
 
-      <div className="mb-6">
-        <PropertiesDisclosure element={element} />
-      </div>
-
-      <div className="border-t border-neutral-100 pt-6">
+      <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-line-soft pt-6">
         <ConnectionsDisclosure elementId={element.id} onSelect={openPeek} />
+        <PropertiesDisclosure element={element} />
       </div>
     </>
   );

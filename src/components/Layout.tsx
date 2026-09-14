@@ -32,14 +32,14 @@ export function Layout({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="flex min-h-screen bg-white text-neutral-900">
-      <aside className="flex w-16 shrink-0 flex-col border-r border-neutral-100 py-5 sm:w-56 sm:px-4">
+    <div className="flex min-h-screen bg-surface text-ink">
+      <aside className="flex w-[68px] shrink-0 flex-col gap-1 border-r border-line-soft bg-surface-2 px-3 py-6 sm:w-[236px] sm:px-4">
         <button
           onClick={() => navigate('/dashboard')}
-          className="mb-8 flex items-center justify-center gap-2 sm:justify-start"
+          className="mb-9 flex items-center justify-center gap-2.5 px-1 sm:justify-start"
         >
-          <Logo size={26} />
-          <span className="hidden text-base font-semibold tracking-tight text-neutral-900 sm:inline">
+          <Logo size={24} />
+          <span className="title-display hidden text-[21px] text-ink sm:inline">
             Mycelium
           </span>
         </button>
@@ -47,19 +47,19 @@ export function Layout({ children }: { children: ReactNode }) {
         <button
           onClick={() => createMutation.mutate()}
           disabled={createMutation.isPending}
-          className="mb-1 flex items-center justify-center gap-2.5 rounded-lg bg-yellow-500 px-3 py-2 text-sm font-medium text-neutral-900 hover:bg-yellow-400 disabled:opacity-50 sm:justify-start"
+          className="flex items-center justify-center gap-2.5 rounded-lg bg-accent px-3 py-2.5 text-[13.5px] font-medium text-white shadow-sm transition hover:bg-accent-hover disabled:opacity-50 sm:justify-start"
         >
-          <Plus size={16} strokeWidth={2} />
+          <Plus size={16} strokeWidth={2.25} />
           <span className="hidden sm:inline">Nouvel Element</span>
         </button>
 
         <button
           onClick={openPalette}
-          className="mb-6 flex items-center justify-center gap-2.5 rounded-lg px-3 py-2 text-sm text-neutral-500 hover:bg-neutral-50 hover:text-neutral-700 sm:justify-start"
+          className="mb-7 flex items-center justify-center gap-2.5 rounded-lg px-3 py-2.5 text-[13.5px] text-ink-3 transition hover:bg-surface-3 hover:text-ink sm:justify-start"
         >
           <Search size={16} strokeWidth={1.75} />
           <span className="hidden sm:inline">Rechercher</span>
-          <span className="ml-auto hidden text-xs text-neutral-300 sm:inline">
+          <span className="ml-auto hidden text-[11px] tracking-wide text-ink-4 sm:inline">
             ⌘K
           </span>
         </button>
@@ -71,10 +71,10 @@ export function Layout({ children }: { children: ReactNode }) {
               <button
                 key={item.to}
                 onClick={() => navigate(item.to)}
-                className={`flex items-center justify-center gap-2.5 rounded-lg px-3 py-2 text-sm sm:justify-start ${
+                className={`flex items-center justify-center gap-2.5 rounded-lg px-3 py-2 text-[13.5px] transition sm:justify-start ${
                   active
-                    ? 'bg-neutral-100 text-neutral-900'
-                    : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-700'
+                    ? 'bg-surface-3 font-medium text-ink'
+                    : 'text-ink-3 hover:bg-surface-3 hover:text-ink'
                 }`}
               >
                 <item.icon size={16} strokeWidth={1.75} />
@@ -86,7 +86,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
         <button
           onClick={() => signOut()}
-          className="mt-auto flex items-center justify-center gap-2.5 rounded-lg px-3 py-2 text-sm text-neutral-400 hover:bg-neutral-50 hover:text-neutral-600 sm:justify-start"
+          className="mt-auto flex items-center justify-center gap-2.5 rounded-lg px-3 py-2 text-[13.5px] text-ink-4 transition hover:bg-surface-3 hover:text-ink-2 sm:justify-start"
         >
           <LogOut size={16} strokeWidth={1.75} />
           <span className="hidden sm:inline">Se déconnecter</span>
@@ -94,7 +94,9 @@ export function Layout({ children }: { children: ReactNode }) {
       </aside>
 
       <main className="min-w-0 flex-1 overflow-x-hidden">
-        <div className="mx-auto max-w-3xl px-8 py-12">{children}</div>
+        <div className="mx-auto max-w-[46rem] px-6 py-14 sm:px-12">
+          {children}
+        </div>
       </main>
     </div>
   );

@@ -11,7 +11,7 @@ function RequireAuth({ children }: { children: React.ReactElement }) {
   const { session, loading } = useAuth();
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white text-neutral-500">
+      <div className="flex min-h-screen items-center justify-center bg-white text-ink-3">
         Chargement…
       </div>
     );

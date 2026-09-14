@@ -31,15 +31,15 @@ export function TrashPage() {
         <h1 className="text-lg font-semibold">Corbeille</h1>
         <button
           onClick={() => navigate('/dashboard')}
-          className="text-sm text-neutral-600 hover:text-neutral-800"
+          className="text-sm text-ink-2 hover:text-ink"
         >
           ← Dashboard
         </button>
       </div>
 
-      {isLoading && <p className="text-sm text-neutral-500">Chargement…</p>}
+      {isLoading && <p className="text-sm text-ink-3">Chargement…</p>}
 
-      <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200">
+      <ul className="divide-y divide-line rounded-lg border border-line">
         {elements?.map((el) => (
           <li
             key={el.id}
@@ -47,21 +47,21 @@ export function TrashPage() {
           >
             <div className="flex items-center gap-2">
               <span>{el.name}</span>
-              <span className="rounded bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
+              <span className="rounded bg-surface-3 px-2 py-0.5 text-xs text-ink-2">
                 {FAMILY_LABEL[el.family]}
               </span>
             </div>
             <button
               onClick={() => restoreMutation.mutate(el.id)}
               disabled={restoreMutation.isPending}
-              className="text-sm text-yellow-500 hover:text-yellow-400 disabled:opacity-50"
+              className="text-sm text-accent hover:text-accent-hover disabled:opacity-50"
             >
               Restaurer
             </button>
           </li>
         ))}
         {elements?.length === 0 && (
-          <li className="px-4 py-6 text-center text-sm text-neutral-500">
+          <li className="px-4 py-6 text-center text-sm text-ink-3">
             La corbeille est vide.
           </li>
         )}

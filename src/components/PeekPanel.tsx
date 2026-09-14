@@ -105,17 +105,17 @@ function PeekOverlay({
   return (
     <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose}>
       <div
-        className="fixed right-0 top-0 h-full w-full max-w-md overflow-y-auto border-l border-neutral-200 bg-white p-8"
+        className="fixed right-0 top-0 h-full w-full max-w-md overflow-y-auto border-l border-line bg-white p-8"
         onClick={(e) => e.stopPropagation()}
       >
         {!element ? (
-          <p className="text-sm text-neutral-500">Chargement…</p>
+          <p className="text-sm text-ink-3">Chargement…</p>
         ) : (
           <>
-            <div className="mb-4 flex items-center justify-between text-xs text-neutral-500">
+            <div className="mb-4 flex items-center justify-between text-xs text-ink-3">
               <div className="flex items-center gap-2">
                 {hasBack && (
-                  <button onClick={onBack} className="hover:text-neutral-700">
+                  <button onClick={onBack} className="hover:text-ink">
                     ←
                   </button>
                 )}
@@ -124,14 +124,14 @@ function PeekOverlay({
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => onOpenFull(element.id)}
-                  className="hover:text-neutral-700"
+                  className="hover:text-ink"
                 >
                   Ouvrir en pleine page ↗
                 </button>
                 <button
                   onClick={onClose}
                   aria-label="Fermer"
-                  className="text-base leading-none text-neutral-600 hover:text-neutral-800"
+                  className="text-base leading-none text-ink-2 hover:text-ink"
                 >
                   ×
                 </button>
@@ -139,17 +139,17 @@ function PeekOverlay({
             </div>
 
             {parents.length > 0 && (
-              <div className="mb-1 truncate text-xs text-neutral-400">
+              <div className="mb-1 truncate text-xs text-ink-4">
                 {parents.map((p) => p.name).join(' · ')}
               </div>
             )}
 
-            <h2 className="mb-3 text-2xl font-semibold text-neutral-900">
+            <h2 className="mb-3 text-2xl font-semibold text-ink">
               {element.name || 'Sans titre'}
             </h2>
 
             {!!element.content && (
-              <p className="mb-5 text-base leading-relaxed text-neutral-600">
+              <p className="mb-5 text-base leading-relaxed text-ink-2">
                 {extractPlainText(element.content)}
               </p>
             )}

@@ -1,13 +1,49 @@
 @import "tailwindcss";
 
+/* ───────────────────────────────────────────────────────────────
+   Mycelium — tokens de marque
+
+   Direction : éditoriale et organique, jamais "SaaS". Mycelium est un
+   réseau souterrain d'idées : palette terreuse et calme (encre chaude,
+   papier cassé, vert mousse profond), titres en serif à fort contraste,
+   interface en sans neutre. Aucune couleur vive, aucun jaune.
+   ─────────────────────────────────────────────────────────────── */
+@theme {
+  /* Encre : neutres chauds plutôt que gris bleutés */
+  --color-ink: #1a1917;
+  --color-ink-2: #57534e;
+  --color-ink-3: #8b8781;
+  --color-ink-4: #b5b1aa;
+
+  /* Papier et filets */
+  --color-surface: #ffffff;
+  --color-surface-2: #faf9f7;
+  --color-surface-3: #f4f3f0;
+  --color-line: #e7e5e1;
+  --color-line-soft: #f1f0ed;
+
+  /* Accent : vert mousse profond — 6:1 sur blanc, lisible en texte
+     comme en fond de bouton avec libellé blanc */
+  --color-accent: #2c6e57;
+  --color-accent-hover: #235645;
+  --color-accent-soft: #eaf2ee;
+
+  /* Alerte, réservée aux suppressions */
+  --color-danger: #9f3a33;
+
+  --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Helvetica Neue", Arial, sans-serif;
+}
+
 :root {
   color-scheme: light;
 }
 
 body {
-  font-family:
-    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
-    Arial, sans-serif;
+  font-family: var(--font-sans);
+  background-color: var(--color-surface);
+  color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   font-feature-settings: "cv11", "ss01";
@@ -26,8 +62,9 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 [role="button"]:focus-visible {
-  outline: 2px solid var(--color-yellow-500);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+  border-radius: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -37,8 +74,17 @@ select:focus-visible,
   }
 }
 
+/* Le titre d'une page est un titre de document, pas un libellé d'app :
+   serif éditorial, contraste fort, interlettrage resserré. */
+.title-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.08;
+}
+
 .prose-mycelium p {
-  margin: 0.5em 0;
+  margin: 0.65em 0;
 }
 
 .prose-mycelium p.is-editor-empty:first-child::before {
@@ -46,20 +92,21 @@ select:focus-visible,
   float: left;
   height: 0;
   pointer-events: none;
-  color: var(--color-neutral-600);
+  color: var(--color-ink-4);
 }
 
 /* Une mention reste du texte — un lien dans une phrase, pas un widget
    inséré. Pas de fond ni de bordure : juste une couleur et un
    soulignement, comme un lien normal. */
 .mention {
-  color: var(--color-yellow-500);
+  color: var(--color-accent);
   text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--color-yellow-500) 35%, transparent);
-  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in srgb, var(--color-accent) 30%, transparent);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
   cursor: pointer;
 }
 
 .mention:hover {
-  text-decoration-color: var(--color-yellow-500);
+  text-decoration-color: var(--color-accent);
 }

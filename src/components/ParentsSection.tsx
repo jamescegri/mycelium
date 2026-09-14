@@ -54,11 +54,11 @@ export function ParentsSection({ element }: { element: Element }) {
 
   return (
     <div className="text-base">
-      <div className="mb-2 text-xs text-neutral-500">
+      <div className="mb-3 text-[12px] font-medium tracking-wide text-ink-4">
         Parents
       </div>
       {parents.length === 0 ? (
-        <p className="mb-2 text-neutral-400">
+        <p className="mb-2 text-ink-4">
           Aucun parent — cet Element est à la racine.
         </p>
       ) : (
@@ -67,14 +67,14 @@ export function ParentsSection({ element }: { element: Element }) {
             <Pill key={parent.id} className="pr-1.5">
               <button
                 onClick={() => navigate(`/elements/${parent.id}`)}
-                className="cursor-pointer text-neutral-700 hover:text-yellow-600"
+                className="cursor-pointer text-ink-2 hover:text-accent"
               >
                 {parent.name || 'Sans titre'}
               </button>
               <button
                 onClick={() => removeParentMutation.mutate(parent.id)}
                 aria-label={`Retirer de ${parent.name}`}
-                className="cursor-pointer text-neutral-400 hover:text-red-600"
+                className="cursor-pointer text-ink-4 hover:text-danger"
               >
                 <X size={12} strokeWidth={2} />
               </button>

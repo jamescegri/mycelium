@@ -64,10 +64,10 @@ export function ElementPicker({
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder={placeholder}
-        className="w-full rounded border border-neutral-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-yellow-500"
+        className="w-full rounded-lg border border-transparent bg-transparent px-2 py-1.5 text-[13.5px] text-ink-2 outline-none transition placeholder:text-ink-4 hover:bg-surface-2 focus:border-line focus:bg-surface"
       />
       {open && (results.length > 0 || showCreate) && (
-        <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-neutral-300 bg-neutral-50 py-1 shadow-xl">
+        <div className="absolute z-10 mt-1 max-h-56 w-full min-w-[220px] overflow-y-auto rounded-xl border border-line bg-surface py-1 shadow-[0_16px_40px_-16px_rgba(26,25,23,0.35)]">
           {results.map((el) => (
             <button
               key={el.id}
@@ -77,11 +77,11 @@ export function ElementPicker({
                 setQuery('');
                 setOpen(false);
               }}
-              className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-neutral-800 hover:bg-neutral-100"
+              className="flex w-full items-center justify-between px-3 py-2 text-left text-[13.5px] text-ink-2 transition hover:bg-surface-2 hover:text-ink"
             >
               <span className="truncate">{el.name}</span>
-              <span className="ml-2 shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] text-neutral-500">
-                {el.family}
+              <span className="ml-2 shrink-0 text-[10.5px] text-ink-4">
+                {el.family === 'TIME' ? 'Temps' : 'Element'}
               </span>
             </button>
           ))}
@@ -90,9 +90,9 @@ export function ElementPicker({
               type="button"
               disabled={creating}
               onMouseDown={handleCreate}
-              className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-sm text-neutral-800 hover:bg-neutral-100 disabled:opacity-50"
+              className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-[13.5px] text-ink-2 transition hover:bg-surface-2 disabled:opacity-50"
             >
-              <span className="text-yellow-500">+ Créer</span>
+              <span className="font-medium text-accent">+ Créer</span>
               <span className="truncate">{trimmed}</span>
             </button>
           )}

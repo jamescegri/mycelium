@@ -12,18 +12,19 @@ export function Callout({
 }: {
   icon?: LucideIcon;
   children: ReactNode;
-  tone?: 'neutral' | 'yellow';
+  tone?: 'neutral' | 'accent';
 }) {
-  const bg = tone === 'yellow' ? '#fdf6e3' : '#f7f7f5';
-  const border = tone === 'yellow' ? '#eab308' : '#d4d4d4';
-  const text = tone === 'yellow' ? '#8a6d1f' : '#6b6b6b';
+  const accent = tone === 'accent';
 
   return (
     <div
-      className="flex items-start gap-3 rounded-lg border-l-[3px] px-4 py-3 text-sm"
-      style={{ backgroundColor: bg, borderColor: border, color: text }}
+      className={`flex items-start gap-3 rounded-xl border-l-2 py-4 pl-4 pr-5 text-sm leading-relaxed ${
+        accent
+          ? 'border-accent bg-accent-soft text-accent'
+          : 'border-ink-4 bg-surface-2 text-ink-2'
+      }`}
     >
-      <Icon size={17} strokeWidth={1.75} className="mt-0.5 shrink-0" />
+      <Icon size={17} strokeWidth={1.75} className="mt-0.5 shrink-0 opacity-80" />
       <div>{children}</div>
     </div>
   );

@@ -15,7 +15,7 @@ export function Pill({
   return (
     <span
       style={style}
-      className={`inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-xs text-neutral-600 ${className}`}
+      className={`inline-flex items-center gap-1 rounded-full border border-line bg-white px-2.5 py-1 text-xs text-ink-2 ${className}`}
     >
       {children}
     </span>
