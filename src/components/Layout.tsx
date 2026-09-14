@@ -7,6 +7,7 @@ import {
   LayoutGrid,
   Link2,
   LogOut,
+  PenLine,
   Search,
   Tag,
   Trash2,
@@ -57,10 +58,13 @@ export function Layout() {
   const showsMain = !path.startsWith('/groupes');
 
   return (
-    <div className="flex h-screen gap-2.5 bg-surface-2 p-2.5 text-ink">
+    <div className="flex h-screen gap-2.5 bg-surface-2 p-2.5 text-ink max-md:flex-col max-md:p-0">
       <nav
         aria-label="Navigation principale"
-        className="flex w-[76px] shrink-0 flex-col items-center rounded-2xl bg-surface px-2 py-4"
+        // Le rail vertical suppose une souris et de la hauteur : sur
+        // téléphone il cède la place à une barre en bas, que le pouce
+        // atteint sans changer de prise.
+        className="flex w-[76px] shrink-0 flex-col items-center rounded-2xl bg-surface px-2 py-4 max-md:hidden"
       >
         <button
           onClick={() => navigate('/dashboard')}
@@ -112,7 +116,7 @@ export function Layout() {
             ? 'hidden'
             : twoPane
               ? 'flex min-h-0 w-[300px] shrink-0 overflow-hidden rounded-2xl bg-surface max-lg:hidden'
-              : 'flex min-h-0 flex-1 overflow-hidden rounded-2xl bg-surface'
+              : 'flex min-h-0 flex-1 overflow-hidden rounded-2xl bg-surface max-md:rounded-none'
         }
       >
         <NavColumn wide={!twoPane} />
@@ -120,14 +124,74 @@ export function Layout() {
 
       {showsMain && (
         <main
-          className={`min-w-0 flex-1 overflow-y-auto rounded-2xl bg-surface ${
+          className={`min-w-0 flex-1 overflow-y-auto rounded-2xl bg-surface max-md:rounded-none ${
             twoPane ? 'animate-panel-in' : ''
           }`}
         >
           <Outlet />
         </main>
       )}
+
+      <MobileTabs />
     </div>
+  );
+}
+
+// Quatre destinations, pas six : au pouce, chaque cible doit rester large.
+// Écrire d'abord — sur téléphone on vient noter une idée avant de la
+// perdre, le rangement attend d'être au calme. Parcourir donne quand même
+// accès à toute l'arborescence : consulter et corriger en déplacement doit
+// rester possible.
+const TABS = [
+  { to: '/dashboard', label: 'Écrire', icon: PenLine },
+  { to: '/groupes', label: 'Parcourir', icon: FolderTree },
+  { to: '/temporel', label: 'Temps', icon: Clock },
+  { to: '/liste', label: 'Tout', icon: LayoutGrid },
+];
+
+function MobileTabs() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { open: openPalette } = useCommandPalette();
+
+  return (
+    <nav
+      aria-label="Navigation"
+      // `pb-[env(safe-area-inset-bottom)]` : sur les téléphones à barre
+      // gestuelle, sans ça les boutons se retrouvent sous la zone de
+      // glissement du système et deviennent difficiles à toucher.
+      className="hidden shrink-0 items-stretch gap-1 border-t border-line-soft bg-surface px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] max-md:flex"
+    >
+      {TABS.map((tab) => {
+        const active = location.pathname.startsWith(tab.to);
+        return (
+          <button
+            key={tab.to}
+            onClick={() => navigate(tab.to)}
+            aria-current={active ? 'page' : undefined}
+            className={`flex flex-1 flex-col items-center gap-0.5 rounded-xl py-1.5 transition ${
+              active ? 'text-ink' : 'text-ink-3'
+            }`}
+          >
+            <tab.icon size={21} strokeWidth={active ? 2.4 : 1.9} />
+            <span
+              className={`text-[10.5px] ${active ? 'font-semibold' : 'font-medium'}`}
+            >
+              {tab.label}
+            </span>
+          </button>
+        );
+      })}
+
+      <button
+        onClick={openPalette}
+        aria-label="Chercher"
+        className="flex flex-1 flex-col items-center gap-0.5 rounded-xl py-1.5 text-ink-3 transition"
+      >
+        <Search size={21} strokeWidth={1.9} />
+        <span className="text-[10.5px] font-medium">Chercher</span>
+      </button>
+    </nav>
   );
 }
 

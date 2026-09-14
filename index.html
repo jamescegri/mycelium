@@ -2,12 +2,18 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#000000" />
-    <link
-      rel="icon"
-      href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2032%2032%27%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20rx%3D%278%27%20fill%3D%27%23000%27%2F%3E%3Cg%20stroke%3D%27%23fff%27%20stroke-width%3D%271.6%27%20stroke-linecap%3D%27round%27%20fill%3D%27none%27%20opacity%3D%27.5%27%3E%3Cpath%20d%3D%27M14.3%208%20C%2011.2%209.7%208.2%2011.7%207.2%2013.5%27%2F%3E%3Cpath%20d%3D%27M17.7%208.1%20C%2020.7%2010%2023.7%2012.1%2024.7%2014.4%27%2F%3E%3Cpath%20d%3D%27M7%2017.8%20C%208.2%2020.6%2011.4%2022.8%2014.2%2024%27%2F%3E%3Cpath%20d%3D%27M25%2018.5%20C%2023.8%2021.2%2020.7%2023.3%2017.8%2024.1%27%2F%3E%3C%2Fg%3E%3Ccircle%20cx%3D%2716%27%20cy%3D%275.8%27%20r%3D%272.6%27%20fill%3D%27%23c9a0ff%27%2F%3E%3Ccircle%20cx%3D%276.2%27%20cy%3D%2715.6%27%20r%3D%272.1%27%20fill%3D%27%235ce1ff%27%2F%3E%3Ccircle%20cx%3D%2725.8%27%20cy%3D%2716.4%27%20r%3D%272.1%27%20fill%3D%27%235bffa5%27%2F%3E%3Ccircle%20cx%3D%2716%27%20cy%3D%2726.2%27%20r%3D%272.6%27%20fill%3D%27%23fff%27%2F%3E%3C%2Fsvg%3E"
+    <!-- `viewport-fit=cover` étend la page sous les coins arrondis et la
+         barre gestuelle ; c'est ce qui rend `env(safe-area-inset-*)`
+         utilisable pour écarter la barre d'onglets de cette zone. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Mycelium" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link
       rel="preload"
       href="/fonts/figtree-latin.woff2"

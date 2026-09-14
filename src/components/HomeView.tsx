@@ -56,9 +56,13 @@ export function HomeView() {
   const unnamed = useMemo(() => all.filter(isUntitled).length, [all]);
 
   return (
-    <div className="mx-auto max-w-[46rem] px-6 py-14 sm:px-10">
-      <h1 className="title-display mb-1.5 text-[38px]">Qu'est-ce qui arrive ?</h1>
-      <p className="mb-7 text-[16.5px] text-ink-3">
+    <div className="mx-auto max-w-[46rem] px-6 py-14 max-md:px-4 max-md:py-7 sm:px-10">
+      {/* Sur téléphone, le champ doit être atteignable sans défiler : le
+          titre se resserre pour lui laisser le haut de l'écran. */}
+      <h1 className="title-display mb-1.5 text-[38px] max-md:text-[26px]">
+        Qu'est-ce qui arrive ?
+      </h1>
+      <p className="mb-7 text-[16.5px] text-ink-3 max-md:mb-5 max-md:text-[15px]">
         Écris-le maintenant, tu le rangeras plus tard.
       </p>
 
