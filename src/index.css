@@ -1,39 +1,83 @@
 @import "tailwindcss";
 
+/* Figtree, servie depuis /public/fonts plutôt que Google Fonts : 30 ko en
+   tout, aucun aller-retour vers un tiers, et la police est là au premier
+   rendu — un titre de 62px qui change de dessin après coup se voit
+   énormément. C'est une police variable : un seul fichier couvre 400→700.
+   font-display: swap pour que le texte reste lisible si elle tarde. */
+@font-face {
+  font-family: "Figtree";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/figtree-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+    U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Figtree";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/figtree-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7,
+    U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
+    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+
 /* ───────────────────────────────────────────────────────────────
    Mycelium — tokens de marque
 
-   Direction : éditoriale et organique, jamais "SaaS". Mycelium est un
-   réseau souterrain d'idées : palette terreuse et calme (encre chaude,
-   papier cassé, vert mousse profond), titres en serif à fort contraste,
-   interface en sans neutre. Aucune couleur vive, aucun jaune.
+   Direction : noir et blanc, typographie géométrique, texte large.
+   L'interface entière est achromatique. La couleur n'est pas une
+   décoration disponible partout : c'est un signal, réservé à deux
+   choses et à rien d'autre —
+     1. les variables créées par "/", "@" et "+",
+     2. les cartes de Groupe.
+   Voir une couleur veut donc toujours dire "ceci est un lien entre
+   deux Elements". Si on colorait aussi les boutons, les onglets ou
+   les états actifs, ce signal disparaîtrait dans le bruit.
    ─────────────────────────────────────────────────────────────── */
 @theme {
-  /* Encre : neutres chauds plutôt que gris bleutés */
-  --color-ink: #1a1917;
-  --color-ink-2: #57534e;
-  --color-ink-3: #8b8781;
-  --color-ink-4: #b5b1aa;
+  /* Encre : gris strictement neutres, aucune teinte */
+  --color-ink: #000000;
+  --color-ink-2: #3f3f3f;
+  --color-ink-3: #737373;
+  --color-ink-4: #a1a1a1;
 
   /* Papier et filets */
   --color-surface: #ffffff;
-  --color-surface-2: #faf9f7;
-  --color-surface-3: #f4f3f0;
-  --color-line: #e7e5e1;
-  --color-line-soft: #f1f0ed;
+  --color-surface-2: #f5f5f5;
+  --color-surface-3: #e9e9e9;
+  --color-line: #dedede;
+  --color-line-soft: #efefef;
 
-  /* Accent : vert mousse profond — 6:1 sur blanc, lisible en texte
-     comme en fond de bouton avec libellé blanc */
-  --color-accent: #2c6e57;
-  --color-accent-hover: #235645;
-  --color-accent-soft: #eaf2ee;
+  /* L'accent est le noir : boutons pleins, états actifs, focus. */
+  --color-accent: #000000;
+  --color-accent-hover: #2b2b2b;
+  --color-accent-soft: #f0f0f0;
 
-  /* Alerte, réservée aux suppressions */
-  --color-danger: #9f3a33;
+  --color-danger: #000000;
 
-  --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    "Helvetica Neue", Arial, sans-serif;
+  /* Fluo — un ton par type de variable, pour qu'on reconnaisse la
+     nature d'un lien à la couleur seule, sans lire le libellé.
+     Employés en fond avec du texte noir : à cette luminance ils
+     dépassent tous 5:1, là où du fluo en texte sur blanc serait
+     illisible. */
+  --color-fluo-mention: #c9a0ff; /* "/" — une mention dans le texte */
+  --color-fluo-parent: #5ce1ff;  /* "@" — un parent */
+  --color-fluo-child: #5bffa5;   /* "+" — un enfant */
+
+  /* Géométrique humaniste, dans la lignée d'Avenir Next et d'Arboria :
+     squelette circulaire, grande hauteur d'x, ouvertures franches. Elle
+     tient aussi bien en titre de 60px qu'en libellé de 14px, ce qui
+     permet de n'avoir qu'une seule famille pour toute l'app. */
+  --font-sans: "Figtree", "Avenir Next", Avenir, "Century Gothic",
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  --font-display: var(--font-sans);
 }
 
 :root {
@@ -46,12 +90,8 @@ body {
   color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  font-feature-settings: "cv11", "ss01";
 }
 
-/* Tous les éléments cliquables ont un curseur pointeur explicite, et un
-   anneau de focus visible au clavier (Tab) — la navigation au clavier ne
-   doit jamais devenir invisible. */
 button:not(:disabled),
 [role="button"] {
   cursor: pointer;
@@ -62,7 +102,7 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 [role="button"]:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-ink);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -74,17 +114,17 @@ select:focus-visible,
   }
 }
 
-/* Le titre d'une page est un titre de document, pas un libellé d'app :
-   serif éditorial, contraste fort, interlettrage resserré. */
+/* Un titre de page est composé, pas juste grossi : en géométrique, plus
+   le corps est grand, plus l'interlettrage par défaut paraît lâche. */
 .title-display {
   font-family: var(--font-display);
-  font-weight: 400;
-  letter-spacing: -0.015em;
-  line-height: 1.08;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.04;
 }
 
 .prose-mycelium p {
-  margin: 0.65em 0;
+  margin: 0.7em 0;
 }
 
 .prose-mycelium p.is-editor-empty:first-child::before {
@@ -95,18 +135,21 @@ select:focus-visible,
   color: var(--color-ink-4);
 }
 
-/* Une mention reste du texte — un lien dans une phrase, pas un widget
-   inséré. Pas de fond ni de bordure : juste une couleur et un
-   soulignement, comme un lien normal. */
+/* Une mention reste du texte courant — surlignée, pas encapsulée dans
+   un widget. Le fond fluo la rend repérable en diagonale sans casser la
+   ligne de base ni l'interligne du paragraphe. */
 .mention {
-  color: var(--color-accent);
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--color-accent) 30%, transparent);
-  text-underline-offset: 3px;
-  text-decoration-thickness: 1px;
+  background-color: var(--color-fluo-mention);
+  color: var(--color-ink);
+  border-radius: 3px;
+  padding: 0.06em 0.22em;
+  margin: 0 -0.02em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  font-weight: 500;
   cursor: pointer;
 }
 
 .mention:hover {
-  text-decoration-color: var(--color-accent);
+  filter: brightness(0.94);
 }

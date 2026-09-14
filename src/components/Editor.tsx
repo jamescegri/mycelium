@@ -15,7 +15,7 @@ import type {
   SuggestionProps,
 } from '@tiptap/suggestion';
 import { MentionList } from './MentionList';
-import type { MentionItem, MentionListHandle } from './MentionList';
+import type { MentionItem, MentionListHandle, TriggerChar } from './MentionList';
 import { createElement, listElements, searchElements } from '../lib/elements';
 import { linkChild, listAllLinks, wouldCreateCycle } from '../lib/links';
 import { usePeek } from './PeekPanel';
@@ -47,7 +47,8 @@ async function mentionItems({ query }: { query: string }): Promise<MentionItem[]
 // fraîches, lues au moment où le popup s'ouvre, pas au moment où
 // l'extension a été créée).
 function suggestionRender(
-  getBrowseData: () => { elements: Element[]; links: ElementLink[] }
+  getBrowseData: () => { elements: Element[]; links: ElementLink[] },
+  trigger: TriggerChar
 ): SuggestionOptions<MentionItem>['render'] {
   return () => {
     let component: ReactRenderer<
@@ -57,6 +58,7 @@ function suggestionRender(
         command: (item: MentionItem) => void;
         query: string;
         browse?: { elements: Element[]; links: ElementLink[] };
+        trigger?: TriggerChar;
       }
     >;
     let popup: TippyInstance[];
@@ -64,7 +66,7 @@ function suggestionRender(
     return {
       onStart: (props: SuggestionProps<MentionItem>) => {
         component = new ReactRenderer(MentionList, {
-          props: { ...props, browse: getBrowseData() },
+          props: { ...props, browse: getBrowseData(), trigger },
           editor: props.editor,
         });
         if (!props.clientRect) return;
@@ -79,7 +81,7 @@ function suggestionRender(
         });
       },
       onUpdate(props: SuggestionProps<MentionItem>) {
-        component.updateProps({ ...props, browse: getBrowseData() });
+        component.updateProps({ ...props, browse: getBrowseData(), trigger });
         if (!props.clientRect) return;
         popup[0].setProps({
           getReferenceClientRect: () => props.clientRect?.() ?? new DOMRect(),
@@ -106,7 +108,7 @@ function suggestionRender(
 // "@query"/"+query" tapé au lieu d'y insérer quoi que ce soit.
 function createStructuralTrigger(
   name: string,
-  char: string,
+  char: TriggerChar,
   onPick: (pickedId: string) => void | Promise<void>,
   getBrowseData: () => { elements: Element[]; links: ElementLink[] }
 ) {
@@ -136,7 +138,7 @@ function createStructuralTrigger(
             }
             void run();
           },
-          render: suggestionRender(getBrowseData),
+          render: suggestionRender(getBrowseData, char),
         }),
       ];
     },
@@ -246,7 +248,7 @@ export function Editor({ elementId, content, onChange }: EditorProps) {
             }
             void run();
           },
-          render: suggestionRender(getBrowseData),
+          render: suggestionRender(getBrowseData, '/'),
         },
       }),
       createStructuralTrigger(
@@ -261,7 +263,7 @@ export function Editor({ elementId, content, onChange }: EditorProps) {
     editorProps: {
       attributes: {
         class:
-          'prose-mycelium min-h-[240px] text-[17px] leading-[1.7] text-ink outline-none',
+          'prose-mycelium min-h-[260px] text-[20px] leading-[1.65] text-ink outline-none',
       },
       handleClickOn: (_view, _pos, node) => {
         if (node.type.name === 'mention' && node.attrs.id) {

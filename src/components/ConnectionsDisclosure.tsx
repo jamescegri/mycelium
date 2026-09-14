@@ -148,7 +148,7 @@ export function ConnectionsDisclosure({
     (temporalItems?.length ?? 0);
 
   return (
-    <div className="text-sm">
+    <div className="text-[16px]">
       <button
         onClick={() => setOpen((v) => !v)}
         className="text-ink-3 hover:text-ink"
@@ -200,7 +200,7 @@ export function ConnectionsDisclosure({
               value={relationLabel}
               onChange={(e) => setRelationLabel(e.target.value)}
               placeholder="Label (optionnel)"
-              className="w-32 border-b border-line bg-transparent px-1 py-1 text-xs text-ink-2 outline-none focus:border-ink-4"
+              className="w-32 border-b border-line bg-transparent px-1 py-1 text-[13.5px] text-ink-2 outline-none focus:border-ink-4"
             />
           </div>
           <div className="flex flex-wrap gap-2">
@@ -209,7 +209,7 @@ export function ConnectionsDisclosure({
               onChange={(e) =>
                 setTemporalDirection(e.target.value as TemporalRelationType)
               }
-              className="border-b border-line bg-transparent py-1 text-xs text-ink-2 outline-none focus:border-ink-4"
+              className="border-b border-line bg-transparent py-1 text-[13.5px] text-ink-2 outline-none focus:border-ink-4"
             >
               <option value="BEFORE">Avant…</option>
               <option value="AFTER">Après…</option>
@@ -238,7 +238,7 @@ function ConnGroup({
   if (items.length === 0) return null;
   return (
     <div>
-      <div className="mb-1 text-xs text-ink-4">{title}</div>
+      <div className="mb-1 text-[13.5px] text-ink-4">{title}</div>
       {items.map((item) => (
         <div key={item.id} className="flex items-center justify-between py-0.5">
           <button

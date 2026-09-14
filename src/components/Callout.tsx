@@ -18,13 +18,13 @@ export function Callout({
 
   return (
     <div
-      className={`flex items-start gap-3 rounded-xl border-l-2 py-4 pl-4 pr-5 text-sm leading-relaxed ${
+      className={`flex items-start gap-3.5 rounded-2xl border-l-[3px] py-5 pl-5 pr-6 text-[16px] leading-relaxed ${
         accent
-          ? 'border-accent bg-accent-soft text-accent'
+          ? 'border-ink bg-surface-2 text-ink'
           : 'border-ink-4 bg-surface-2 text-ink-2'
       }`}
     >
-      <Icon size={17} strokeWidth={1.75} className="mt-0.5 shrink-0 opacity-80" />
+      <Icon size={19} strokeWidth={2} className="mt-0.5 shrink-0 opacity-80" />
       <div>{children}</div>
     </div>
   );

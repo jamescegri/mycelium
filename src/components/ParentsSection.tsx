@@ -53,30 +53,33 @@ export function ParentsSection({ element }: { element: Element }) {
   ];
 
   return (
-    <div className="text-base">
-      <div className="mb-3 text-[12px] font-medium tracking-wide text-ink-4">
-        Parents
-      </div>
+    <div className="text-[17px]">
+      <div className="mb-3 text-[14px] font-semibold text-ink-3">Parents</div>
       {parents.length === 0 ? (
-        <p className="mb-2 text-ink-4">
+        <p className="mb-3 text-[16px] text-ink-4">
           Aucun parent — cet Element est à la racine.
         </p>
       ) : (
-        <div className="mb-2 flex flex-wrap gap-1.5">
+        /* Fond cyan : c'est la couleur du "@" dans l'éditeur. Un parent
+           se reconnaît à sa teinte, ici comme dans le texte. */
+        <div className="mb-3 flex flex-wrap gap-2">
           {parents.map((parent) => (
-            <Pill key={parent.id} className="pr-1.5">
+            <Pill
+              key={parent.id}
+              className="border-transparent bg-fluo-parent px-3 py-1.5 pr-2 text-[14.5px] font-medium text-ink"
+            >
               <button
                 onClick={() => navigate(`/elements/${parent.id}`)}
-                className="cursor-pointer text-ink-2 hover:text-accent"
+                className="cursor-pointer text-ink"
               >
                 {parent.name || 'Sans titre'}
               </button>
               <button
                 onClick={() => removeParentMutation.mutate(parent.id)}
                 aria-label={`Retirer de ${parent.name}`}
-                className="cursor-pointer text-ink-4 hover:text-danger"
+                className="cursor-pointer text-ink/45 transition hover:text-ink"
               >
-                <X size={12} strokeWidth={2} />
+                <X size={14} strokeWidth={2.5} />
               </button>
             </Pill>
           ))}

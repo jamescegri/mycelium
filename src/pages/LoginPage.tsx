@@ -34,34 +34,34 @@ export function LoginPage() {
         className="w-full max-w-sm space-y-4 rounded-lg border border-line bg-surface-2 p-8"
       >
         <h1 className="text-xl font-semibold tracking-tight">Mycelium</h1>
-        <p className="text-sm text-ink-2">
+        <p className="text-[16px] text-ink-2">
           Connecte-toi avec le compte créé dans ton projet Supabase.
         </p>
         <div className="space-y-1">
-          <label className="text-sm text-ink-2">Email</label>
+          <label className="text-[16px] text-ink-2">Email</label>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent"
+            className="w-full rounded border border-line bg-white px-3 py-2 text-[16px] outline-none focus:border-accent"
           />
         </div>
         <div className="space-y-1">
-          <label className="text-sm text-ink-2">Mot de passe</label>
+          <label className="text-[16px] text-ink-2">Mot de passe</label>
           <input
             type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent"
+            className="w-full rounded border border-line bg-white px-3 py-2 text-[16px] outline-none focus:border-accent"
           />
         </div>
-        {error && <p className="text-sm text-danger">{error}</p>}
+        {error && <p className="text-[16px] text-danger">{error}</p>}
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded bg-accent px-3 py-2 text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
+          className="w-full rounded bg-accent px-3 py-2 text-[16px] font-medium text-white hover:bg-accent-hover disabled:opacity-50"
         >
           {loading ? 'Connexion…' : 'Se connecter'}
         </button>

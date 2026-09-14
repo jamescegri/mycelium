@@ -46,21 +46,21 @@ export function DashboardPage() {
 
   return (
     <Layout>
-      <h1 className="title-display mb-1 text-[40px] text-ink">Mon réseau</h1>
-      <p className="mb-9 text-[14px] text-ink-3">
+      <h1 className="title-display mb-2 text-[56px] text-ink">Mon réseau</h1>
+      <p className="mb-10 text-[18px] text-ink-3">
         Tout ce que tu as écrit, rangé comme tu l'as relié.
       </p>
 
       <CaptureBar />
 
-      <nav className="mb-9 flex gap-7 border-b border-line-soft text-[13.5px]">
+      <nav className="mb-10 flex gap-8 border-b border-line text-[16px]">
         {(Object.keys(TAB_LABEL) as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`-mb-px border-b-[1.5px] pb-3 transition ${
+            className={`-mb-px border-b-2 pb-3.5 transition ${
               tab === t
-                ? 'border-accent font-medium text-ink'
+                ? 'border-ink font-semibold text-ink'
                 : 'border-transparent text-ink-3 hover:text-ink'
             }`}
           >
@@ -101,16 +101,18 @@ function CaptureBar() {
   }
 
   return (
-    <form className="mb-10 flex items-center gap-3 rounded-xl border border-line bg-surface-2 px-4 py-3 transition focus-within:border-ink-4 focus-within:bg-surface" onSubmit={handleSubmit}>
-      <PenLine size={16} strokeWidth={1.75} className="shrink-0 text-ink-4" />
+    <form className="mb-12 flex items-center gap-3.5 rounded-2xl border-2 border-line bg-surface px-5 py-4 transition focus-within:border-ink" onSubmit={handleSubmit}>
+      <PenLine size={20} strokeWidth={2} className="shrink-0 text-ink-4" />
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Écrire une idée, un nom, un lieu…"
-        className="min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-4"
+        className="min-w-0 flex-1 bg-transparent text-[19px] text-ink outline-none placeholder:text-ink-4"
       />
       {name.trim() && (
-        <span className="shrink-0 text-[11.5px] text-ink-4">Entrée ↵</span>
+        <span className="shrink-0 text-[13px] font-medium text-ink-3">
+          Entrée ↵
+        </span>
       )}
     </form>
   );
@@ -138,7 +140,7 @@ function GroupesTab({
             un.
           </Callout>
         ) : (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             {groups.map((group) => (
               <GroupCard
                 key={group.id}
@@ -154,7 +156,7 @@ function GroupesTab({
 
       {standalone.length > 0 && (
         <div>
-          <div className="mb-3 text-[12px] font-medium tracking-wide text-ink-3">
+          <div className="mb-4 text-[14px] font-semibold text-ink-3">
             Pas encore rangés
           </div>
           <div className="space-y-0.5">
@@ -162,11 +164,11 @@ function GroupesTab({
               <button
                 key={el.id}
                 onClick={() => navigate(`/elements/${el.id}`)}
-                className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-[14.5px] text-ink-2 transition hover:bg-surface-2 hover:text-ink"
+                className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left text-[18px] text-ink transition hover:bg-surface-2"
               >
                 <FileText
-                  size={15}
-                  strokeWidth={1.75}
+                  size={17}
+                  strokeWidth={2}
                   className="shrink-0 text-ink-4"
                 />
                 <span className="truncate">{el.name || 'Sans titre'}</span>
@@ -179,10 +181,10 @@ function GroupesTab({
   );
 }
 
-// Carte façon dossier coloré : fond pastel stable (dérivé de l'id), un
-// aperçu du contenu si l'Element en a écrit, ses premiers enfants en
-// pastilles, et un lien "Ouvrir" en pied de carte — la carte entière reste
-// cliquable. La page du Groupe montre ensuite ses enfants en cascade.
+// Une carte de Groupe est un aplat fluo plein, pas une boîte blanche avec
+// un filet : sur la grille c'est la couleur qui distingue les Groupes, et
+// elle doit donc porter toute la carte. Texte noir par-dessus — le fluo est
+// assez clair pour rester au-delà de 7:1.
 function GroupCard({
   group,
   elements,
@@ -195,47 +197,36 @@ function GroupCard({
   onNavigate: () => void;
 }) {
   const allChildren = childrenOf(links, elements, group.id);
-  const preview = allChildren.slice(0, 6);
+  const preview = allChildren.slice(0, 5);
   const remaining = allChildren.length - preview.length;
-  const description = extractPlainText(group.content, 90);
+  const description = extractPlainText(group.content, 80);
   const colors = pastelFor(group.id);
 
   return (
     <button
       onClick={onNavigate}
-      style={{ backgroundColor: colors.bg }}
-      className="group flex cursor-pointer flex-col rounded-2xl p-6 text-left transition duration-200 hover:-translate-y-[3px] hover:shadow-[0_12px_28px_-12px_rgba(26,25,23,0.25)]"
+      style={{ backgroundColor: colors.bg, color: colors.text }}
+      className="group flex cursor-pointer flex-col rounded-2xl p-7 text-left transition duration-200 hover:-translate-y-1 hover:shadow-[0_16px_34px_-14px_rgba(0,0,0,0.4)]"
     >
-      <div className="mb-2.5 flex items-center gap-2">
-        <FolderClosed
-          size={15}
-          strokeWidth={1.75}
-          style={{ color: colors.text }}
-          className="opacity-70"
-        />
-        <span
-          className="title-display truncate text-[19px]"
-          style={{ color: colors.text }}
-        >
+      <div className="mb-3 flex items-center gap-2.5">
+        <FolderClosed size={19} strokeWidth={2.25} className="shrink-0" />
+        <span className="title-display truncate text-[26px]">
           {group.name || 'Sans titre'}
         </span>
       </div>
 
       {description && (
-        <p
-          className="mb-4 line-clamp-2 text-[13px] leading-relaxed opacity-75"
-          style={{ color: colors.text }}
-        >
+        <p className="mb-5 line-clamp-2 text-[15px] leading-snug opacity-70">
           {description}
         </p>
       )}
 
       {preview.length > 0 && (
-        <div className="mb-5 flex flex-wrap gap-1.5">
+        <div className="mb-6 flex flex-wrap gap-2">
           {preview.map((child) => (
             <Pill
               key={child.id}
-              className="border-0 bg-white/65 text-[11.5px]"
+              className="border-0 bg-white/55 px-3 py-1 text-[13.5px] font-medium"
               style={{ color: colors.text }}
             >
               {child.name || 'Sans titre'}
@@ -243,7 +234,7 @@ function GroupCard({
           ))}
           {remaining > 0 && (
             <Pill
-              className="border-0 bg-white/40 text-[11.5px]"
+              className="border-0 bg-white/35 px-3 py-1 text-[13.5px] font-medium"
               style={{ color: colors.text }}
             >
               +{remaining}
@@ -252,14 +243,11 @@ function GroupCard({
         </div>
       )}
 
-      <div
-        className="mt-auto flex items-center gap-1.5 border-t pt-3.5 text-[12.5px] font-medium"
-        style={{ borderColor: colors.ring, color: colors.text }}
-      >
+      <div className="mt-auto flex items-center gap-2 border-t border-black/15 pt-4 text-[15px] font-semibold">
         Ouvrir
         <ArrowRight
-          size={13}
-          strokeWidth={2}
+          size={16}
+          strokeWidth={2.5}
           className="transition group-hover:translate-x-1"
         />
       </div>
@@ -306,7 +294,7 @@ function TemporalTab() {
         <button
           key={el.id}
           onClick={() => navigate(`/elements/${el.id}`)}
-          className="block text-left text-base text-ink hover:text-accent"
+          className="block py-1 text-left text-[19px] text-ink hover:opacity-60"
         >
           {el.name || 'Sans titre'}
         </button>
@@ -351,18 +339,18 @@ function ConnexionsTab({ elements }: { elements: Element[] }) {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-xs text-ink-4">
+        <p className="text-[14px] text-ink-4">
           Pas un graphe — un point de départ pour explorer.
         </p>
         <button
           onClick={() => setShowOrphans((v) => !v)}
-          className="text-xs text-ink-3 hover:text-ink"
+          className="text-[14px] font-medium text-ink-3 hover:text-ink"
         >
           {showOrphans ? '← Les plus connectés' : 'Elements orphelins →'}
         </button>
       </div>
       {list.length === 0 && (
-        <p className="text-sm text-ink-4">
+        <p className="text-[16px] text-ink-4">
           {showOrphans
             ? 'Aucun Element orphelin — tout est relié à quelque chose.'
             : "Aucune connexion pour l'instant."}
@@ -373,10 +361,10 @@ function ConnexionsTab({ elements }: { elements: Element[] }) {
           <button
             key={el.id}
             onClick={() => navigate(`/elements/${el.id}`)}
-            className="flex w-full items-center justify-between text-left text-base text-ink hover:text-accent"
+            className="flex w-full items-center justify-between py-1 text-left text-[19px] text-ink hover:opacity-60"
           >
             <span className="truncate">{el.name || 'Sans titre'}</span>
-            <span className="ml-2 shrink-0 text-xs text-ink-4">
+            <span className="ml-2 shrink-0 text-[14px] text-ink-4">
               {count}
             </span>
           </button>

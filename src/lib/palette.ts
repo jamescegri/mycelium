@@ -1,15 +1,23 @@
-// Palette pastel stable : la couleur d'un Groupe est dérivée de son id, pas
-// aléatoire — il garde toujours la même couleur d'une visite à l'autre.
-// Tons terreux et désaturés, accordés entre eux (aucun jaune, aucune
-// couleur vive). Chaque paire (bg, text) dépasse 4.5:1 de contraste.
-const PASTELS: { bg: string; text: string; ring: string }[] = [
-  { bg: '#e6f0e9', text: '#275b43', ring: '#cfe2d6' }, // mousse
-  { bg: '#f7ebe2', text: '#7a4a2e', ring: '#ecd6c5' }, // argile
-  { bg: '#e7edf7', text: '#33507c', ring: '#d1dcef' }, // ardoise
-  { bg: '#efe9f7', text: '#553d7d', ring: '#ddd2ef' }, // lilas
-  { bg: '#e6f0f1', text: '#255c60', ring: '#cee2e4' }, // sarcelle
-  { bg: '#f9e9ec', text: '#7d3949', ring: '#efd2d9' }, // rose sourd
+// Les Groupes sont, avec les variables "/" "@" "+", le seul endroit de
+// l'app où la couleur est autorisée. Sur une grille de cartes, la teinte
+// fait le travail qu'un titre seul ne fait pas : on retrouve "Personnages"
+// à sa couleur avant même d'avoir lu son nom.
+//
+// Fluo saturés, texte noir par-dessus : chaque fond dépasse 7:1 avec
+// l'encre, donc le fluo reste parfaitement lisible. Aucun jaune.
+const FLUO: { bg: string; ring: string }[] = [
+  { bg: '#5ce1ff', ring: '#16c3e8' }, // cyan
+  { bg: '#ff6fd8', ring: '#f52bb5' }, // magenta
+  { bg: '#5bffa5', ring: '#0fd975' }, // vert
+  { bg: '#c9a0ff', ring: '#9b56f5' }, // violet
+  { bg: '#ff9d6b', ring: '#f2661f' }, // orange
+  { bg: '#7d9bff', ring: '#3f66f0' }, // bleu
 ];
+
+// Le texte sur une carte de Groupe est toujours noir : c'est ce qui rend
+// le fluo utilisable en aplat plein sans tomber sous le seuil de
+// contraste.
+export const GROUP_TEXT = '#000000';
 
 // FNV-1a : bien plus dispersant qu'un simple hash *31 sur des uuid dont
 // les premiers caractères se ressemblent — deux Groupes voisins ne
@@ -20,5 +28,6 @@ export function pastelFor(id: string): { bg: string; text: string; ring: string 
     hash ^= id.charCodeAt(i);
     hash = Math.imul(hash, 0x01000193) >>> 0;
   }
-  return PASTELS[hash % PASTELS.length];
+  const tone = FLUO[hash % FLUO.length];
+  return { bg: tone.bg, ring: tone.ring, text: GROUP_TEXT };
 }

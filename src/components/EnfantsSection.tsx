@@ -81,28 +81,27 @@ export function EnfantsSection({ element }: { element: Element }) {
   ];
 
   return (
-    <div className="text-base">
-      <div className="mb-3 text-[12px] font-medium tracking-wide text-ink-4">
-        Enfants
-      </div>
+    <div className="text-[17px]">
+      <div className="mb-3 text-[14px] font-semibold text-ink-3">Enfants</div>
       {children.length === 0 ? (
-        <p className="mb-2 text-ink-4">Pas encore d'enfant.</p>
+        <p className="mb-3 text-[16px] text-ink-4">Pas encore d'enfant.</p>
       ) : (
-        <div className="mb-2">
+        <div className="mb-3">
           {children.map((child, index) => (
             <div
               key={child.id}
-              className="group flex items-center justify-between rounded-lg py-1.5 hover:bg-surface-2"
+              className="group flex items-center justify-between rounded-lg px-1 py-2 hover:bg-surface-2"
             >
               <button
                 onClick={() => navigate(`/elements/${child.id}`)}
-                className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left text-ink-2 hover:text-accent"
+                className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 text-left text-ink"
               >
-                <FileText
-                  size={15}
-                  strokeWidth={1.75}
-                  className="shrink-0 text-ink-4"
-                />
+                {/* Pastille verte : la couleur du "+". Les enfants sont
+                    listés et non en pastilles (ils sont ordonnés et
+                    réordonnables), le marqueur porte donc le signal. */}
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-fluo-child">
+                  <FileText size={13} strokeWidth={2} className="text-ink" />
+                </span>
                 <span className="truncate">{child.name || 'Sans titre'}</span>
               </button>
               <span className="ml-2 hidden shrink-0 items-center gap-1 group-hover:flex">

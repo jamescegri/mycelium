@@ -51,7 +51,7 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
   });
 
   return (
-    <div className="text-sm">
+    <div className="text-[16px]">
       <button
         onClick={() => setOpen((v) => !v)}
         className="text-ink-3 hover:text-ink"
@@ -62,7 +62,7 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
       {open && (
         <div className="mt-3 space-y-3">
           <div className="flex items-center gap-3">
-            <span className="w-20 shrink-0 text-xs text-ink-3">
+            <span className="w-20 shrink-0 text-[13.5px] text-ink-3">
               Famille
             </span>
             <select
@@ -70,7 +70,7 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
               onChange={(e) =>
                 setFamilyMutation.mutate(e.target.value as ElementFamily)
               }
-              className="border-b border-line bg-transparent py-1 text-sm text-ink-2 outline-none focus:border-ink-4"
+              className="border-b border-line bg-transparent py-1 text-[16px] text-ink-2 outline-none focus:border-ink-4"
             >
               {FAMILIES.map((f) => (
                 <option key={f} value={f}>
@@ -81,11 +81,11 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className="w-20 shrink-0 text-xs text-ink-3">
+            <span className="w-20 shrink-0 text-[13.5px] text-ink-3">
               Tags
             </span>
             {tags?.map((tag) => (
-              <Pill key={tag.id} className="pr-1.5 text-xs">
+              <Pill key={tag.id} className="pr-1.5 text-[13.5px]">
                 #{tag.name}
                 <button
                   onClick={() => removeTagMutation.mutate(tag.id)}
@@ -106,7 +106,7 @@ export function PropertiesDisclosure({ element }: { element: Element }) {
                 }
               }}
               placeholder="+ tag"
-              className="w-20 border-b border-line bg-transparent px-1 py-1 text-xs text-ink-2 outline-none focus:border-ink-4"
+              className="w-20 border-b border-line bg-transparent px-1 py-1 text-[13.5px] text-ink-2 outline-none focus:border-ink-4"
             />
           </div>
         </div>

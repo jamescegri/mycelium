@@ -109,10 +109,10 @@ function PeekOverlay({
         onClick={(e) => e.stopPropagation()}
       >
         {!element ? (
-          <p className="text-sm text-ink-3">Chargement…</p>
+          <p className="text-[16px] text-ink-3">Chargement…</p>
         ) : (
           <>
-            <div className="mb-4 flex items-center justify-between text-xs text-ink-3">
+            <div className="mb-4 flex items-center justify-between text-[13.5px] text-ink-3">
               <div className="flex items-center gap-2">
                 {hasBack && (
                   <button onClick={onBack} className="hover:text-ink">
@@ -139,7 +139,7 @@ function PeekOverlay({
             </div>
 
             {parents.length > 0 && (
-              <div className="mb-1 truncate text-xs text-ink-4">
+              <div className="mb-1 truncate text-[13.5px] text-ink-4">
                 {parents.map((p) => p.name).join(' · ')}
               </div>
             )}

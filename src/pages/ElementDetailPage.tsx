@@ -3,10 +3,10 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, Trash2 } from 'lucide-react';
 import { getElement, listElements, softDeleteElement, updateElement } from '../lib/elements';
-import { listAllLinks, parentsOf } from '../lib/links';
+import { hasChildren, listAllLinks, parentsOf } from '../lib/links';
 import { syncMentionRelations } from '../lib/relations';
 import { extractMentionIds, toEditorContent } from '../lib/content';
-import { FAMILY_COLOR } from '../lib/family';
+import { FAMILY_COLOR, FAMILY_LABEL } from '../lib/family';
 import { pastelFor } from '../lib/palette';
 import type { Element } from '../types';
 import { Layout } from '../components/Layout';
@@ -39,7 +39,7 @@ export function ElementDetailPage() {
   if (isLoading) {
     return (
       <Layout>
-        <p className="text-sm text-ink-3">Chargement…</p>
+        <p className="text-[17px] text-ink-3">Chargement…</p>
       </Layout>
     );
   }
@@ -47,7 +47,7 @@ export function ElementDetailPage() {
   if (!element) {
     return (
       <Layout>
-        <p className="text-sm text-ink-3">Element introuvable.</p>
+        <p className="text-[17px] text-ink-3">Element introuvable.</p>
       </Layout>
     );
   }
@@ -113,8 +113,6 @@ function ElementEditor({
     },
   });
 
-  const avatarColors = pastelFor(element.id);
-
   const { data: allElements } = useQuery({
     queryKey: ['elements'],
     queryFn: listElements,
@@ -127,10 +125,19 @@ function ElementEditor({
   const parents =
     allElements && allLinks ? parentsOf(allLinks, allElements, element.id) : [];
 
+  // La pastille n'est fluo que si l'Element est un Groupe (il a au moins un
+  // enfant) — et c'est alors exactement la teinte de sa carte sur le
+  // Dashboard. Un Element sans enfant reste en gris : voir de la couleur
+  // veut dire "ceci regroupe des choses", jamais "ceci est un Element".
+  const isGroup = allLinks ? hasChildren(allLinks, element.id) : false;
+  const avatarColors = isGroup
+    ? pastelFor(element.id)
+    : { bg: 'var(--color-surface-3)', text: 'var(--color-ink-2)' };
+
   return (
     <>
       <div className="mb-8 flex items-center justify-between gap-4">
-        <nav className="flex min-w-0 items-center gap-1.5 text-[13px] text-ink-4">
+        <nav className="flex min-w-0 items-center gap-2 text-[15px] text-ink-4">
           <button
             onClick={() => navigate('/dashboard')}
             className="shrink-0 transition hover:text-ink-2"
@@ -139,7 +146,7 @@ function ElementEditor({
           </button>
           {parents[0] && (
             <>
-              <ChevronRight size={13} strokeWidth={1.75} className="shrink-0 opacity-60" />
+              <ChevronRight size={15} strokeWidth={2} className="shrink-0 opacity-60" />
               <button
                 onClick={() => navigate(`/elements/${parents[0].id}`)}
                 className="max-w-[180px] truncate transition hover:text-ink-2"
@@ -149,11 +156,11 @@ function ElementEditor({
             </>
           )}
           {parents.length > 1 && (
-            <span className="shrink-0 text-[11px] text-ink-4">
+            <span className="shrink-0 text-[13px] text-ink-4">
               +{parents.length - 1}
             </span>
           )}
-          <ChevronRight size={13} strokeWidth={1.75} className="shrink-0 opacity-60" />
+          <ChevronRight size={15} strokeWidth={2} className="shrink-0 opacity-60" />
           <span className="truncate text-ink-2">{name || 'Sans titre'}</span>
         </nav>
 
@@ -163,22 +170,22 @@ function ElementEditor({
           <button
             onClick={() => saveMutation.mutate()}
             disabled={saveMutation.isPending}
-            className="rounded-lg px-3 py-1.5 text-[13px] font-medium text-accent transition hover:bg-accent-soft disabled:opacity-50"
+            className="rounded-xl px-4 py-2 text-[15px] font-semibold text-ink transition hover:bg-surface-3 disabled:opacity-50"
           >
             {saveMutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
           </button>
           <button
             onClick={onRequestDelete}
             aria-label="Supprimer cet Element"
-            className="rounded-lg p-1.5 text-ink-4 transition hover:bg-surface-2 hover:text-danger"
+            className="rounded-xl p-2 text-ink-4 transition hover:bg-surface-3 hover:text-ink"
           >
-            <Trash2 size={15} strokeWidth={1.75} />
+            <Trash2 size={18} strokeWidth={2} />
           </button>
         </div>
       </div>
 
       <span
-        className="title-display mb-5 flex h-[60px] w-[60px] items-center justify-center rounded-2xl text-[26px]"
+        className="title-display mb-6 flex h-[68px] w-[68px] items-center justify-center rounded-2xl text-[32px]"
         style={{ backgroundColor: avatarColors.bg, color: avatarColors.text }}
       >
         {(name || '?').charAt(0).toUpperCase()}
@@ -189,29 +196,29 @@ function ElementEditor({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Sans titre"
-        className="title-display w-full bg-transparent text-[46px] text-ink outline-none placeholder:text-ink-4"
+        className="title-display w-full bg-transparent text-[62px] text-ink outline-none placeholder:text-ink-4"
       />
 
       <div
-        className="mb-12 mt-3 text-[13px] font-medium tracking-wide opacity-90"
+        className="mb-14 mt-4 text-[15px] font-medium"
         style={{ color: FAMILY_COLOR[element.family] }}
       >
-        {element.family === 'TIME' ? 'Temps' : 'Element'}
+        {FAMILY_LABEL[element.family]}
       </div>
 
-      <div className="mb-12">
+      <div className="mb-14">
         <Editor elementId={element.id} content={content} onChange={setContent} />
       </div>
 
       {/* Le classement (Parents/Enfants) vit sous la zone de texte, jamais
           dedans : "@"/"+" tapés dans l'éditeur agissent ici, pas comme du
           texte inséré. */}
-      <div className="space-y-8 border-t border-line-soft pt-10">
+      <div className="space-y-10 border-t border-line pt-12">
         <ParentsSection element={element} />
         <EnfantsSection element={element} />
       </div>
 
-      <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-line-soft pt-6">
+      <div className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-line pt-7">
         <ConnectionsDisclosure elementId={element.id} onSelect={openPeek} />
         <PropertiesDisclosure element={element} />
       </div>
