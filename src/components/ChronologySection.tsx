@@ -113,7 +113,7 @@ export function ChronologySection({ element }: { element: Element }) {
           <button
             onClick={() => removeMutation.mutate()}
             disabled={removeMutation.isPending}
-            className="rounded-full px-2 py-0.5 text-[13px] text-ink-4 transition hover:bg-surface-2 hover:text-ink disabled:opacity-50"
+            className="rounded-full px-2 py-0.5 text-[13px] text-ink-3 transition hover:bg-surface-2 hover:text-ink disabled:opacity-50"
           >
             Retirer
           </button>

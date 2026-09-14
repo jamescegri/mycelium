@@ -59,7 +59,7 @@ export function ElementPicker({
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-transparent bg-transparent px-2.5 py-2 text-[16px] text-ink-2 outline-none transition placeholder:text-ink-4 hover:bg-surface-2 focus:border-line focus:bg-surface"
+        className="w-full rounded-lg border border-transparent bg-transparent px-2 py-1 text-[13.5px] text-ink-2 outline-none transition placeholder:text-ink-3 hover:bg-surface-2 focus:border-line focus:bg-surface"
       />
       {open && (results.length > 0 || showCreate) && (
         <div className="absolute z-10 mt-1 max-h-64 w-full min-w-[260px] overflow-y-auto rounded-xl border-2 border-ink bg-surface py-1 shadow-[0_18px_44px_-16px_rgba(0,0,0,0.45)]">

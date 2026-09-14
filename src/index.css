@@ -42,11 +42,16 @@
    les états actifs, ce signal disparaîtrait dans le bruit.
    ─────────────────────────────────────────────────────────────── */
 @theme {
-  /* Encre : gris strictement neutres, aucune teinte */
+  /* Encre : gris strictement neutres, aucune teinte.
+     Les deux derniers niveaux portent du vrai texte — libellés de
+     propriétés, valeurs vides, mentions secondaires — et doivent donc
+     rester lisibles : 6,5:1 et 4,5:1 sur le papier. Les tons d'origine
+     (#737373 et #a1a1a1) descendaient à 2,9:1 pour le dernier, sous le
+     seuil où un texte cesse d'être lisible pour beaucoup de gens. */
   --color-ink: #000000;
   --color-ink-2: #3f3f3f;
-  --color-ink-3: #737373;
-  --color-ink-4: #a1a1a1;
+  --color-ink-3: #5c5c5c;
+  --color-ink-4: #757575;
 
   /* Papier et filets */
   --color-surface: #ffffff;

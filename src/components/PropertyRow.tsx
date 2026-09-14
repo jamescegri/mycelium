@@ -17,7 +17,7 @@ export function PropertyRow({
 }) {
   return (
     <div className="flex min-w-0 items-baseline gap-3 py-1">
-      <span className="flex w-[92px] shrink-0 items-center gap-1.5 text-[13.5px] text-ink-4">
+      <span className="flex w-[92px] shrink-0 items-center gap-1.5 text-[13px] text-ink-3">
         <Icon size={13} strokeWidth={2} className="shrink-0" />
         {label}
       </span>
@@ -31,5 +31,5 @@ export function PropertyRow({
 // Le texte d'une propriété vide : présent mais en retrait, pour qu'on voie
 // qu'il n'y a rien sans que ça attire l'œil.
 export function PropertyEmpty({ children }: { children: string }) {
-  return <span className="text-[14px] text-ink-4">{children}</span>;
+  return <span className="text-[13.5px] text-ink-3">{children}</span>;
 }
