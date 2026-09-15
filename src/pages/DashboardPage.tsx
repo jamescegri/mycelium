@@ -5,6 +5,7 @@ import { Clock, Columns3, Download, FileText, Rows3, Spline } from 'lucide-react
 import { listElements } from '../lib/elements';
 import { listAllLinks, parentsOf } from '../lib/links';
 import { listAllElementTags, listAllTags } from '../lib/tags';
+import { listAllRelations } from '../lib/relations';
 import { displayName, isUntitled } from '../lib/display';
 import { searchFullText } from '../lib/search';
 import { downloadMarkdown, universeToMarkdown } from '../lib/export';
@@ -12,7 +13,7 @@ import { TimelineTree } from '../components/TimelineTree';
 import { ConnectionsView } from '../components/connections/ConnectionsView';
 import { TimelineRibbon } from '../components/TimelineRibbon';
 import { ThreadsView } from '../components/threads/ThreadsView';
-import type { Element, ElementLink } from '../types';
+import type { Element, ElementLink, Relation } from '../types';
 
 // Les angles sont de vraies routes, pas un état local : le bouton Retour
 // du navigateur fonctionne, et une vue peut être mise en favori. Ils sont
@@ -31,6 +32,13 @@ export function DashboardPage() {
   const { data: links } = useQuery({
     queryKey: ['links'],
     queryFn: listAllLinks,
+  });
+  // N'est chargé que pour le filtre « Sans connexion » de l'onglet Éléments ;
+  // les autres onglets ne s'en servent pas.
+  const { data: allRelations } = useQuery({
+    queryKey: ['relations'],
+    queryFn: listAllRelations,
+    enabled: path === '/liste',
   });
 
   // Connexions a sa propre page : un Element au centre, ses voisins en
@@ -61,7 +69,7 @@ export function DashboardPage() {
       <p className="mb-10 max-w-[62ch] text-[15px] text-ink-3">{sub}</p>
 
       {path === '/liste' && (
-        <ElementsTab elements={elements ?? []} links={links ?? []} />
+        <ElementsTab elements={elements ?? []} links={links ?? []} allRelations={allRelations ?? []} />
       )}
       {path === '/temporel' && <TemporalViews />}
     </div>
@@ -168,20 +176,46 @@ function ElementRow({
 function ElementsTab({
   elements,
   links,
+  allRelations,
 }: {
   elements: Element[];
   links: ElementLink[];
+  allRelations: Relation[];
 }) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
+  const [noGroup, setNoGroup] = useState(false);
+  const [noConnection, setNoConnection] = useState(false);
+
+  // Deux dimensions, deux filtres : sans groupe regarde le rangement
+  // (element_links), sans connexion regarde les relations (mentions et
+  // liens à la main, dans les deux sens). Rien de nouveau : on relit ce
+  // qui existe déjà.
+  const hasParent = useMemo(() => new Set(links.map((l) => l.child_id)), [links]);
+  const hasRelation = useMemo(() => {
+    const ids = new Set<string>();
+    for (const r of allRelations) {
+      ids.add(r.source_id);
+      ids.add(r.target_id);
+    }
+    return ids;
+  }, [allRelations]);
+
+  const scoped = useMemo(
+    () =>
+      elements.filter(
+        (el) => (!noGroup || !hasParent.has(el.id)) && (!noConnection || !hasRelation.has(el.id))
+      ),
+    [elements, noGroup, noConnection, hasParent, hasRelation]
+  );
 
   // La recherche regarde le texte autant que les titres — voir lib/search.
   const hits = useMemo(
     () =>
       query.trim()
-        ? searchFullText(elements, query)
-        : elements.map((element) => ({ element, inName: true, excerpt: null })),
-    [elements, query]
+        ? searchFullText(scoped, query)
+        : scoped.map((element) => ({ element, inName: true, excerpt: null })),
+    [scoped, query]
   );
 
   return (
@@ -190,8 +224,17 @@ function ElementsTab({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Chercher un nom, une phrase…"
-        className="mb-6 w-full border-b border-line bg-transparent pb-2.5 text-[15px] text-ink outline-none transition placeholder:text-ink-4 focus:border-ink-4"
+        className="mb-4 w-full border-b border-line bg-transparent pb-2.5 text-[15px] text-ink outline-none transition placeholder:text-ink-4 focus:border-ink-4"
       />
+
+      <div className="mb-6 flex flex-wrap gap-1">
+        <ElementFilterToggle pressed={noGroup} onClick={() => setNoGroup((v) => !v)}>
+          Sans groupe
+        </ElementFilterToggle>
+        <ElementFilterToggle pressed={noConnection} onClick={() => setNoConnection((v) => !v)}>
+          Sans connexion
+        </ElementFilterToggle>
+      </div>
 
       {elements.length > 0 && (
         <div className="mb-6">
@@ -203,7 +246,9 @@ function ElementsTab({
         <p className="text-[15px] text-ink-3">
           {elements.length === 0
             ? "Rien encore. Écris une première idée depuis l'accueil."
-            : 'Aucun Element ne correspond.'}
+            : noGroup || noConnection
+              ? 'Aucun Element isolé de cette façon.'
+              : 'Aucun Element ne correspond.'}
         </p>
       ) : (
         <div className="space-y-0.5">
@@ -230,6 +275,28 @@ function ElementsTab({
         </div>
       )}
     </div>
+  );
+}
+
+function ElementFilterToggle({
+  pressed,
+  onClick,
+  children,
+}: {
+  pressed: boolean;
+  onClick: () => void;
+  children: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-pressed={pressed}
+      className={`rounded-lg px-2.5 py-1 text-[13.5px] transition hover:bg-surface-2 ${
+        pressed ? 'bg-ink text-white hover:bg-ink' : 'text-ink-3 hover:text-ink'
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
