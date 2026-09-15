@@ -1,23 +1,17 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ExternalLink, Plus, SlidersHorizontal, X } from 'lucide-react';
-import { createElement, listElements, updateElement } from '../../lib/elements';
-import { listAllLinks } from '../../lib/links';
-import { createManualRelation, listAllRelations, syncMentionRelations } from '../../lib/relations';
-import { listAllElementTags, listAllTags } from '../../lib/tags';
-import { listTemporalRelations } from '../../lib/temporal';
-import { timelineRows } from '../../lib/chronology';
-import { extractMentionIds } from '../../lib/content';
+import { createElement } from '../../lib/elements';
+import { createManualRelation, syncMentionRelations } from '../../lib/relations';
 import { displayName } from '../../lib/display';
 import { pastelFor } from '../../lib/palette';
 import { reportError } from '../../lib/errors';
+import { linkCitation } from '../../lib/connectionWrites';
 import {
-  buildConnectionsIndex,
   DEFAULT_SHOW,
   firstSentence,
-  insertMentionForCitation,
   isGroup,
   neighbourhood,
   normalize,
@@ -28,18 +22,12 @@ import {
   type ShowKey,
 } from '../../lib/connections';
 import { usePeek } from '../PeekPanel';
+import { useConnectionsData } from './useConnectionsData';
 import { ElementPicker } from '../ElementPicker';
 import { ConnectionsGraph } from './ConnectionsGraph';
 import { ConnectionsDetails } from './ConnectionsDetails';
 import { KIND_STYLE, reasonText, truncate } from './kinds';
-import type { Element, ElementLink, Relation, Tag, TemporalRelation } from '../../types';
-
-const NO_ELEMENTS: Element[] = [];
-const NO_LINKS: ElementLink[] = [];
-const NO_RELATIONS: Relation[] = [];
-const NO_TAGS: Tag[] = [];
-const NO_ELEMENT_TAGS: { element_id: string; tag_id: string }[] = [];
-const NO_TEMPORAL: TemporalRelation[] = [];
+import type { Element } from '../../types';
 
 const SHOW_OPTIONS: [ShowKey, string][] = [
   ['rangement', 'Rangement'],
@@ -81,32 +69,7 @@ export function ConnectionsView() {
   const { openPeek } = usePeek();
   const [params, setParams] = useSearchParams();
 
-  const { data: elements, isLoading } = useQuery({ queryKey: ['elements'], queryFn: listElements });
-  const { data: links } = useQuery({ queryKey: ['links'], queryFn: listAllLinks });
-  const { data: relations } = useQuery({ queryKey: ['relations'], queryFn: listAllRelations });
-  const { data: tags } = useQuery({ queryKey: ['tags'], queryFn: listAllTags });
-  const { data: elementTags } = useQuery({ queryKey: ['element-tags'], queryFn: listAllElementTags });
-  const { data: temporal } = useQuery({ queryKey: ['temporal-relations'], queryFn: listTemporalRelations });
-
-  const all = elements ?? NO_ELEMENTS;
-  const allLinks = links ?? NO_LINKS;
-  const allRelations = relations ?? NO_RELATIONS;
-  const allTags = tags ?? NO_TAGS;
-  const allElementTags = elementTags ?? NO_ELEMENT_TAGS;
-  const allTemporal = temporal ?? NO_TEMPORAL;
-
-  // Préparé une fois par changement de données, pas à chaque recentrage.
-  const index = useMemo(() => {
-    const chronology = new Set(timelineRows(all, allLinks, allTemporal).map((row) => row.element.id));
-    return buildConnectionsIndex({
-      elements: all,
-      links: allLinks,
-      relations: allRelations,
-      tagNames: new Map(allTags.map((t) => [t.id, t.name])),
-      elementTags: allElementTags,
-      chronology,
-    });
-  }, [all, allLinks, allRelations, allTags, allElementTags, allTemporal]);
+  const { index, elements: all, relations: allRelations, isLoading } = useConnectionsData();
 
   // Sans centre demandé, on part de l'Element touché en dernier : c'est
   // souvent celui dont on veut voir l'entourage.
@@ -218,20 +181,7 @@ export function ConnectionsView() {
   const markFresh = (id: string) => setFreshIds((prev) => new Set(prev).add(id));
 
   const citationMutation = useMutation({
-    mutationFn: async (otherId: string) => {
-      const other = index.byId.get(otherId);
-      const center = centerId ? index.byId.get(centerId) : undefined;
-      if (!other || !center) throw new Error('Element introuvable.');
-      const content = insertMentionForCitation(other.content, center, all);
-      if (!content) {
-        throw new Error(
-          `« ${displayName(center)} » n'a pas été retrouvé tel quel dans le texte de « ${displayName(other)} ».`
-        );
-      }
-      await updateElement(otherId, { content });
-      await syncMentionRelations(otherId, extractMentionIds(content));
-      return otherId;
-    },
+    mutationFn: (otherId: string) => linkCitation(index, centerId!, otherId).then(() => otherId),
     onSuccess: (otherId) => {
       markFresh(otherId);
       invalidateAround([otherId, centerId ?? '']);

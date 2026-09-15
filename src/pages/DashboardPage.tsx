@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Clock, Columns3, Download, FileText, Rows3 } from 'lucide-react';
+import { Clock, Columns3, Download, FileText, Rows3, Spline } from 'lucide-react';
 import { listElements } from '../lib/elements';
 import { listAllLinks, parentsOf } from '../lib/links';
 import { listAllElementTags, listAllTags } from '../lib/tags';
@@ -11,6 +11,7 @@ import { downloadMarkdown, universeToMarkdown } from '../lib/export';
 import { TimelineTree } from '../components/TimelineTree';
 import { ConnectionsView } from '../components/connections/ConnectionsView';
 import { TimelineRibbon } from '../components/TimelineRibbon';
+import { ThreadsView } from '../components/threads/ThreadsView';
 import type { Element, ElementLink } from '../types';
 
 // Les angles sont de vraies routes, pas un état local : le bouton Retour
@@ -49,7 +50,13 @@ export function DashboardPage() {
         : 'Ce qui relie tes Elements, cherchable et filtrable.';
 
   return (
-    <div className="mx-auto max-w-[58rem] px-6 py-14 max-md:py-8 sm:px-14">
+    <div
+      className={`mx-auto px-6 py-14 max-md:py-8 sm:px-14 ${
+        path === '/temporel' && new URLSearchParams(location.search).get('vue') === 'fils'
+          ? 'max-w-[84rem]'
+          : 'max-w-[58rem]'
+      }`}
+    >
       <h1 className="title-display mb-2 text-[32px] text-ink">{title}</h1>
       <p className="mb-10 max-w-[62ch] text-[15px] text-ink-3">{sub}</p>
 
@@ -61,26 +68,42 @@ export function DashboardPage() {
   );
 }
 
-// Deux façons de regarder la même chronologie. En hauteur pour écrire et
-// réorganiser — c'est là qu'on ajoute et qu'on déplace. En largeur pour
-// prendre du recul : on y lit le rythme du récit, quel arc s'étire et quel
-// chapitre est expédié, ce qu'une liste verticale ne montre jamais.
+// Trois lectures de la même chronologie, sans rien stocker de plus. En
+// hauteur pour écrire et réorganiser ; en largeur pour lire le rythme du
+// récit ; en fils pour suivre des Elements au fil de l'histoire. Le mode vit
+// dans l'adresse (`?vue=`), pour que le bouton Retour et les favoris
+// fonctionnent.
+const TEMPORAL_MODES = [
+  { id: 'hauteur', label: 'En hauteur', icon: Rows3 },
+  { id: 'largeur', label: 'En largeur', icon: Columns3 },
+  { id: 'fils', label: 'Fils', icon: Spline },
+] as const;
+
 function TemporalViews() {
-  const [horizontal, setHorizontal] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const mode = TEMPORAL_MODES.find((m) => m.id === params.get('vue'))?.id ?? 'hauteur';
 
   return (
     <div>
       <div className="mb-6 flex w-fit items-center gap-0.5 rounded-xl border border-line p-1">
-        {[
-          { id: false, label: 'En hauteur', icon: Rows3 },
-          { id: true, label: 'En largeur', icon: Columns3 },
-        ].map((v) => (
+        {TEMPORAL_MODES.map((v) => (
           <button
-            key={String(v.id)}
-            onClick={() => setHorizontal(v.id)}
-            aria-pressed={horizontal === v.id}
+            key={v.id}
+            onClick={() =>
+              setParams((prev) => {
+                const next = new URLSearchParams(prev);
+                if (v.id === 'hauteur') next.delete('vue');
+                else next.set('vue', v.id);
+                if (v.id !== 'fils') {
+                  next.delete('suivre');
+                  next.delete('niveau');
+                }
+                return next;
+              })
+            }
+            aria-pressed={mode === v.id}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13.5px] transition ${
-              horizontal === v.id
+              mode === v.id
                 ? 'bg-accent font-semibold text-white'
                 : 'text-ink-3 hover:text-ink'
             }`}
@@ -91,7 +114,7 @@ function TemporalViews() {
         ))}
       </div>
 
-      {horizontal ? <TimelineRibbon /> : <TimelineTree />}
+      {mode === 'fils' ? <ThreadsView /> : mode === 'largeur' ? <TimelineRibbon /> : <TimelineTree />}
     </div>
   );
 }

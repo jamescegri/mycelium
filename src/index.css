@@ -279,6 +279,37 @@ input:focus-visible {
   stroke-width: 1.5;
 }
 
+/* ── Graphique Fils ───────────────────────────────────────────────── */
+.th-text {
+  font-family: var(--font-sans);
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.th-band {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  fill: var(--color-ink-4);
+  stroke-width: 4px;
+}
+.th-col {
+  font-size: 12px;
+  fill: var(--color-ink-3);
+  stroke-width: 4px;
+}
+.th-lane {
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--color-ink-2);
+  stroke-width: 4px;
+}
+.th-row {
+  transition: opacity 220ms ease;
+}
+
 /* Une carte se soulève au survol et s'enfonce au clic : on sent qu'elle
    s'ouvre avant même qu'elle ne s'ouvre. */
 .lift {
