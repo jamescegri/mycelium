@@ -19,7 +19,7 @@ export function TrashPage() {
   });
 
   return (
-      <div className="mx-auto max-w-[56rem] px-6 py-10 sm:px-10">
+      <div className="mx-auto max-w-[58rem] px-6 py-14 max-md:py-8 sm:px-14">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-lg font-semibold">Corbeille</h1>
         <button

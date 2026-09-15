@@ -59,13 +59,13 @@ export function Layout() {
   const showsMain = !path.startsWith('/groupes');
 
   return (
-    <div className="flex h-screen gap-2.5 bg-surface-2 p-2.5 text-ink max-md:flex-col max-md:p-0">
+    <div className="flex h-screen gap-4 bg-surface-2 p-4 text-ink max-md:flex-col max-md:gap-0 max-md:p-0">
       <nav
         aria-label="Navigation principale"
         // Le rail vertical suppose une souris et de la hauteur : sur
         // téléphone il cède la place à une barre en bas, que le pouce
         // atteint sans changer de prise.
-        className="flex w-[76px] shrink-0 flex-col items-center rounded-2xl bg-surface px-2 py-4 max-md:hidden"
+        className="flex w-[80px] shrink-0 flex-col items-center rounded-panel bg-surface px-2 py-5 max-md:hidden"
       >
         <button
           onClick={() => navigate('/dashboard')}
@@ -124,8 +124,8 @@ export function Layout() {
           !usesNav
             ? 'hidden'
             : twoPane
-              ? 'flex min-h-0 w-[300px] shrink-0 overflow-hidden rounded-2xl bg-surface max-lg:hidden'
-              : 'flex min-h-0 flex-1 overflow-hidden rounded-2xl bg-surface max-md:rounded-none'
+              ? 'flex min-h-0 w-[320px] shrink-0 overflow-hidden rounded-panel bg-surface max-lg:hidden'
+              : 'flex min-h-0 flex-1 overflow-hidden rounded-panel bg-surface max-md:rounded-none'
         }
       >
         <NavColumn wide={!twoPane} />
@@ -133,11 +133,13 @@ export function Layout() {
 
       {showsMain && (
         <main
-          className={`min-w-0 flex-1 overflow-y-auto rounded-2xl bg-surface max-md:rounded-none ${
+          className={`min-w-0 flex-1 overflow-y-auto rounded-panel bg-surface max-md:rounded-none ${
             twoPane ? 'animate-panel-in' : ''
           }`}
         >
-          <Outlet />
+          <div key={path} className="animate-page-in">
+            <Outlet />
+          </div>
         </main>
       )}
 
@@ -234,7 +236,7 @@ function RailButton({
       // Une pastille carrée plutôt qu'un bandeau sur toute la largeur du
       // rail : la surface colorée doit avoir la forme de l'icône qu'elle
       // met en avant, pas celle de la colonne qui la contient.
-      className="mx-auto flex size-11 items-center justify-center rounded-xl transition"
+      className="mx-auto flex size-11 items-center justify-center rounded-xl transition duration-300 ease-out hover:scale-[1.08] active:scale-95"
       style={
         // La couleur reste quand la destination est celle où l'on se
         // trouve : un onglet actif qui redevient gris oblige à relire les

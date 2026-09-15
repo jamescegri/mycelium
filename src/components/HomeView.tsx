@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight } from 'lucide-react';
@@ -21,6 +21,9 @@ const NO_LINKS: ElementLink[] = [];
 // pour ça.
 export function HomeView() {
   const navigate = useNavigate();
+  // Figé à l'ouverture : les « il y a 5 min » ne doivent pas bouger sous
+  // les yeux pendant qu'on lit.
+  const [now] = useState(() => Date.now());
 
   const { data: elements } = useQuery({
     queryKey: ['elements'],
@@ -62,29 +65,54 @@ export function HomeView() {
   );
 
   return (
-    <div className="mx-auto max-w-[46rem] px-6 py-14 max-md:px-4 max-md:py-7 sm:px-10">
-      {/* Sur téléphone, le champ doit être atteignable sans défiler : le
-          titre se resserre pour lui laisser le haut de l'écran. */}
-      <h1 className="title-display mb-1.5 text-[38px] max-md:text-[26px]">
-        Qu'est-ce qui arrive ?
-      </h1>
-      <p className="mb-7 text-[16.5px] text-ink-3 max-md:mb-5 max-md:text-[15px]">
-        Écris-le maintenant, tu le rangeras plus tard.
-      </p>
+    <div className="mx-auto max-w-[64rem] px-6 py-16 max-md:px-4 max-md:py-8 sm:px-14">
+      {/* Le champ garde une largeur de phrase même quand la page s'élargit
+          pour la galerie : un champ de 900 px intimide plus qu'il n'invite. */}
+      <div className="max-w-[46rem]">
+        {/* Sur téléphone, le champ doit être atteignable sans défiler : le
+            titre se resserre pour lui laisser le haut de l'écran. */}
+        <h1 className="title-display mb-2 text-[40px] max-md:text-[28px]">
+          Continue ton histoire
+        </h1>
+        <p className="mb-8 text-[16.5px] text-ink-3 max-md:mb-5 max-md:text-[15px]">
+          Note une idée maintenant, tu la rangeras plus tard.
+        </p>
 
-      <CaptureBar />
+        <CaptureBar />
+      </div>
+
+      {/* Reprendre vient juste sous l'écriture : c'est l'autre moitié du
+          même geste, se remettre au travail. En galerie, parce qu'on
+          reconnaît une scène à son début de texte plus vite qu'à son titre. */}
+      {recent.length > 0 && (
+        <section className="mt-14">
+          <SectionTitle>Reprendre</SectionTitle>
+          <div className="stagger grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-4">
+            {recent.map((el) => (
+              <RecentCard
+                key={el.id}
+                element={el}
+                parent={parentsOf(allLinks, all, el.id)[0] ?? null}
+                isGroup={hasChildren(allLinks, el.id)}
+                now={now}
+                onOpen={() => navigate(`/elements/${el.id}`)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {entries.length > 0 && (
         <section className="mt-14">
           <SectionTitle>Tes entrées</SectionTitle>
-          <div className="flex flex-wrap gap-2">
+          <div className="stagger flex flex-wrap gap-2.5">
             {entries.map((entry) => {
               const tone = pastelFor(entry.id);
               return (
                 <button
                   key={entry.id}
                   onClick={() => navigate(`/elements/${entry.id}`)}
-                  className="rounded-full px-3.5 py-1.5 text-[14.5px] font-medium transition hover:opacity-80"
+                  className="lift rounded-full px-4 py-2 text-[14.5px] font-medium"
                   style={{ backgroundColor: tone.bg, color: tone.text }}
                 >
                   {displayName(entry)}
@@ -95,29 +123,18 @@ export function HomeView() {
         </section>
       )}
 
-      {recent.length > 0 && (
-        <section className="mt-12">
-          <SectionTitle>Reprendre</SectionTitle>
-          <div className="flex flex-col">
-            {recent.map((el) => (
-              <RecentRow
-                key={el.id}
-                element={el}
-                onOpen={() => navigate(`/elements/${el.id}`)}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
       {unfiled > 0 && (
         <button
           onClick={() => navigate('/groupes')}
-          className="mt-10 flex items-center gap-2 text-[15px] text-ink-3 transition hover:text-ink"
+          className="group mt-12 flex items-center gap-2 text-[15px] text-ink-3 transition hover:text-ink"
         >
           {unfiled} Element{unfiled > 1 ? 's' : ''} n'
           {unfiled > 1 ? 'ont' : 'a'} pas encore trouvé sa place
-          <ArrowRight size={15} strokeWidth={2} />
+          <ArrowRight
+            size={15}
+            strokeWidth={2}
+            className="transition-transform duration-300 group-hover:translate-x-1"
+          />
         </button>
       )}
     </div>
@@ -126,37 +143,82 @@ export function HomeView() {
 
 function SectionTitle({ children }: { children: string }) {
   return (
-    <p className="mb-3 text-[12px] font-semibold tracking-[0.08em] text-ink-4 uppercase">
+    <p className="mb-4 text-[12px] font-semibold tracking-[0.08em] text-ink-4 uppercase">
       {children}
     </p>
   );
 }
 
-function RecentRow({
+// « Il y a 3 h » plutôt qu'une date : pour reprendre, ce qui compte est
+// la distance au dernier passage, pas le jour exact.
+function since(iso: string, now: number): string {
+  const minutes = Math.round((now - new Date(iso).getTime()) / 60000);
+  if (minutes < 1) return "à l'instant";
+  if (minutes < 60) return `il y a ${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `il y a ${hours} h`;
+  const days = Math.round(hours / 24);
+  if (days === 1) return 'hier';
+  if (days < 7) return `il y a ${days} j`;
+  return new Date(iso).toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
+function RecentCard({
   element,
+  parent,
+  isGroup,
+  now,
   onOpen,
 }: {
   element: Element;
+  parent: Element | null;
+  isGroup: boolean;
+  now: number;
   onOpen: () => void;
 }) {
-  const excerpt = extractPlainText(element.content, 70);
+  const excerpt = extractPlainText(element.content, 140);
   const untitled = isUntitled(element);
+  const tone = pastelFor(element.id);
 
   return (
     <button
       onClick={onOpen}
-      className="flex items-baseline gap-3 rounded-lg px-2 py-2.5 text-left transition hover:bg-surface-2"
+      className="lift flex min-h-[9.5rem] flex-col gap-2.5 rounded-2xl border border-line bg-surface p-5 text-left hover:border-ink-4"
     >
-      <span
-        className={`shrink-0 text-[16.5px] ${untitled ? 'text-ink-3 italic' : ''}`}
-      >
-        {displayName(element)}
+      <span className="flex items-center gap-2.5">
+        {/* Pleine pour un Groupe, creuse pour une feuille : la même règle
+            que dans l'explorateur. */}
+        <span
+          className="size-3 shrink-0 rounded-[4px]"
+          style={
+            isGroup
+              ? { backgroundColor: tone.bg }
+              : { boxShadow: `inset 0 0 0 2px ${tone.bg}` }
+          }
+        />
+        <span
+          className={`truncate text-[16px] font-semibold ${
+            untitled ? 'text-ink-3 italic' : ''
+          }`}
+        >
+          {displayName(element)}
+        </span>
       </span>
+
       {excerpt && !untitled && (
-        <span className="min-w-0 flex-1 truncate text-[14px] text-ink-4">
+        <span className="line-clamp-3 text-[14px] leading-relaxed text-ink-3">
           {excerpt}
         </span>
       )}
+
+      <span className="mt-auto flex items-center gap-2 pt-1 text-[12.5px] text-ink-4">
+        {parent && <span className="truncate">{displayName(parent)}</span>}
+        {parent && <span aria-hidden>·</span>}
+        <span className="shrink-0">{since(element.updated_at, now)}</span>
+      </span>
     </button>
   );
 }

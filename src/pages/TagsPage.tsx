@@ -46,7 +46,7 @@ export function TagsPage() {
 
   if (!tagId) {
     return (
-          <div className="mx-auto max-w-[56rem] px-6 py-10 sm:px-10">
+          <div className="mx-auto max-w-[58rem] px-6 py-14 max-md:py-8 sm:px-14">
           <h1 className="title-display mb-2 text-[40px]">Tags</h1>
           <p className="max-w-[62ch] text-[16.5px] text-ink-3">
             Un Tag ne range rien : il traverse. Choisis-en un à gauche pour voir
@@ -59,7 +59,7 @@ export function TagsPage() {
   const tone = tag ? pastelFor(tag.id) : null;
 
   return (
-      <div className="mx-auto max-w-[56rem] px-6 py-10 sm:px-10">
+      <div className="mx-auto max-w-[58rem] px-6 py-14 max-md:py-8 sm:px-14">
       <div className="mb-2 flex items-center gap-3">
         {tone && (
           <span

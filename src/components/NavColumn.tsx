@@ -103,7 +103,10 @@ export function NavColumn({ wide = false }: { wide?: boolean }) {
 
   // Au large, le contenu garde une largeur de lecture et se centre : une
   // liste étirée sur 1400 px se parcourt mal, l'œil perd la colonne.
-  const inner = wide ? 'mx-auto w-full max-w-[48rem]' : 'w-full';
+  const inner = wide ? 'mx-auto w-full max-w-[52rem]' : 'w-full';
+  // Au large, la vue respire comme une page ; resserrée à côté d'un
+  // Element, elle reste une colonne.
+  const pad = wide ? 'px-10 max-md:px-5' : 'px-5';
 
   return (
     <div className="flex min-h-0 w-full flex-col">
@@ -111,7 +114,7 @@ export function NavColumn({ wide = false }: { wide?: boolean }) {
           globale reste sous ⌘K, et écrire une idée est le geste de
           l'Accueil. Ici on vient parcourir ce qui existe déjà. */}
       {!wide && (
-        <div className={`${inner} px-4 pt-5 pb-3`}>
+        <div className={`${inner} ${pad} pt-6 pb-3`}>
           <button
             onClick={openPalette}
             className="flex w-full items-center gap-2.5 rounded-xl border border-line px-3.5 py-2.5 text-left text-[15px] text-ink-3 transition hover:border-ink-4"
@@ -123,7 +126,7 @@ export function NavColumn({ wide = false }: { wide?: boolean }) {
         </div>
       )}
 
-      <div className={`${inner} px-4 ${wide ? 'pt-6' : ''} pb-3`}>
+      <div className={`${inner} ${pad} ${wide ? 'pt-12 max-md:pt-6' : ''} pb-4`}>
         <input
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -133,13 +136,13 @@ export function NavColumn({ wide = false }: { wide?: boolean }) {
       </div>
 
       {panel === 'groupes' && (
-        <div className={`${inner} px-4 pb-3`}>
+        <div className={`${inner} ${pad} pb-6`}>
           <FilterBar value={filters} onChange={setFilters} />
         </div>
       )}
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className={`${inner} px-3 pb-3`}>
+        <div key={panel} className={`${inner} ${wide ? 'px-9 max-md:px-4' : 'px-4'} animate-page-in pb-10`}>
           {panel === 'groupes' && (
             <GroupesPanel filter={filter} filters={filters} wide={wide} />
           )}
@@ -563,10 +566,10 @@ function GroupesPanel({
               : "Rattache un enfant à un Element pour qu'il devienne un Groupe."}
         </EmptyPanel>
       ) : view === 'liste' ? (
-        <div className="flex flex-col">
-          {rows.map((row, i) => (
+        <div className="stagger flex flex-col">
+          {rows.map((row) => (
             <ExplorerRow
-              key={`${row.element.id}-${i}`}
+              key={`${row.parentId ?? 'racine'}-${row.element.id}`}
               row={row}
               excerpt={matches.excerptOf.get(row.element.id) ?? null}
               expanded={expanded.has(row.element.id)}
@@ -592,7 +595,7 @@ function GroupesPanel({
         </div>
       ) : (
         <div
-          className={`grid gap-2.5 ${
+          className={`stagger grid gap-3.5 ${
             wide
               ? 'grid-cols-[repeat(auto-fill,minmax(15rem,1fr))]'
               : 'grid-cols-1'
@@ -766,7 +769,7 @@ function GalleryCard({
       onDoubleClick={onOpen}
       title={isGroup ? 'Double-clic pour ouvrir ce Groupe' : undefined}
       aria-current={active ? 'true' : undefined}
-      className={`flex flex-col gap-2.5 rounded-2xl border p-4 text-left transition ${
+      className={`lift flex flex-col gap-2.5 rounded-2xl border bg-surface p-5 text-left ${
         active
           ? 'border-ink-4 bg-surface-2'
           : 'border-line hover:border-ink-4'
@@ -934,13 +937,13 @@ function ChronologiePanel({ filter }: { filter: string }) {
   return (
     <>
       <PanelTitle>Chronologie</PanelTitle>
-      <div className="flex flex-col">
-        {rows.map((row, i) => {
+      <div className="stagger flex flex-col">
+        {rows.map((row) => {
           const tone = pastelFor(row.element.id);
           const active = location.pathname === `/elements/${row.element.id}`;
           return (
             <button
-              key={`${row.element.id}-${i}`}
+              key={`${row.parentId ?? 'racine'}-${row.element.id}`}
               onClick={() => navigate(`/elements/${row.element.id}`)}
               aria-current={active ? 'true' : undefined}
               style={{ paddingLeft: 10 + row.depth * 14 }}

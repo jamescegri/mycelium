@@ -46,9 +46,9 @@ export function DashboardPage() {
         : 'Ce qui relie tes Elements, cherchable et filtrable.';
 
   return (
-    <div className="mx-auto max-w-[56rem] px-6 py-9 sm:px-10">
-      <h1 className="title-display mb-1.5 text-[32px] text-ink">{title}</h1>
-      <p className="mb-7 max-w-[62ch] text-[15px] text-ink-3">{sub}</p>
+    <div className="mx-auto max-w-[58rem] px-6 py-14 max-md:py-8 sm:px-14">
+      <h1 className="title-display mb-2 text-[32px] text-ink">{title}</h1>
+      <p className="mb-10 max-w-[62ch] text-[15px] text-ink-3">{sub}</p>
 
       {path === '/liste' && (
         <ElementsTab elements={elements ?? []} links={links ?? []} />

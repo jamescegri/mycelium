@@ -237,14 +237,14 @@ export function TimelineTree() {
   }
 
   return (
-    <div className="pb-6">
-      {items.map((item, i) => {
+    <div className="stagger pb-6">
+      {items.map((item) => {
         if (item.kind === 'row') {
           const { row } = item;
           const connections = connectionsOf.get(row.element.id) ?? [];
           return (
             <TimelineEntry
-              key={`row-${row.element.id}-${i}`}
+              key={`row-${row.parentId ?? 'racine'}-${row.element.id}`}
               row={row}
               connections={connections}
               collapsed={collapsed.has(row.element.id)}

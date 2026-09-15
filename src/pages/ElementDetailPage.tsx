@@ -49,7 +49,7 @@ export function ElementDetailPage() {
   }
 
   return (
-      <div className="mx-auto max-w-[52rem] px-6 py-12 sm:px-12">
+      <div className="mx-auto max-w-[52rem] px-6 py-14 max-md:py-8 sm:px-14">
       {/* key={element.id} : une instance fraîche par Element, avec son
           propre état local initialisé directement depuis les données déjà
           chargées. Sans ça, changer d'Element (ex. en cliquant sur une
