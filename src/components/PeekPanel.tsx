@@ -58,6 +58,10 @@ export function PeekProvider({ children }: { children: ReactNode }) {
             closePeek();
             navigate(`/elements/${id}`);
           }}
+          onExplore={(id) => {
+            closePeek();
+            navigate(`/connexions?autour=${id}`);
+          }}
         />
       )}
     </PeekContext.Provider>
@@ -71,6 +75,7 @@ function PeekOverlay({
   onClose,
   onSelect,
   onOpenFull,
+  onExplore,
 }: {
   currentId: string;
   hasBack: boolean;
@@ -78,6 +83,7 @@ function PeekOverlay({
   onClose: () => void;
   onSelect: (id: string) => void;
   onOpenFull: (id: string) => void;
+  onExplore: (id: string) => void;
 }) {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -131,6 +137,9 @@ function PeekOverlay({
                 <span>{element.timeline ? 'Chronologie' : ''}</span>
               </div>
               <div className="flex items-center gap-3">
+                <button onClick={() => onExplore(element.id)} className="hover:text-ink">
+                  Explorer les connexions
+                </button>
                 <button
                   onClick={() => onOpenFull(element.id)}
                   className="hover:text-ink"

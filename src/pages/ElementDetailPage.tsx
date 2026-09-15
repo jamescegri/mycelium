@@ -115,6 +115,9 @@ function ElementEditor({
       dirtyRef.current = false;
       queryClient.invalidateQueries({ queryKey: ['elements'] });
       queryClient.invalidateQueries({ queryKey: ['elements', element.id] });
+      // Les mentions tapées changent les relations : sans ça, Connexions
+      // ne verrait un nouveau lien qu'au rechargement.
+      queryClient.invalidateQueries({ queryKey: ['relations'] });
     },
   });
 
@@ -291,7 +294,17 @@ function ElementEditor({
       </div>
 
       <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-line pt-7">
-        <ConnectionsDisclosure elementId={element.id} onSelect={openPeek} />
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <ConnectionsDisclosure elementId={element.id} onSelect={openPeek} />
+          </div>
+          <button
+            onClick={() => navigate(`/connexions?autour=${element.id}`)}
+            className="shrink-0 text-[15px] text-ink-3 transition hover:text-ink"
+          >
+            Explorer les connexions ›
+          </button>
+        </div>
       </div>
     </>
   );

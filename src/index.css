@@ -204,6 +204,81 @@ input:focus-visible {
 .stagger > :nth-child(7) { animation-delay: 200ms; }
 .stagger > :nth-child(n + 8) { animation-delay: 230ms; }
 
+/* Les traits du visuel de Connexions apparaissent une fois les nœuds
+   arrivés à leur place. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 420ms 260ms both;
+}
+
+/* ── Visuel de Connexions ─────────────────────────────────────────── */
+.cx-label,
+.cx-edge-label,
+.cx-group-label {
+  font-family: var(--font-sans);
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.cx-label {
+  font-size: 14px;
+  font-weight: 500;
+  fill: var(--color-ink-2);
+  stroke-width: 6px;
+  transition: fill 150ms;
+}
+.cx-label.is-center {
+  font-size: 19px;
+  font-weight: 600;
+  fill: var(--color-ink);
+  stroke-width: 0;
+}
+.cx-edge-label {
+  font-size: 12px;
+  font-weight: 500;
+  fill: var(--color-ink-3);
+  stroke-width: 5px;
+}
+/* Le nom du Groupe au-dessus d'un paquet de voisins : un repère de
+   lecture, discret, qui ne dit rien de plus que le rangement. */
+.cx-group-label {
+  font-size: 11.5px;
+  font-weight: 500;
+  fill: var(--color-ink-4);
+  letter-spacing: 0.02em;
+  stroke-width: 4px;
+}
+.cx-edge,
+.cx-group-label,
+.cx-dim {
+  transition: opacity 200ms, stroke-width 200ms;
+}
+/* Survoler un voisin met son lien au premier plan et estompe le reste. */
+.cx-graph.has-hot .cx-dim:not(.is-hot):not(.is-center) {
+  opacity: 0.25;
+}
+.cx-graph.has-hot .cx-edge:not(.is-hot),
+.cx-graph.has-hot .cx-group-label {
+  opacity: 0.12;
+}
+.cx-dim.is-hot .cx-label {
+  fill: var(--color-ink);
+  font-weight: 600;
+}
+.cx-node:focus-visible .cx-hit {
+  stroke: var(--color-ink);
+  stroke-width: 1.5;
+}
+
 /* Une carte se soulève au survol et s'enfonce au clic : on sent qu'elle
    s'ouvre avant même qu'elle ne s'ouvre. */
 .lift {
